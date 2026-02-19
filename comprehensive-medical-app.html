@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>高齢者包括的検査・測定アプリケーション</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse-recording {
+            0%, 100% { transform: scale(1); background-color: rgb(239, 68, 68); }
+            50% { transform: scale(1.15); background-color: rgb(220, 38, 38); }
+        }
+        .recording { animation: pulse-recording 0.8s ease-in-out infinite; }
+        @keyframes wave {
+            0%, 100% { height: 20%; }
+            50% { height: 100%; }
+        }
+        .wave-bar { animation: wave 0.5s ease-in-out infinite; }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+        .tab-active {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);
+        }
+        .camera-frame { position: relative; background: #000; border-radius: 12px; overflow: hidden; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        .trial-max { background-color: #fef3c7 !important; border-color: #f59e0b !important; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3); }
+        .sppb-total { font-size: 2.5rem; font-weight: 800; text-align: center; padding: 0.5rem; border-radius: 0.75rem; }
+        .frailty-normal { background-color: #d1fae5; color: #065f46; border: 2px solid #10b981; }
+        .frailty-prefrail { background-color: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
+        .frailty-frail { background-color: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
+        .measurement-section { border-left: 4px solid #3b82f6; padding-left: 1rem; margin-bottom: 1.5rem; }
+        .ms-purple { border-left-color: #8b5cf6; }
+        .ms-green { border-left-color: #10b981; }
+        #cameraModal, .inline-camera-modal {
+            position: fixed; inset: 0; z-index: 50;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.6);
+        }
+        #cameraModal.active, .inline-camera-modal.active { display: flex; }
+        #cameraModal .modal-content, .inline-camera-modal .modal-content {
+            background: white; border-radius: 1rem; padding: 1.5rem;
+            max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto;
+        }
+        .auto-field { background-color: #eff6ff; border-color: #93c5fd; font-weight: 700; }
+        /* ヘッダー入力フィールド共通 */
+        .header-input {
+            padding: 8px 10px; font-size: 15px; border: 1.5px solid #d1d5db;
+            border-radius: 8px; background: #f9fafb; transition: border-color 0.15s, box-shadow 0.15s;
+            box-sizing: border-box;
+        }
+        .header-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); background: #fff; }
+        .header-input::placeholder { color: #9ca3af; }
+        .voice-btn {
+            background: #ef4444; color: white; border: none; border-radius: 0.5rem;
+            width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: transform 0.1s;
+        }
+        .voice-btn:hover { transform: scale(1.1); }
+        /* 舌TCI図 */
+        .tongue-input {
+            position: absolute; width: 42px; height: 30px; text-align: center;
+            border: 2px solid #d1d5db; border-radius: 6px; font-weight: 700; font-size: 0.9rem;
+            background: rgba(255,255,255,0.92); box-sizing: border-box;
+            transform: translate(-50%, -50%);
+        }
+        .tongue-input:focus { border-color: #8b5cf6; outline: none; box-shadow: 0 0 0 2px rgba(139,92,246,0.3); }
+
+        /* ===== モバイル最適化 ===== */
+        @media (max-width: 768px) {
+            body { font-size: 16px; -webkit-text-size-adjust: 100%; }
+            .container { padding: 6px !important; }
+
+            /* 見出し */
+            h2 { font-size: 1.15rem !important; }
+            h3 { font-size: 1rem !important; }
+
+            /* ヘッダー行1: ID全幅、氏名+日付を横並び */
+            .header-row1 {
+                grid-template-columns: 3fr 2fr !important;
+                gap: 6px !important;
+            }
+            .header-row1 > div:nth-child(1) { grid-column: 1 / -1 !important; }
+            /* 2,3番目は自動で2列に収まる */
+
+            /* ヘッダー行2: 5列均等維持 */
+            .header-row2 {
+                grid-template-columns: repeat(5, 1fr) !important;
+                gap: 4px !important;
+            }
+
+            /* ヘッダー入力 */
+            .header-input {
+                font-size: 16px !important;
+                padding: 9px 6px !important;
+                min-height: 42px;
+            }
+            .header-input[type="number"] { padding-right: 20px !important; }
+            .header-row2 .relative span { font-size: 9px !important; right: 2px !important; }
+            .header-row2 label { font-size: 9px !important; margin-bottom: 1px !important; }
+            .header-row1 label { font-size: 11px !important; }
+
+            /* 入力フィールド全般 */
+            input[type="text"]:not(.header-input),
+            input[type="number"]:not(.header-input):not(.tongue-input),
+            input[type="date"]:not(.header-input),
+            select:not(.header-input),
+            textarea {
+                font-size: 16px !important;
+                padding: 10px 12px !important;
+                min-height: 44px;
+                border-radius: 8px !important;
+            }
+
+            /* タブボタン */
+            .grid.grid-cols-3 button {
+                padding: 14px 6px !important;
+                font-size: 0.82rem !important;
+                min-height: 52px;
+                line-height: 1.2;
+            }
+
+            /* タブコンテンツ */
+            #content-physical, #content-swallowing, #content-cognitive {
+                padding: 12px !important; margin-bottom: 10px !important;
+                border-radius: 1rem !important;
+            }
+
+            /* チェックボックスラベル */
+            label.flex.items-center {
+                padding: 12px !important; min-height: 48px; font-size: 0.95rem;
+            }
+            label.flex.items-center input[type="checkbox"] {
+                width: 22px !important; height: 22px !important; min-width: 22px;
+            }
+
+            /* 音声入力ボタン */
+            .voice-btn {
+                width: 44px !important; height: 44px !important;
+                font-size: 1.3rem !important; min-width: 44px;
+                border-radius: 10px !important; flex-shrink: 0;
+            }
+
+            /* SPPB等のセクション */
+            .measurement-section { padding-left: 10px; margin-bottom: 14px; }
+            .measurement-section .p-4 { padding: 10px !important; }
+
+            /* 3回測定の並び */
+            .flex.gap-3.flex-wrap { gap: 6px !important; }
+            .flex.gap-3.flex-wrap .flex-1 { min-width: 60px !important; }
+
+            /* グリッド調整 */
+            .grid.grid-cols-2 { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+
+            /* テーブル（咀嚼機能） */
+            table input[type="number"] { padding: 8px 4px !important; font-size: 15px !important; }
+            table .voice-btn { width: 30px !important; height: 30px !important; font-size: 0.9rem !important; min-width: 30px !important; }
+            table th, table td { padding: 5px 3px !important; font-size: 0.85rem; }
+
+            /* ディアドコキネシス測定ボタン */
+            #oralStartBtn { padding: 14px 10px !important; font-size: 1.05rem !important; min-height: 52px; }
+
+            /* 波形モニター */
+            .bg-gray-900 { height: 100px !important; padding: 10px !important; }
+            .wave-bar { width: 20px !important; }
+
+            /* 結果表示 */
+            #oralCount, #oralRate { font-size: 2rem !important; }
+            #oralTimer { font-size: 2.2rem !important; }
+
+            /* SPPB合計 */
+            .sppb-total { font-size: 1.8rem !important; }
+
+            /* 自動判定パネル */
+            .grid.grid-cols-1.md\\:grid-cols-3 { gap: 8px !important; }
+
+            /* 保存・操作ボタン */
+            button { min-height: 44px; }
+
+            /* カメラモーダル */
+            #cameraModal .modal-content, .inline-camera-modal .modal-content {
+                padding: 12px !important; width: 98% !important; border-radius: 12px !important;
+            }
+            #cameraModal .modal-content button, .inline-camera-modal .modal-content button {
+                padding: 12px 8px !important; font-size: 0.95rem !important; min-height: 48px;
+            }
+
+            /* データ一覧 */
+            .grid.grid-cols-1.md\\:grid-cols-2 { grid-template-columns: 1fr !important; }
+
+            /* 舌TCI図 */
+            .tongue-container { width: 190px !important; height: 260px !important; }
+            .tongue-input { width: 36px !important; height: 30px !important; font-size: 0.9rem !important; }
+
+            /* 5m歩行セクション内の小さなボタン */
+            .voice-btn[style*="width:28px"] {
+                width: 34px !important; height: 34px !important;
+                font-size: 0.95rem !important; min-width: 34px !important;
+            }
+
+            /* セレクトボックス */
+            select:not(.header-input) { font-size: 16px !important; min-height: 44px !important; }
+
+            /* 自動計算フィールド */
+            .auto-field:not(.header-input) { font-size: 16px !important; min-height: 44px !important; }
+
+            /* データ一覧ヘッダー */
+            .flex.justify-between.items-center.mb-6 { flex-direction: column; align-items: stretch !important; gap: 8px; }
+            .flex.justify-between.items-center.mb-6 .flex.gap-3 { justify-content: flex-end; }
+        }
+
+        /* 極小画面（iPhone SE等 375px以下） */
+        @media (max-width: 375px) {
+            .grid.grid-cols-3 button { font-size: 0.72rem !important; padding: 12px 4px !important; }
+            .header-row2 { gap: 3px !important; }
+            .header-input { padding: 7px 6px !important; font-size: 15px !important; }
+            .tongue-container { width: 160px !important; height: 220px !important; }
+        }
+
+        /* デスクトップ（769px以上） */
+        @media (min-width: 769px) {
+            .header-row1 > div { grid-column: auto !important; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-green-50 to-purple-50 min-h-screen">
+<div class="container mx-auto p-4 max-w-7xl">
+
+    <!-- ヘッダー -->
+    <div class="bg-white rounded-2xl shadow-xl mb-4 overflow-hidden">
+        <!-- タイトルバー -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 flex items-center justify-between">
+            <h1 class="text-lg md:text-xl font-bold text-white tracking-wide">高齢者包括的検査・測定</h1>
+            <div class="flex gap-2">
+                <button onclick="openCameraModal()" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-3 rounded-lg text-sm backdrop-blur transition">📷 カメラ</button>
+                <button onclick="saveSession()" class="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold py-2 px-3 rounded-lg text-sm shadow transition">💾 保存</button>
+            </div>
+        </div>
+        <!-- 入力フォーム -->
+        <div class="p-4">
+            <!-- 行1: ID・氏名・検査日 -->
+            <div class="grid gap-2 mb-3 header-row1" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 tracking-wider">利用者ID</label>
+                    <div class="flex gap-1">
+                        <input type="text" id="userId" class="header-input flex-1 min-w-0" placeholder="U12345">
+                        <button onclick="loadSessionById()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 rounded-lg text-xs whitespace-nowrap shadow-sm transition flex items-center gap-1" title="途中記録を読み込み">📂 読込</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 tracking-wider">氏名</label>
+                    <input type="text" id="userName" class="header-input w-full" placeholder="山田 太郎">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 tracking-wider">検査日</label>
+                    <input type="date" id="examDate" class="header-input w-full">
+                </div>
+            </div>
+            <!-- 行2: 性別・年齢・身長・体重・BMI -->
+            <div class="grid gap-2 header-row2" style="grid-template-columns: repeat(5, 1fr);">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 tracking-wider">性別</label>
+                    <select id="userSex" class="header-input w-full">
+                        <option value="">—</option>
+                        <option value="male">男</option>
+                        <option value="female">女</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 tracking-wider">年齢</label>
+                    <div class="relative">
+                        <input type="number" id="userAge" min="0" max="130" class="header-input w-full pr-6" placeholder="—">
+                        <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">歳</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 tracking-wider">身長</label>
+                    <div class="relative">
+                        <input type="number" id="userHeight" step="0.1" min="0" onchange="calcBMI()" class="header-input w-full pr-8" placeholder="—">
+                        <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">cm</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 tracking-wider">体重</label>
+                    <div class="relative">
+                        <input type="number" id="userWeight" step="0.1" min="0" onchange="calcBMI()" class="header-input w-full pr-7" placeholder="—">
+                        <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">kg</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 tracking-wider">BMI</label>
+                    <input type="text" id="userBMI" readonly class="header-input w-full auto-field text-center font-bold" value="—">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- タブナビゲーション -->
+    <div class="bg-white rounded-2xl shadow-lg p-2 mb-4">
+        <div class="grid grid-cols-3 gap-2">
+            <button onclick="switchTab('physical')" id="tab-physical" class="tab-active py-3 px-2 rounded-xl font-bold text-sm md:text-base transition">🏃 身体機能</button>
+            <button onclick="switchTab('swallowing')" id="tab-swallowing" class="bg-gray-100 text-gray-600 py-3 px-2 rounded-xl font-bold text-sm md:text-base transition hover:bg-gray-200">🗣️ 嚥下機能</button>
+            <button onclick="switchTab('cognitive')" id="tab-cognitive" class="bg-gray-100 text-gray-600 py-3 px-2 rounded-xl font-bold text-sm md:text-base transition hover:bg-gray-200">🧠 認知機能</button>
+        </div>
+    </div>
+
+    <!-- ========== タブ①: 身体機能 ========== -->
+    <div id="content-physical" class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b-4 border-blue-500 pb-2">🏃 身体機能</h2>
+
+        <!-- 機器測定チェック -->
+        <div class="measurement-section">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">機器測定項目</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50"><input type="checkbox" id="chk_bodyComp" class="w-5 h-5"> <span class="font-semibold">体組成</span></label>
+                <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50"><input type="checkbox" id="chk_boneDensity" class="w-5 h-5"> <span class="font-semibold">骨密度</span></label>
+                <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50"><input type="checkbox" id="chk_postural" class="w-5 h-5"> <span class="font-semibold">重心動揺</span></label>
+                <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50"><input type="checkbox" id="chk_limbBP" class="w-5 h-5"> <span class="font-semibold">四肢血圧</span></label>
+                <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50"><input type="checkbox" id="chk_pulseWave" class="w-5 h-5"> <span class="font-semibold">脈波</span></label>
+                <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50"><input type="checkbox" id="chk_endothelial" class="w-5 h-5"> <span class="font-semibold">血管内皮機能</span></label>
+            </div>
+        </div>
+
+        <!-- SPPB -->
+        <div class="measurement-section">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">SPPB（Short Physical Performance Battery）</h3>
+            <div class="space-y-4">
+                <!-- バランス -->
+                <div class="p-4 bg-blue-50 rounded-lg">
+                    <label class="block font-semibold text-gray-700 mb-2">バランス（最大パフォーマンス）</label>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <select id="sppb_balance_test" onchange="calcSPPBBalance()" class="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                            <option value="">テスト選択</option>
+                            <option value="side">閉脚立位</option>
+                            <option value="semi">セミタンデム</option>
+                            <option value="tandem">タンデム</option>
+                            <option value="single">片脚立位</option>
+                        </select>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="sppb_balance_sec" step="0.1" placeholder="秒" onchange="calcSPPBBalance()" class="w-20 px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                            <span class="text-gray-600 text-sm">秒</span>
+                            <button type="button" class="voice-btn" onclick="startVoiceInput('sppb_balance_sec')">🎤</button>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-sm font-semibold text-gray-600">得点:</span>
+                            <input type="text" id="sppb_balance_score" readonly class="w-16 px-2 py-2 border-2 rounded-lg auto-field text-center" value="—">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 歩行 -->
+                <div class="p-4 bg-blue-50 rounded-lg">
+                    <label class="block font-semibold text-gray-700 mb-2">歩行（4m）</label>
+                    <div class="flex items-center gap-3 flex-wrap mb-3">
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="sppb_gait_sec" step="0.01" placeholder="秒" onchange="calcSPPBGait()" class="w-24 px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                            <span class="text-gray-600 text-sm">秒</span>
+                            <button type="button" class="voice-btn" onclick="startVoiceInput('sppb_gait_sec')">🎤</button>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-sm font-semibold text-gray-600">得点:</span>
+                            <input type="text" id="sppb_gait_score" readonly class="w-16 px-2 py-2 border-2 rounded-lg auto-field text-center" value="—">
+                        </div>
+                    </div>
+                    <!-- 5m歩行速度 -->
+                    <div class="mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                        <p class="text-sm font-bold text-gray-600 mb-2">5m歩行速度（SPPB採点対象外）</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 mb-1">自然歩行速度</p>
+                                <div class="flex gap-2">
+                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_nat_1" step="0.01" placeholder="1回目" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('walk5m_nat_1')">🎤</button></div>
+                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_nat_2" step="0.01" placeholder="2回目" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('walk5m_nat_2')">🎤</button></div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 mb-1">最大歩行速度</p>
+                                <div class="flex gap-2">
+                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_max_1" step="0.01" placeholder="1回目" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('walk5m_max_1')">🎤</button></div>
+                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_max_2" step="0.01" placeholder="2回目" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('walk5m_max_2')">🎤</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 立ち上がり -->
+                <div class="p-4 bg-blue-50 rounded-lg">
+                    <label class="block font-semibold text-gray-700 mb-2">立ち上がり（5回）</label>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="sppb_chair_sec" step="0.01" placeholder="秒" onchange="calcSPPBChair()" class="w-24 px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                            <span class="text-gray-600 text-sm">秒</span>
+                            <button type="button" class="voice-btn" onclick="startVoiceInput('sppb_chair_sec')">🎤</button>
+                        </div>
+                        <label class="flex items-center gap-1 text-sm"><input type="checkbox" id="sppb_chair_unable" onchange="calcSPPBChair()"> 実施不可</label>
+                        <div class="flex items-center gap-1">
+                            <span class="text-sm font-semibold text-gray-600">得点:</span>
+                            <input type="text" id="sppb_chair_score" readonly class="w-16 px-2 py-2 border-2 rounded-lg auto-field text-center" value="—">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SPPB合計 -->
+                <div class="p-4 bg-indigo-100 rounded-lg text-center">
+                    <label class="block font-bold text-gray-700 mb-1">SPPB合計</label>
+                    <div id="sppb_total" class="sppb-total text-indigo-700">— / 12</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 膝伸展筋力（2回測定+平均） -->
+        <div class="measurement-section">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">膝伸展筋力（2回測定・平均値自動算出）</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <label class="block font-semibold text-gray-700 mb-2">左</label>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="kneeExt_L1" step="0.1" placeholder="NM" onchange="calcAvg('kneeExt_L','NM',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('kneeExt_L1')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="kneeExt_L2" step="0.1" placeholder="NM" onchange="calcAvg('kneeExt_L','NM',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('kneeExt_L2')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10 font-bold">平均</span><input type="text" id="kneeExt_L_avg" readonly class="flex-1 px-2 py-1 border rounded auto-field" value="—"><span class="text-xs">NM</span></div>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <label class="block font-semibold text-gray-700 mb-2">右</label>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="kneeExt_R1" step="0.1" placeholder="NM" onchange="calcAvg('kneeExt_R','NM',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('kneeExt_R1')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="kneeExt_R2" step="0.1" placeholder="NM" onchange="calcAvg('kneeExt_R','NM',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('kneeExt_R2')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10 font-bold">平均</span><input type="text" id="kneeExt_R_avg" readonly class="flex-1 px-2 py-1 border rounded auto-field" value="—"><span class="text-xs">NM</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 握力（2回測定+平均） -->
+        <div class="measurement-section">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">握力（2回測定・平均値自動算出）</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <label class="block font-semibold text-gray-700 mb-2">左 (kg)</label>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="grip_L1" step="0.1" placeholder="kg" onchange="calcAvg('grip_L','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('grip_L1')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="grip_L2" step="0.1" placeholder="kg" onchange="calcAvg('grip_L','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('grip_L2')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10 font-bold">平均</span><input type="text" id="grip_L_avg" readonly class="flex-1 px-2 py-1 border rounded auto-field" value="—"><span class="text-xs">kg</span></div>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <label class="block font-semibold text-gray-700 mb-2">右 (kg)</label>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="grip_R1" step="0.1" placeholder="kg" onchange="calcAvg('grip_R','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('grip_R1')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="grip_R2" step="0.1" placeholder="kg" onchange="calcAvg('grip_R','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('grip_R2')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10 font-bold">平均</span><input type="text" id="grip_R_avg" readonly class="flex-1 px-2 py-1 border rounded auto-field" value="—"><span class="text-xs">kg</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 呼吸筋力（3回測定+最大値自動） -->
+        <div class="measurement-section">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">呼吸筋力（3回測定・最大値自動算出）</h3>
+            <div class="flex gap-3 flex-wrap items-end">
+                <div class="flex-1 min-w-[90px]">
+                    <label class="block text-sm text-gray-600 mb-1">1回目</label>
+                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_1" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('respMuscle_1')">🎤</button></div>
+                </div>
+                <div class="flex-1 min-w-[90px]">
+                    <label class="block text-sm text-gray-600 mb-1">2回目</label>
+                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_2" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('respMuscle_2')">🎤</button></div>
+                </div>
+                <div class="flex-1 min-w-[90px]">
+                    <label class="block text-sm text-gray-600 mb-1">3回目</label>
+                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_3" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('respMuscle_3')">🎤</button></div>
+                </div>
+                <div class="min-w-[100px]">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">最大値</label>
+                    <input type="text" id="respMuscle_max" readonly class="w-full px-2 py-2 border-2 rounded-lg auto-field text-center" value="—">
+                </div>
+            </div>
+        </div>
+
+        <!-- 大腿筋エコー -->
+        <div class="measurement-section">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">大腿筋エコー</h3>
+            <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-blue-50"><input type="checkbox" id="chk_thighEcho" class="w-5 h-5"> <span class="font-semibold">実施済み</span></label>
+        </div>
+    </div>
+
+    <!-- ========== タブ②: 嚥下機能 ========== -->
+    <div id="content-swallowing" class="bg-white rounded-2xl shadow-xl p-6 mb-6 hidden">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b-4 border-purple-500 pb-2">🗣️ 嚥下機能（オーラルフレイル）</h2>
+
+        <!-- オトガイ舌骨筋エコー -->
+        <div class="measurement-section ms-purple">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">オトガイ舌骨筋エコー</h3>
+            <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-purple-50"><input type="checkbox" id="chk_geniohyoid" class="w-5 h-5"> <span class="font-semibold">実施済み</span></label>
+        </div>
+
+        <!-- オーラルディアドコキネシス（30秒） -->
+        <div class="measurement-section ms-purple">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">オーラルディアドコキネシス（pa/ta/ka）— 10秒間</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <div class="mb-4">
+                        <label class="block font-semibold text-gray-700 mb-2">測定対象</label>
+                        <select id="oralTarget" class="w-full px-3 py-2 text-lg font-bold border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+                            <option value="pa">「パ」の発音</option>
+                            <option value="ta">「タ」の発音</option>
+                            <option value="ka">「カ」の発音</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block font-semibold text-gray-700 mb-2">音量閾値: <span id="thresholdValue">30</span></label>
+                        <input type="range" id="threshold" min="10" max="50" value="30" oninput="updateThreshold(this.value)" class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <button onclick="startOralTest()" id="oralStartBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-xl text-xl shadow-lg transform transition hover:scale-105 mb-4">▶️ 測定開始（10秒間）</button>
+                    <div class="bg-purple-50 rounded-xl p-4 border-2 border-purple-200">
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div><p class="text-sm font-semibold text-gray-700">検出回数</p><p id="oralCount" class="text-4xl font-bold text-purple-600">0</p><p class="text-xs text-gray-600">回</p></div>
+                            <div><p class="text-sm font-semibold text-gray-700">1秒あたり</p><p id="oralRate" class="text-4xl font-bold text-blue-600">0.0</p><p class="text-xs text-gray-600">回/秒</p></div>
+                        </div>
+                    </div>
+                    <div class="mt-3 grid grid-cols-3 gap-2">
+                        <div class="text-center p-2 bg-gray-50 rounded-lg"><span class="text-sm font-bold">pa</span><p id="result_pa" class="text-lg font-bold text-gray-500">—</p></div>
+                        <div class="text-center p-2 bg-gray-50 rounded-lg"><span class="text-sm font-bold">ta</span><p id="result_ta" class="text-lg font-bold text-gray-500">—</p></div>
+                        <div class="text-center p-2 bg-gray-50 rounded-lg"><span class="text-sm font-bold">ka</span><p id="result_ka" class="text-lg font-bold text-gray-500">—</p></div>
+                    </div>
+                    <button onclick="saveCurrentOralResult()" class="w-full mt-3 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow transform transition hover:scale-105">💾 この測定結果を記録</button>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-700 mb-2">🎵 音声波形モニター</h4>
+                    <div class="bg-gray-900 rounded-xl p-6 h-48 flex items-end justify-around gap-2">
+                        <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
+                        <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
+                        <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
+                        <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
+                        <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
+                    </div>
+                    <div id="oralStatus" class="mt-3 text-center text-lg font-bold text-gray-600">準備完了</div>
+                    <div class="mt-3 bg-blue-50 rounded-xl p-4 text-center">
+                        <p class="text-sm font-semibold text-gray-700">残り時間</p>
+                        <p id="oralTimer" class="text-4xl font-bold text-blue-600">30.0</p>
+                        <p class="text-xs text-gray-600">秒</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 咀嚼機能(ガム) L/a/b値 3回 -->
+        <div class="measurement-section ms-purple">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">咀嚼機能・ガム（L/a/b値 × 3回測定）</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead><tr class="bg-purple-50">
+                        <th class="p-2 text-left"></th><th class="p-2">L値</th><th class="p-2">a値</th><th class="p-2">b値</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr><td class="p-2 font-semibold">1回目</td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_L1" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_L1')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_a1" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_a1')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_b1" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_b1')">🎤</button></div></td></tr>
+                        <tr><td class="p-2 font-semibold">2回目</td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_L2" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_L2')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_a2" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_a2')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_b2" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_b2')">🎤</button></div></td></tr>
+                        <tr><td class="p-2 font-semibold">3回目</td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_L3" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_L3')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_a3" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_a3')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_b3" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_b3')">🎤</button></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 最大舌圧（3回+最大値自動） -->
+        <div class="measurement-section ms-purple">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">最大舌圧（3回測定・最大値自動算出）</h3>
+            <div class="flex gap-3 flex-wrap items-end">
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">1回目</label><div class="flex items-center gap-1"><input type="number" id="tonguePressure_1" step="0.1" placeholder="kPa" onchange="highlightMax('tonguePressure',3); calcMaxField('tonguePressure',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('tonguePressure_1')">🎤</button></div></div>
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">2回目</label><div class="flex items-center gap-1"><input type="number" id="tonguePressure_2" step="0.1" placeholder="kPa" onchange="highlightMax('tonguePressure',3); calcMaxField('tonguePressure',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('tonguePressure_2')">🎤</button></div></div>
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">3回目</label><div class="flex items-center gap-1"><input type="number" id="tonguePressure_3" step="0.1" placeholder="kPa" onchange="highlightMax('tonguePressure',3); calcMaxField('tonguePressure',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('tonguePressure_3')">🎤</button></div></div>
+                <div class="min-w-[100px]"><label class="block text-sm font-bold text-gray-700 mb-1">最大値</label><input type="text" id="tonguePressure_max" readonly class="w-full px-2 py-2 border-2 rounded-lg auto-field text-center" value="—"></div>
+            </div>
+        </div>
+
+        <!-- 口腔乾燥（3回+最大値自動） -->
+        <div class="measurement-section ms-purple">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">口腔乾燥・ムーカス（3回測定・最大値自動算出）</h3>
+            <div class="flex gap-3 flex-wrap items-end">
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">1回目</label><div class="flex items-center gap-1"><input type="number" id="mucus_1" step="0.1" placeholder="値" onchange="highlightMax('mucus',3); calcMaxField('mucus',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('mucus_1')">🎤</button></div></div>
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">2回目</label><div class="flex items-center gap-1"><input type="number" id="mucus_2" step="0.1" placeholder="値" onchange="highlightMax('mucus',3); calcMaxField('mucus',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('mucus_2')">🎤</button></div></div>
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">3回目</label><div class="flex items-center gap-1"><input type="number" id="mucus_3" step="0.1" placeholder="値" onchange="highlightMax('mucus',3); calcMaxField('mucus',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('mucus_3')">🎤</button></div></div>
+                <div class="min-w-[100px]"><label class="block text-sm font-bold text-gray-700 mb-1">最大値</label><input type="text" id="mucus_max" readonly class="w-full px-2 py-2 border-2 rounded-lg auto-field text-center" value="—"></div>
+            </div>
+        </div>
+
+        <!-- 口腔衛生TCI（舌図） -->
+        <div class="measurement-section ms-purple">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">口腔衛生 — TCI（Tongue Coating Index）</h3>
+            <p class="text-sm text-gray-600 mb-3">舌の各部位に 0（なし）/ 1（薄い）/ 2（厚い）を入力してください。</p>
+            <div class="flex flex-col md:flex-row items-start gap-6">
+                <div class="tongue-container" style="width:220px; height:300px; position:relative; margin:0 auto;">
+                    <svg viewBox="0 0 220 300" style="width:100%; height:100%; display:block;">
+                        <!-- 舌の形 -->
+                        <path d="M110 8 C45 8, 8 70, 8 150 C8 230, 45 292, 110 292 C175 292, 212 230, 212 150 C212 70, 175 8, 110 8 Z" fill="#ffb3b3" stroke="#cc6666" stroke-width="2"/>
+                        <!-- 区切り線 -->
+                        <line x1="20" y1="105" x2="200" y2="105" stroke="#cc666688" stroke-width="1" stroke-dasharray="4,4"/>
+                        <line x1="20" y1="195" x2="200" y2="195" stroke="#cc666688" stroke-width="1" stroke-dasharray="4,4"/>
+                        <line x1="110" y1="15" x2="110" y2="285" stroke="#cc666688" stroke-width="1" stroke-dasharray="4,4"/>
+                        <!-- ラベル -->
+                        <text x="22" y="60" font-size="11" fill="#994444" font-weight="bold">後方</text>
+                        <text x="22" y="155" font-size="11" fill="#994444" font-weight="bold">中央</text>
+                        <text x="22" y="250" font-size="11" fill="#994444" font-weight="bold">前方</text>
+                        <!-- 入力欄の位置ガイド（3×3グリッド中心座標） -->
+                        <!-- 後方: y=55, 中央: y=148, 前方: y=240 -->
+                        <!-- 左: x=55, 中: x=110, 右: x=165 -->
+                    </svg>
+                    <!-- 後方行 (top ≈ 55/300*100% = 18.3%) -->
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_pl" style="top:13%; left:12%" placeholder="0" oninput="calcTCI()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_pc" style="top:13%; left:40%" placeholder="0" oninput="calcTCI()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_pr" style="top:13%; left:67%" placeholder="0" oninput="calcTCI()">
+                    <!-- 中央行 (top ≈ 148/300*100% = 49.3%) -->
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_ml" style="top:44%; left:14%" placeholder="0" oninput="calcTCI()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_mc" style="top:44%; left:40%" placeholder="0" oninput="calcTCI()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_mr" style="top:44%; left:65%" placeholder="0" oninput="calcTCI()">
+                    <!-- 前方行 (top ≈ 240/300*100% = 80%) -->
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_al" style="top:73%; left:20%" placeholder="0" oninput="calcTCI()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_ac" style="top:73%; left:40%" placeholder="0" oninput="calcTCI()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_ar" style="top:73%; left:60%" placeholder="0" oninput="calcTCI()">
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm text-gray-600 mb-2">0=舌苔なし　1=薄い/部分的　2=厚い/全体</p>
+                    <div class="bg-purple-50 p-3 rounded-lg">
+                        <p class="font-bold text-gray-700">TCI合計: <span id="tci_total" class="text-purple-700">0</span> / 18</p>
+                        <p class="font-bold text-gray-700">TCI (%): <span id="tci_percent" class="text-purple-700">0.0</span>%</p>
+                    </div>
+                    <button onclick="calcTCI()" class="mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm">TCI計算</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 残存歯数 -->
+        <div class="measurement-section ms-purple">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">残存歯数</h3>
+            <div class="flex items-center gap-2">
+                <input type="number" id="remainingTeeth" min="0" max="30" step="1" placeholder="本数" onchange="updateJudgment()" class="w-32 px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg">
+                <span class="text-gray-600">本 (0〜30)</span>
+                <button type="button" class="voice-btn" onclick="startVoiceInput('remainingTeeth')">🎤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== タブ③: 認知機能 ========== -->
+    <div id="content-cognitive" class="bg-white rounded-2xl shadow-xl p-6 mb-6 hidden">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b-4 border-green-500 pb-2">🧠 認知機能</h2>
+
+        <!-- MoCA-J -->
+        <div class="measurement-section ms-green">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">MoCA-J</h3>
+            <div class="flex gap-4 flex-wrap mb-3">
+                <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-green-50"><input type="checkbox" id="chk_moca_done" class="w-5 h-5"> <span class="font-semibold">実施済み</span></label>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg">
+                <p class="font-semibold text-gray-700 mb-2">📷 MoCA-J記録用紙を撮影</p>
+                <p class="text-xs text-gray-500 mb-2">スマホカメラから直接撮影します。写真フォルダには保存されません。</p>
+                <button onclick="openInlineCamera('moca')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow">📸 撮影する</button>
+                <div id="moca_images" class="mt-2 flex gap-2 flex-wrap"></div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="measurement-section ms-green">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">FAB</h3>
+            <div class="flex gap-4 flex-wrap mb-3">
+                <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-green-50"><input type="checkbox" id="chk_fab_done" class="w-5 h-5"> <span class="font-semibold">実施済み</span></label>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg">
+                <p class="font-semibold text-gray-700 mb-2">📷 FAB記録用紙を撮影</p>
+                <p class="text-xs text-gray-500 mb-2">スマホカメラから直接撮影します。写真フォルダには保存されません。</p>
+                <button onclick="openInlineCamera('fab')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow">📸 撮影する</button>
+                <div id="fab_images" class="mt-2 flex gap-2 flex-wrap"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自動判定パネル -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-4 border-yellow-500 pb-2">📊 自動判定パネル</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div id="judge_physicalFrailty" class="p-4 rounded-xl border-2 border-gray-200 bg-gray-50">
+                <h3 class="font-bold text-gray-700 mb-2">身体的フレイル</h3>
+                <p class="text-sm text-gray-600 mb-2">握力・SPPB等から判定</p>
+                <div id="judge_physicalFrailty_result" class="text-lg font-bold text-gray-400">— 未判定 —</div>
+            </div>
+            <div id="judge_physicalDecline" class="p-4 rounded-xl border-2 border-gray-200 bg-gray-50">
+                <h3 class="font-bold text-gray-700 mb-2">身体機能低下</h3>
+                <p class="text-sm text-gray-600 mb-2">SPPBスコア: 0-6低 / 7-9中 / 10-12高</p>
+                <div id="judge_physicalDecline_result" class="text-lg font-bold text-gray-400">— 未判定 —</div>
+            </div>
+            <div id="judge_oralFrailty" class="p-4 rounded-xl border-2 border-gray-200 bg-gray-50">
+                <h3 class="font-bold text-gray-700 mb-2">オーラルフレイル</h3>
+                <p class="text-sm text-gray-600 mb-2">6項目中3項目以上で該当</p>
+                <div id="judge_oralFrailty_result" class="text-lg font-bold text-gray-400">— 未判定 —</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- データ一覧 -->
+    <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+            <h2 class="text-2xl font-bold text-gray-800 border-b-4 border-indigo-500 pb-2">📋 記録済みセッション一覧</h2>
+            <div class="flex gap-3">
+                <span class="text-lg font-semibold text-gray-700">総件数: <span id="totalRecords" class="text-indigo-600">0</span>件</span>
+                <button onclick="exportData()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow">📤 JSON出力</button>
+                <button onclick="clearAllRecords()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow">🗑️ 全削除</button>
+            </div>
+        </div>
+        <div id="recordsList" class="grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar" style="max-height:600px;overflow-y:auto">
+            <p class="col-span-full text-center text-gray-400 py-10">まだデータがありません</p>
+        </div>
+    </div>
+</div>
+
+<!-- カメラモーダル（汎用） -->
+<div id="cameraModal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800">📷 カメラ撮影</h2>
+            <button onclick="closeCameraModal()" class="text-2xl text-gray-500 hover:text-gray-800 font-bold">&times;</button>
+        </div>
+        <div class="mb-3">
+            <label class="block font-semibold text-gray-700 mb-1">カテゴリタグ</label>
+            <select id="cameraCategory" class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none">
+                <option value="moca_j">MoCA-J</option>
+                <option value="echo_thigh">大腿筋エコー画像</option>
+                <option value="echo_geniohyoid">オトガイ舌骨筋エコー画像</option>
+                <option value="other">その他</option>
+            </select>
+        </div>
+        <div class="camera-frame aspect-video mb-3">
+            <video id="cameraPreview" autoplay playsinline class="w-full h-full object-cover"></video>
+            <canvas id="captureCanvas" class="hidden"></canvas>
+        </div>
+        <div class="flex gap-2 mb-3">
+            <button onclick="startCamera('cameraPreview')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow">📹 起動</button>
+            <button onclick="captureImage('cameraPreview','captureCanvas','general')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow">📸 撮影</button>
+            <button onclick="stopCamera('cameraPreview')" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow">⏹️ 停止</button>
+        </div>
+        <p class="text-xs text-gray-500 mb-3">撮影した画像は端末に保存されず、ブラウザのメモリ上でのみ処理されます。</p>
+        <h3 class="font-bold text-gray-700 mb-2">🖼️ 撮影画像</h3>
+        <div id="capturedImages" class="grid grid-cols-3 gap-2" style="max-height:200px;overflow-y:auto">
+            <p class="col-span-3 text-center text-gray-400 py-4 text-sm">まだ画像がありません</p>
+        </div>
+    </div>
+</div>
+
+<!-- インラインカメラモーダル（MoCA-J/FAB用） -->
+<div id="inlineCameraModal" class="inline-camera-modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800" id="inlineCameraTitle">📷 用紙撮影</h2>
+            <button onclick="closeInlineCamera()" class="text-2xl text-gray-500 hover:text-gray-800 font-bold">&times;</button>
+        </div>
+        <div class="camera-frame aspect-video mb-3">
+            <video id="inlineCameraPreview" autoplay playsinline class="w-full h-full object-cover"></video>
+            <canvas id="inlineCaptureCanvas" class="hidden"></canvas>
+        </div>
+        <div class="flex gap-2 mb-3">
+            <button onclick="startCamera('inlineCameraPreview')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow">📹 起動</button>
+            <button onclick="captureInlineImage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow">📸 撮影</button>
+            <button onclick="closeInlineCamera()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow">⏹️ 閉じる</button>
+        </div>
+        <p class="text-xs text-gray-500">撮影した画像は写真フォルダに保存されません。ブラウザのメモリ上でのみ処理されます。</p>
+    </div>
+</div>
+
+<script>
+// ==========================================
+// グローバル状態
+// ==========================================
+let allSessions = [];
+let capturedImagesData = [];
+let cameraStreams = {};
+let audioContext = null, analyser = null, microphone = null;
+let oralTestInterval = null, oralTestTimeout = null, oralCount = 0, oralThreshold = 30, lastPeakTime = 0;
+const oralTestDuration = 10;
+let diadochoResults = { pa: null, ta: null, ka: null };
+let inlineCameraTarget = null;
+let cognitiveImages = { moca: [], fab: [] };
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'ja-JP';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+}
+
+// ==========================================
+// BMI自動計算
+// ==========================================
+function calcBMI() {
+    const h = parseFloat(document.getElementById('userHeight').value);
+    const w = parseFloat(document.getElementById('userWeight').value);
+    if (!isNaN(h) && !isNaN(w) && h > 0) {
+        const hm = h / 100;
+        document.getElementById('userBMI').value = (w / (hm * hm)).toFixed(1);
+    } else {
+        document.getElementById('userBMI').value = '—';
+    }
+}
+
+// ==========================================
+// 途中保存（localStorage）— ID単位で自動保存
+// ==========================================
+const DRAFT_KEY_PREFIX = 'medapp_draft_';
+
+function autoSaveDraft() {
+    const userId = document.getElementById('userId').value.trim();
+    if (!userId) return;
+    const data = collectSessionDataRaw();
+    data._draftTimestamp = new Date().toISOString();
+    localStorage.setItem(DRAFT_KEY_PREFIX + userId, JSON.stringify(data));
+}
+
+function loadSessionById() {
+    const userId = document.getElementById('userId').value.trim();
+    if (!userId) { alert('利用者IDを入力してください'); return; }
+    const raw = localStorage.getItem(DRAFT_KEY_PREFIX + userId);
+    if (!raw) { alert(`ID「${userId}」の途中記録は見つかりませんでした`); return; }
+    const data = JSON.parse(raw);
+    if (!confirm(`ID「${userId}」(${data.userName || '名前未入力'}) の途中記録を読み込みますか？\n保存日時: ${data._draftTimestamp ? new Date(data._draftTimestamp).toLocaleString('ja-JP') : '不明'}`)) return;
+    restoreSessionData(data);
+    alert('途中記録を読み込みました');
+}
+
+function restoreSessionData(d) {
+    // 基本情報
+    if (d.userName) document.getElementById('userName').value = d.userName;
+    if (d.examDate) document.getElementById('examDate').value = d.examDate;
+    if (d.userSex) document.getElementById('userSex').value = d.userSex;
+    if (d.userAge) document.getElementById('userAge').value = d.userAge;
+    if (d.userHeight) document.getElementById('userHeight').value = d.userHeight;
+    if (d.userWeight) document.getElementById('userWeight').value = d.userWeight;
+    calcBMI();
+
+    // 身体機能チェック
+    const checks = d.physical?.checks || {};
+    Object.entries(checks).forEach(([k,v]) => { const el = document.getElementById('chk_' + k); if (el) el.checked = !!v; });
+
+    // SPPB
+    if (d.physical?.sppb) {
+        const s = d.physical.sppb;
+        if (s.balance?.test) document.getElementById('sppb_balance_test').value = s.balance.test;
+        if (s.balance?.sec) document.getElementById('sppb_balance_sec').value = s.balance.sec;
+        if (s.gait?.sec) document.getElementById('sppb_gait_sec').value = s.gait.sec;
+        if (s.chair?.sec) document.getElementById('sppb_chair_sec').value = s.chair.sec;
+        if (s.chair?.unable) document.getElementById('sppb_chair_unable').checked = s.chair.unable;
+        calcSPPBBalance(); calcSPPBGait(); calcSPPBChair();
+    }
+
+    // 5m歩行
+    if (d.physical?.walk5m) {
+        const w = d.physical.walk5m;
+        if (w.natural) { if (w.natural[0]) document.getElementById('walk5m_nat_1').value = w.natural[0]; if (w.natural[1]) document.getElementById('walk5m_nat_2').value = w.natural[1]; }
+        if (w.max) { if (w.max[0]) document.getElementById('walk5m_max_1').value = w.max[0]; if (w.max[1]) document.getElementById('walk5m_max_2').value = w.max[1]; }
+    }
+
+    // 膝伸展
+    if (d.physical?.kneeExtension) {
+        const k = d.physical.kneeExtension;
+        if (k.left) { if (k.left[0]) document.getElementById('kneeExt_L1').value = k.left[0]; if (k.left[1]) document.getElementById('kneeExt_L2').value = k.left[1]; }
+        if (k.right) { if (k.right[0]) document.getElementById('kneeExt_R1').value = k.right[0]; if (k.right[1]) document.getElementById('kneeExt_R2').value = k.right[1]; }
+        calcAvg('kneeExt_L','NM',2); calcAvg('kneeExt_R','NM',2);
+    }
+
+    // 握力
+    if (d.physical?.grip) {
+        const g = d.physical.grip;
+        if (g.left) { if (g.left[0]) document.getElementById('grip_L1').value = g.left[0]; if (g.left[1]) document.getElementById('grip_L2').value = g.left[1]; }
+        if (g.right) { if (g.right[0]) document.getElementById('grip_R1').value = g.right[0]; if (g.right[1]) document.getElementById('grip_R2').value = g.right[1]; }
+        calcAvg('grip_L','kg',2); calcAvg('grip_R','kg',2);
+    }
+
+    // 呼吸筋力
+    if (d.physical?.respMuscle?.trials) {
+        d.physical.respMuscle.trials.forEach((v,i) => { if (v) document.getElementById(`respMuscle_${i+1}`).value = v; });
+        highlightMax('respMuscle',3); calcMaxField('respMuscle',3);
+    }
+    if (d.physical?.checks?.thighEcho !== undefined) document.getElementById('chk_thighEcho').checked = d.physical.checks.thighEcho;
+
+    // 嚥下機能
+    if (d.swallowing?.geniohyoidEcho !== undefined) document.getElementById('chk_geniohyoid').checked = d.swallowing.geniohyoidEcho;
+    if (d.swallowing?.diadochokinesis) {
+        diadochoResults = { ...diadochoResults, ...d.swallowing.diadochokinesis };
+        ['pa','ta','ka'].forEach(k => {
+            if (diadochoResults[k] !== null) {
+                document.getElementById(`result_${k}`).textContent = `${diadochoResults[k]} 回/秒`;
+                document.getElementById(`result_${k}`).className = 'text-lg font-bold text-purple-700';
+            }
+        });
+    }
+
+    // 咀嚼
+    if (d.swallowing?.chewing) {
+        const ch = d.swallowing.chewing;
+        ['L','a','b'].forEach(c => { if (ch[c]) ch[c].forEach((v,i) => { if (v) document.getElementById(`chew_${c}${i+1}`).value = v; }); });
+    }
+
+    // 舌圧
+    if (d.swallowing?.tonguePressure?.trials) {
+        d.swallowing.tonguePressure.trials.forEach((v,i) => { if (v) document.getElementById(`tonguePressure_${i+1}`).value = v; });
+        highlightMax('tonguePressure',3); calcMaxField('tonguePressure',3);
+    }
+
+    // ムーカス
+    if (d.swallowing?.mucus?.trials) {
+        d.swallowing.mucus.trials.forEach((v,i) => { if (v) document.getElementById(`mucus_${i+1}`).value = v; });
+        highlightMax('mucus',3); calcMaxField('mucus',3);
+    }
+
+    // TCI
+    if (d.swallowing?.tci?.sections) {
+        Object.entries(d.swallowing.tci.sections).forEach(([id,v]) => { const el = document.getElementById(id); if (el) el.value = v; });
+        calcTCI();
+    }
+
+    // 残存歯数
+    if (d.swallowing?.remainingTeeth) document.getElementById('remainingTeeth').value = d.swallowing.remainingTeeth;
+
+    // 認知機能
+    if (d.cognitive?.moca?.done !== undefined) document.getElementById('chk_moca_done').checked = d.cognitive.moca.done;
+    if (d.cognitive?.fab?.done !== undefined) document.getElementById('chk_fab_done').checked = d.cognitive.fab.done;
+    if (d.cognitive?.moca?.images) { cognitiveImages.moca = d.cognitive.moca.images; renderCognitiveImages('moca'); }
+    if (d.cognitive?.fab?.images) { cognitiveImages.fab = d.cognitive.fab.images; renderCognitiveImages('fab'); }
+
+    // 汎用画像
+    if (d.images) { capturedImagesData = d.images; renderCapturedImages(); }
+
+    updateJudgment();
+}
+
+// collectSessionDataのベース（バリデーションなし版、途中保存用）
+function collectSessionDataRaw() {
+    calcTCI();
+    const tciIds = ['tci_pl','tci_pc','tci_pr','tci_ml','tci_mc','tci_mr','tci_al','tci_ac','tci_ar'];
+    const tciData = {};
+    tciIds.forEach(id => { tciData[id] = parseInt(document.getElementById(id).value) || 0; });
+    return {
+        userId: document.getElementById('userId').value.trim(),
+        userName: document.getElementById('userName').value.trim(),
+        examDate: document.getElementById('examDate').value,
+        userSex: document.getElementById('userSex').value,
+        userAge: document.getElementById('userAge').value || null,
+        userHeight: document.getElementById('userHeight').value || null,
+        userWeight: document.getElementById('userWeight').value || null,
+        userBMI: document.getElementById('userBMI').value,
+        physical: {
+            checks: { bodyComp: document.getElementById('chk_bodyComp').checked, boneDensity: document.getElementById('chk_boneDensity').checked, postural: document.getElementById('chk_postural').checked, limbBP: document.getElementById('chk_limbBP').checked, pulseWave: document.getElementById('chk_pulseWave').checked, endothelial: document.getElementById('chk_endothelial').checked, thighEcho: document.getElementById('chk_thighEcho').checked },
+            sppb: {
+                balance: { test: document.getElementById('sppb_balance_test').value, sec: document.getElementById('sppb_balance_sec').value || null, score: document.getElementById('sppb_balance_score').value },
+                gait: { sec: document.getElementById('sppb_gait_sec').value || null, score: document.getElementById('sppb_gait_score').value },
+                chair: { sec: document.getElementById('sppb_chair_sec').value || null, unable: document.getElementById('sppb_chair_unable').checked, score: document.getElementById('sppb_chair_score').value },
+                total: getSPPBTotal(),
+            },
+            walk5m: {
+                natural: [document.getElementById('walk5m_nat_1').value||null, document.getElementById('walk5m_nat_2').value||null],
+                max: [document.getElementById('walk5m_max_1').value||null, document.getElementById('walk5m_max_2').value||null],
+            },
+            kneeExtension: {
+                left: [document.getElementById('kneeExt_L1').value||null, document.getElementById('kneeExt_L2').value||null],
+                leftAvg: document.getElementById('kneeExt_L_avg').value,
+                right: [document.getElementById('kneeExt_R1').value||null, document.getElementById('kneeExt_R2').value||null],
+                rightAvg: document.getElementById('kneeExt_R_avg').value,
+            },
+            grip: {
+                left: [document.getElementById('grip_L1').value||null, document.getElementById('grip_L2').value||null],
+                leftAvg: document.getElementById('grip_L_avg').value,
+                right: [document.getElementById('grip_R1').value||null, document.getElementById('grip_R2').value||null],
+                rightAvg: document.getElementById('grip_R_avg').value,
+            },
+            respMuscle: { trials: [document.getElementById('respMuscle_1').value||null, document.getElementById('respMuscle_2').value||null, document.getElementById('respMuscle_3').value||null], max: document.getElementById('respMuscle_max').value },
+        },
+        swallowing: {
+            geniohyoidEcho: document.getElementById('chk_geniohyoid').checked,
+            diadochokinesis: { ...diadochoResults },
+            chewing: {
+                L: [document.getElementById('chew_L1').value||null, document.getElementById('chew_L2').value||null, document.getElementById('chew_L3').value||null],
+                a: [document.getElementById('chew_a1').value||null, document.getElementById('chew_a2').value||null, document.getElementById('chew_a3').value||null],
+                b: [document.getElementById('chew_b1').value||null, document.getElementById('chew_b2').value||null, document.getElementById('chew_b3').value||null],
+            },
+            tonguePressure: { trials: [document.getElementById('tonguePressure_1').value||null, document.getElementById('tonguePressure_2').value||null, document.getElementById('tonguePressure_3').value||null], max: document.getElementById('tonguePressure_max').value },
+            mucus: { trials: [document.getElementById('mucus_1').value||null, document.getElementById('mucus_2').value||null, document.getElementById('mucus_3').value||null], max: document.getElementById('mucus_max').value },
+            tci: { sections: tciData, total: parseInt(document.getElementById('tci_total').textContent), percent: parseFloat(document.getElementById('tci_percent').textContent) },
+            remainingTeeth: document.getElementById('remainingTeeth').value || null,
+        },
+        cognitive: {
+            moca: { done: document.getElementById('chk_moca_done').checked, images: cognitiveImages.moca },
+            fab: { done: document.getElementById('chk_fab_done').checked, images: cognitiveImages.fab },
+        },
+        images: capturedImagesData,
+    };
+}
+
+// ==========================================
+// 初期化
+// ==========================================
+window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('examDate').valueAsDate = new Date();
+    document.getElementById('oralTimer').textContent = oralTestDuration.toFixed(1);
+    updateRecordsList();
+    // 30秒ごとに途中自動保存
+    setInterval(autoSaveDraft, 30000);
+});
+
+// ==========================================
+// タブ切り替え
+// ==========================================
+function switchTab(tabName) {
+    ['physical','swallowing','cognitive'].forEach(tab => {
+        const btn = document.getElementById(`tab-${tab}`);
+        const content = document.getElementById(`content-${tab}`);
+        if (tab === tabName) { btn.classList.add('tab-active'); btn.classList.remove('bg-gray-100','text-gray-600'); content.classList.remove('hidden'); }
+        else { btn.classList.remove('tab-active'); btn.classList.add('bg-gray-100','text-gray-600'); content.classList.add('hidden'); }
+    });
+}
+
+// ==========================================
+// 音声入力 (Web Speech API)
+// ==========================================
+function startVoiceInput(fieldId) {
+    if (!recognition) { alert('お使いのブラウザは音声入力に対応していません。'); return; }
+    const btn = event.target;
+    btn.classList.add('recording');
+    const inputEl = document.getElementById(fieldId);
+    recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        const val = extractNumericValue(transcript);
+        if (val !== null) { inputEl.value = val; inputEl.classList.add('bg-green-100'); setTimeout(() => inputEl.classList.remove('bg-green-100'), 800); inputEl.dispatchEvent(new Event('change')); }
+        else { alert(`数値が認識できませんでした: "${transcript}"`); }
+    };
+    recognition.onerror = () => { alert('音声認識エラー'); };
+    recognition.onend = () => { btn.classList.remove('recording'); };
+    recognition.start();
+}
+function extractNumericValue(text) {
+    text = text.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+    text = text.replace(/[一二三四五六七八九]/g, s => '123456789'['一二三四五六七八九'.indexOf(s)]);
+    text = text.replace(/[てん点]/g, '.');
+    const m = text.match(/\d+\.?\d*/);
+    return m ? parseFloat(m[0]) : null;
+}
+
+// ==========================================
+// SPPB自動採点
+// ==========================================
+function calcSPPBBalance() {
+    const test = document.getElementById('sppb_balance_test').value;
+    const sec = parseFloat(document.getElementById('sppb_balance_sec').value);
+    let score = null;
+    if (test && !isNaN(sec)) {
+        if (test === 'single') { score = 4; }
+        else if (test === 'tandem') { score = sec >= 10 ? 4 : sec >= 3 ? 3 : 2; }
+        else if (test === 'semi') { score = sec >= 10 ? 2 : 1; }
+        else if (test === 'side') { score = sec >= 10 ? 1 : 0; }
+    }
+    document.getElementById('sppb_balance_score').value = score !== null ? score : '—';
+    calcSPPBTotal();
+}
+function calcSPPBGait() {
+    const sec = parseFloat(document.getElementById('sppb_gait_sec').value);
+    let score = null;
+    if (!isNaN(sec) && sec > 0) {
+        if (sec <= 4.82) score = 4;
+        else if (sec <= 6.20) score = 3;
+        else if (sec <= 8.70) score = 2;
+        else score = 1;
+    }
+    document.getElementById('sppb_gait_score').value = score !== null ? score : '—';
+    calcSPPBTotal();
+}
+function calcSPPBChair() {
+    const unable = document.getElementById('sppb_chair_unable').checked;
+    const sec = parseFloat(document.getElementById('sppb_chair_sec').value);
+    let score = null;
+    if (unable) { score = 0; }
+    else if (!isNaN(sec) && sec > 0) {
+        if (sec > 60) score = 0;
+        else if (sec < 11.20) score = 4;
+        else if (sec < 13.70) score = 3;
+        else if (sec < 16.70) score = 2;
+        else score = 1;
+    }
+    document.getElementById('sppb_chair_score').value = score !== null ? score : '—';
+    calcSPPBTotal();
+}
+function calcSPPBTotal() {
+    const b = document.getElementById('sppb_balance_score').value;
+    const g = document.getElementById('sppb_gait_score').value;
+    const c = document.getElementById('sppb_chair_score').value;
+    if (b !== '—' && g !== '—' && c !== '—') {
+        const total = parseInt(b) + parseInt(g) + parseInt(c);
+        document.getElementById('sppb_total').textContent = `${total} / 12`;
+    } else {
+        document.getElementById('sppb_total').textContent = '— / 12';
+    }
+    updateJudgment();
+}
+function getSPPBTotal() {
+    const b = document.getElementById('sppb_balance_score').value;
+    const g = document.getElementById('sppb_gait_score').value;
+    const c = document.getElementById('sppb_chair_score').value;
+    if (b !== '—' && g !== '—' && c !== '—') return parseInt(b) + parseInt(g) + parseInt(c);
+    return null;
+}
+
+// ==========================================
+// 平均値自動算出（2回測定用）
+// ==========================================
+function calcAvg(prefix, unit, count) {
+    let sum = 0, n = 0;
+    for (let i = 1; i <= count; i++) {
+        const v = parseFloat(document.getElementById(`${prefix}${i}`).value);
+        if (!isNaN(v)) { sum += v; n++; }
+    }
+    document.getElementById(`${prefix}_avg`).value = n === count ? (sum / count).toFixed(1) : '—';
+}
+
+// ==========================================
+// 最大値ハイライト＋最大値フィールド
+// ==========================================
+function highlightMax(prefix, count) {
+    let maxVal = -Infinity, maxIdx = -1;
+    for (let i = 1; i <= count; i++) {
+        const el = document.getElementById(`${prefix}_${i}`);
+        const val = parseFloat(el.value);
+        el.classList.remove('trial-max');
+        if (!isNaN(val) && val > maxVal) { maxVal = val; maxIdx = i; }
+    }
+    if (maxIdx > 0) document.getElementById(`${prefix}_${maxIdx}`).classList.add('trial-max');
+}
+function calcMaxField(prefix, count) {
+    let maxVal = -Infinity;
+    for (let i = 1; i <= count; i++) {
+        const v = parseFloat(document.getElementById(`${prefix}_${i}`).value);
+        if (!isNaN(v) && v > maxVal) maxVal = v;
+    }
+    document.getElementById(`${prefix}_max`).value = maxVal === -Infinity ? '—' : maxVal;
+}
+function getMaxTrial(prefix, count) {
+    let maxVal = -Infinity;
+    for (let i = 1; i <= count; i++) {
+        const v = parseFloat(document.getElementById(`${prefix}_${i}`).value);
+        if (!isNaN(v) && v > maxVal) maxVal = v;
+    }
+    return maxVal === -Infinity ? null : maxVal;
+}
+
+// ==========================================
+// TCI計算
+// ==========================================
+function calcTCI() {
+    const ids = ['tci_pl','tci_pc','tci_pr','tci_ml','tci_mc','tci_mr','tci_al','tci_ac','tci_ar'];
+    let sum = 0;
+    ids.forEach(id => { const v = parseInt(document.getElementById(id).value); if (!isNaN(v)) sum += v; });
+    document.getElementById('tci_total').textContent = sum;
+    document.getElementById('tci_percent').textContent = ((sum / 18) * 100).toFixed(1);
+}
+
+// ==========================================
+// 自動判定ロジック
+// ==========================================
+function updateJudgment() {
+    const sppb = getSPPBTotal();
+    // 身体機能低下
+    const declineEl = document.getElementById('judge_physicalDecline');
+    const declineR = document.getElementById('judge_physicalDecline_result');
+    if (sppb !== null) {
+        if (sppb <= 6) { declineEl.className = 'p-4 rounded-xl frailty-frail'; declineR.textContent = `低機能 (${sppb}点)`; }
+        else if (sppb <= 9) { declineEl.className = 'p-4 rounded-xl frailty-prefrail'; declineR.textContent = `中機能 (${sppb}点)`; }
+        else { declineEl.className = 'p-4 rounded-xl frailty-normal'; declineR.textContent = `高機能 (${sppb}点)`; }
+        declineR.className = 'text-lg font-bold';
+    } else { declineEl.className = 'p-4 rounded-xl border-2 border-gray-200 bg-gray-50'; declineR.textContent = '— 未判定 —'; declineR.className = 'text-lg font-bold text-gray-400'; }
+
+    // 身体的フレイル
+    const gL1 = parseFloat(document.getElementById('grip_L1').value), gL2 = parseFloat(document.getElementById('grip_L2').value);
+    const gR1 = parseFloat(document.getElementById('grip_R1').value), gR2 = parseFloat(document.getElementById('grip_R2').value);
+    const maxGrip = Math.max(isNaN(gL1)?0:gL1, isNaN(gL2)?0:gL2, isNaN(gR1)?0:gR1, isNaN(gR2)?0:gR2);
+    const frailEl = document.getElementById('judge_physicalFrailty');
+    const frailR = document.getElementById('judge_physicalFrailty_result');
+    if (maxGrip > 0 || sppb !== null) {
+        let fc = 0;
+        if (maxGrip > 0 && maxGrip < 20) fc++;
+        if (sppb !== null && sppb <= 6) fc++;
+        if (fc >= 2) { frailEl.className = 'p-4 rounded-xl frailty-frail'; frailR.textContent = 'フレイル該当'; }
+        else if (fc === 1) { frailEl.className = 'p-4 rounded-xl frailty-prefrail'; frailR.textContent = 'プレフレイル'; }
+        else { frailEl.className = 'p-4 rounded-xl frailty-normal'; frailR.textContent = '正常'; }
+        frailR.className = 'text-lg font-bold';
+    } else { frailEl.className = 'p-4 rounded-xl border-2 border-gray-200 bg-gray-50'; frailR.textContent = '— 未判定 —'; frailR.className = 'text-lg font-bold text-gray-400'; }
+
+    // オーラルフレイル
+    let ofc = 0, oic = 0;
+    const teethVal = parseInt(document.getElementById('remainingTeeth').value);
+    if (!isNaN(teethVal)) { oic++; if (teethVal < 20) ofc++; }
+    const maxT = getMaxTrial('tonguePressure', 3);
+    if (maxT !== null) { oic++; if (maxT < 30) ofc++; }
+    if (diadochoResults.pa !== null) { oic++; if (diadochoResults.pa < 6) ofc++; }
+    if (diadochoResults.ta !== null) { oic++; if (diadochoResults.ta < 6) ofc++; }
+    if (diadochoResults.ka !== null) { oic++; if (diadochoResults.ka < 6) ofc++; }
+    const chewV = parseFloat(document.getElementById('chew_a1').value);
+    if (!isNaN(chewV)) { oic++; if (chewV < 0) ofc++; }
+    const oralEl = document.getElementById('judge_oralFrailty');
+    const oralR = document.getElementById('judge_oralFrailty_result');
+    if (oic > 0) {
+        if (ofc >= 3) { oralEl.className = 'p-4 rounded-xl frailty-frail'; oralR.textContent = `オーラルフレイル該当 (${ofc}/${oic})`; }
+        else if (ofc >= 1) { oralEl.className = 'p-4 rounded-xl frailty-prefrail'; oralR.textContent = `注意 (${ofc}/${oic})`; }
+        else { oralEl.className = 'p-4 rounded-xl frailty-normal'; oralR.textContent = `正常 (0/${oic})`; }
+        oralR.className = 'text-lg font-bold';
+    } else { oralEl.className = 'p-4 rounded-xl border-2 border-gray-200 bg-gray-50'; oralR.textContent = '— 未判定 —'; oralR.className = 'text-lg font-bold text-gray-400'; }
+}
+
+// ==========================================
+// カメラ（汎用）
+// ==========================================
+async function startCamera(videoId) {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        cameraStreams[videoId] = stream;
+        document.getElementById(videoId).srcObject = stream;
+    } catch (e) { alert('カメラの起動に失敗しました。'); }
+}
+function stopCamera(videoId) {
+    if (cameraStreams[videoId]) { cameraStreams[videoId].getTracks().forEach(t => t.stop()); delete cameraStreams[videoId]; document.getElementById(videoId).srcObject = null; }
+}
+function openCameraModal() { document.getElementById('cameraModal').classList.add('active'); }
+function closeCameraModal() { stopCamera('cameraPreview'); document.getElementById('cameraModal').classList.remove('active'); }
+
+function captureImage(videoId, canvasId, mode) {
+    const vid = document.getElementById(videoId || 'cameraPreview');
+    if (!cameraStreams[videoId || 'cameraPreview']) { alert('先にカメラを起動してください'); return; }
+    const canvas = document.getElementById(canvasId || 'captureCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = vid.videoWidth; canvas.height = vid.videoHeight;
+    ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+    const cat = document.getElementById('cameraCategory').value;
+    const labels = { moca_j:'MoCA-J', echo_thigh:'大腿筋エコー', echo_geniohyoid:'オトガイ舌骨筋エコー', other:'その他' };
+    capturedImagesData.push({ id: Date.now(), data: canvas.toDataURL('image/jpeg', 0.8), timestamp: new Date().toLocaleString('ja-JP'), category: cat, categoryLabel: labels[cat] || cat });
+    renderCapturedImages();
+}
+function renderCapturedImages() {
+    const c = document.getElementById('capturedImages');
+    if (!capturedImagesData.length) { c.innerHTML = '<p class="col-span-3 text-center text-gray-400 py-4 text-sm">まだ画像がありません</p>'; return; }
+    c.innerHTML = capturedImagesData.map((img,i) => `<div class="relative border rounded-lg overflow-hidden"><img src="${img.data}" alt="撮影${i+1}" class="w-full h-24 object-cover"><button onclick="deleteImage(${img.id})" class="absolute top-0 right-0 bg-red-500 text-white w-6 h-6 text-xs font-bold rounded-bl">&times;</button><p class="text-xs text-center bg-gray-100 py-0.5">${img.categoryLabel}</p></div>`).join('');
+}
+function deleteImage(id) { capturedImagesData = capturedImagesData.filter(i => i.id !== id); renderCapturedImages(); }
+
+// ==========================================
+// インラインカメラ（MoCA-J / FAB用）
+// ==========================================
+function openInlineCamera(target) {
+    inlineCameraTarget = target;
+    document.getElementById('inlineCameraTitle').textContent = target === 'moca' ? '📷 MoCA-J用紙撮影' : '📷 FAB用紙撮影';
+    document.getElementById('inlineCameraModal').classList.add('active');
+    startCamera('inlineCameraPreview');
+}
+function closeInlineCamera() { stopCamera('inlineCameraPreview'); document.getElementById('inlineCameraModal').classList.remove('active'); inlineCameraTarget = null; }
+function captureInlineImage() {
+    const vid = document.getElementById('inlineCameraPreview');
+    if (!cameraStreams['inlineCameraPreview']) { alert('カメラを起動してください'); return; }
+    const canvas = document.getElementById('inlineCaptureCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = vid.videoWidth; canvas.height = vid.videoHeight;
+    ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+    const imgData = canvas.toDataURL('image/jpeg', 0.8);
+    const target = inlineCameraTarget;
+    cognitiveImages[target].push({ id: Date.now(), data: imgData, timestamp: new Date().toLocaleString('ja-JP') });
+    renderCognitiveImages(target);
+    alert('撮影しました');
+}
+function renderCognitiveImages(target) {
+    const c = document.getElementById(`${target}_images`);
+    c.innerHTML = cognitiveImages[target].map((img,i) => `<div class="relative border rounded-lg overflow-hidden w-24"><img src="${img.data}" class="w-full h-16 object-cover"><button onclick="deleteCogImage('${target}',${img.id})" class="absolute top-0 right-0 bg-red-500 text-white w-5 h-5 text-xs rounded-bl">&times;</button></div>`).join('');
+}
+function deleteCogImage(target, id) { cognitiveImages[target] = cognitiveImages[target].filter(i => i.id !== id); renderCognitiveImages(target); }
+
+// ==========================================
+// ディアドコキネシス (30秒)
+// ==========================================
+function updateThreshold(v) { oralThreshold = parseInt(v); document.getElementById('thresholdValue').textContent = v; }
+
+async function startOralTest() {
+    const target = document.getElementById('oralTarget').value;
+    const label = document.getElementById('oralTarget').selectedOptions[0].textContent;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        microphone = audioContext.createMediaStreamSource(stream);
+        analyser.fftSize = 256;
+        microphone.connect(analyser);
+        const bufLen = analyser.frequencyBinCount, dataArr = new Uint8Array(bufLen);
+        oralCount = 0; lastPeakTime = 0;
+        document.getElementById('oralCount').textContent = '0';
+        document.getElementById('oralRate').textContent = '0.0';
+        document.getElementById('oralStatus').textContent = `測定中: ${label}`;
+        const btn = document.getElementById('oralStartBtn');
+        btn.disabled = true; btn.classList.add('opacity-50');
+        let timeLeft = oralTestDuration;
+        document.getElementById('oralTimer').textContent = timeLeft.toFixed(1);
+        const timerInt = setInterval(() => { timeLeft -= 0.1; document.getElementById('oralTimer').textContent = timeLeft <= 0 ? '0.0' : timeLeft.toFixed(1); if (timeLeft <= 0) clearInterval(timerInt); }, 100);
+        oralTestInterval = setInterval(() => {
+            analyser.getByteFrequencyData(dataArr);
+            const avg = dataArr.reduce((a,b) => a+b, 0) / bufLen;
+            const now = Date.now();
+            if (avg > oralThreshold && now - lastPeakTime > 200) { oralCount++; lastPeakTime = now; document.getElementById('oralCount').textContent = oralCount; }
+        }, 50);
+        oralTestTimeout = setTimeout(() => stopOralTest(stream, timerInt), oralTestDuration * 1000);
+    } catch (e) { alert('マイクへのアクセスに失敗しました。'); }
+}
+function stopOralTest(stream, timerInt) {
+    if (oralTestInterval) { clearInterval(oralTestInterval); oralTestInterval = null; }
+    if (oralTestTimeout) { clearTimeout(oralTestTimeout); oralTestTimeout = null; }
+    if (timerInt) clearInterval(timerInt);
+    if (audioContext) { audioContext.close(); audioContext = null; }
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    const rate = (oralCount / oralTestDuration).toFixed(1);
+    document.getElementById('oralRate').textContent = rate;
+    document.getElementById('oralStatus').textContent = '測定完了';
+    document.getElementById('oralTimer').textContent = oralTestDuration.toFixed(1);
+    const btn = document.getElementById('oralStartBtn');
+    btn.disabled = false; btn.classList.remove('opacity-50');
+}
+function saveCurrentOralResult() {
+    const target = document.getElementById('oralTarget').value;
+    const rate = parseFloat(document.getElementById('oralRate').textContent);
+    const count = parseInt(document.getElementById('oralCount').textContent);
+    if (count === 0 && rate === 0) { alert('先に測定を実施してください'); return; }
+    diadochoResults[target] = rate;
+    document.getElementById(`result_${target}`).textContent = `${rate} 回/秒`;
+    document.getElementById(`result_${target}`).className = 'text-lg font-bold text-purple-700';
+    document.getElementById('oralCount').textContent = '0';
+    document.getElementById('oralRate').textContent = '0.0';
+    updateJudgment();
+    alert(`「${target}」: ${rate} 回/秒 を記録しました`);
+}
+
+// ==========================================
+// セッション保存
+// ==========================================
+function collectSessionData() {
+    const userId = document.getElementById('userId').value.trim();
+    const userName = document.getElementById('userName').value.trim();
+    if (!userId || !userName) { alert('利用者IDと氏名を入力してください'); return null; }
+    const data = collectSessionDataRaw();
+    data.timestamp = new Date().toISOString();
+    data.timestampLocal = new Date().toLocaleString('ja-JP');
+    // 画像をコピーデータに変換（参照ではなくスナップショット）
+    data.cognitive.moca.images = cognitiveImages.moca.map(i => ({ data: i.data, capturedAt: i.timestamp }));
+    data.cognitive.fab.images = cognitiveImages.fab.map(i => ({ data: i.data, capturedAt: i.timestamp }));
+    data.images = capturedImagesData.map(img => ({ data: img.data, category: img.category, categoryLabel: img.categoryLabel, capturedAt: img.timestamp }));
+    return data;
+}
+function saveSession() {
+    const s = collectSessionData();
+    if (!s) return;
+    allSessions.unshift(s);
+    // 途中記録を削除（正式保存したため）
+    localStorage.removeItem(DRAFT_KEY_PREFIX + s.userId);
+    updateRecordsList();
+    alert(`セッションを保存しました (${s.userName})`);
+}
+
+// ==========================================
+// データ一覧
+// ==========================================
+function updateRecordsList() {
+    const c = document.getElementById('recordsList');
+    document.getElementById('totalRecords').textContent = allSessions.length;
+    if (!allSessions.length) { c.innerHTML = '<p class="col-span-full text-center text-gray-400 py-10">まだデータがありません</p>'; return; }
+    c.innerHTML = allSessions.map((s,i) => {
+        const sexLabel = {male:'男性',female:'女性'}[s.userSex] || '';
+        const profile = [sexLabel, s.userAge ? `${s.userAge}歳` : '', s.userBMI && s.userBMI !== '—' ? `BMI:${s.userBMI}` : ''].filter(Boolean).join(' / ');
+        const sppb = s.physical.sppb.total !== null ? `SPPB: ${s.physical.sppb.total}/12` : '';
+        const grip = (s.physical.grip.leftAvg !== '—' || s.physical.grip.rightAvg !== '—') ? `握力: L${s.physical.grip.leftAvg} / R${s.physical.grip.rightAvg} kg` : '';
+        const diad = (s.swallowing.diadochokinesis.pa!==null||s.swallowing.diadochokinesis.ta!==null||s.swallowing.diadochokinesis.ka!==null) ? `パタカ: pa${s.swallowing.diadochokinesis.pa??'-'} ta${s.swallowing.diadochokinesis.ta??'-'} ka${s.swallowing.diadochokinesis.ka??'-'}` : '';
+        const imgs = s.images.length + s.cognitive.moca.images.length + s.cognitive.fab.images.length;
+        return `<div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+            <div class="flex justify-between items-start mb-2"><span class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">セッション</span><span class="text-xs text-gray-500">#${allSessions.length-i}</span></div>
+            <p class="font-bold text-lg mb-1">${s.userName} (${s.userId})</p>
+            ${profile ? `<p class="text-sm text-gray-700 mb-1">${profile}</p>` : ''}
+            <p class="text-xs text-gray-600 mb-2">${s.examDate} ${s.timestampLocal}</p>
+            ${sppb ? `<p class="text-sm">${sppb}</p>` : ''}${grip ? `<p class="text-sm">${grip}</p>` : ''}${diad ? `<p class="text-sm">${diad}</p>` : ''}${imgs ? `<p class="text-sm">📷 ${imgs}枚</p>` : ''}
+        </div>`;
+    }).join('');
+}
+function exportData() {
+    if (!allSessions.length) { alert('データがありません'); return; }
+    const blob = new Blob([JSON.stringify(allSessions, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `medical-session-${Date.now()}.json`; a.click();
+    URL.revokeObjectURL(url);
+}
+function clearAllRecords() { if (confirm('全てのデータを削除しますか？')) { allSessions = []; updateRecordsList(); } }
+function sendToPleasanterAPI(data) { console.log('Pleasanter API送信予定データ:', data); }
+</script>
+</body>
+</html>
