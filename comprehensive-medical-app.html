@@ -20,6 +20,8 @@
         .wave-bar:nth-child(3) { animation-delay: 0.2s; }
         .wave-bar:nth-child(4) { animation-delay: 0.3s; }
         .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+        /* 録音中は CSS アニメを停止してリアルタイム高さを反映 */
+        .wave-container.live .wave-bar { animation: none !important; transition: height 0.05s linear; }
         .tab-active {
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
@@ -461,25 +463,61 @@
             </div>
         </div>
 
-        <!-- 呼吸筋力（3回測定+最大値自動） -->
+        <!-- 呼吸筋力（PImax 吸気筋力・PEmax 呼気筋力 各3回・平均値算出） -->
         <div class="measurement-section">
-            <h3 class="text-lg font-bold text-gray-700 mb-3">呼吸筋力（3回測定・最大値自動算出）</h3>
-            <div class="flex gap-3 flex-wrap items-end">
-                <div class="flex-1 min-w-[90px]">
-                    <label class="block text-sm text-gray-600 mb-1">1回目</label>
-                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_1" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('respMuscle_1')">🎤</button></div>
+            <h3 class="text-lg font-bold text-gray-700 mb-3">呼吸筋力（PImax・PEmax 各3回測定・平均値算出）</h3>
+
+            <!-- PImax: 吸気筋力（息を吸う力） -->
+            <div class="mb-4 bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="bg-blue-600 text-white text-sm font-bold px-3 py-1 rounded-full">PImax</span>
+                    <span class="font-bold text-blue-800">吸気筋力（息を吸う力）</span>
+                    <span class="text-xs text-gray-500 ml-1">単位: cmH₂O</span>
                 </div>
-                <div class="flex-1 min-w-[90px]">
-                    <label class="block text-sm text-gray-600 mb-1">2回目</label>
-                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_2" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('respMuscle_2')">🎤</button></div>
+                <div class="flex gap-3 flex-wrap items-end">
+                    <div class="flex-1 min-w-[90px]">
+                        <label class="block text-sm text-gray-600 mb-1">1回目</label>
+                        <div class="flex items-center gap-1"><input type="number" id="pimax_1" step="0.1" placeholder="値" onchange="calcAvgField('pimax',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('pimax_1')">🎤</button></div>
+                    </div>
+                    <div class="flex-1 min-w-[90px]">
+                        <label class="block text-sm text-gray-600 mb-1">2回目</label>
+                        <div class="flex items-center gap-1"><input type="number" id="pimax_2" step="0.1" placeholder="値" onchange="calcAvgField('pimax',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('pimax_2')">🎤</button></div>
+                    </div>
+                    <div class="flex-1 min-w-[90px]">
+                        <label class="block text-sm text-gray-600 mb-1">3回目</label>
+                        <div class="flex items-center gap-1"><input type="number" id="pimax_3" step="0.1" placeholder="値" onchange="calcAvgField('pimax',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('pimax_3')">🎤</button></div>
+                    </div>
+                    <div class="min-w-[100px]">
+                        <label class="block text-sm font-bold text-blue-700 mb-1">平均値</label>
+                        <input type="text" id="pimax_avg" readonly class="w-full px-2 py-2 border-2 rounded-lg auto-field text-center" value="—">
+                    </div>
                 </div>
-                <div class="flex-1 min-w-[90px]">
-                    <label class="block text-sm text-gray-600 mb-1">3回目</label>
-                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_3" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('respMuscle_3')">🎤</button></div>
+            </div>
+
+            <!-- PEmax: 呼気筋力（息を吐く力） -->
+            <div class="bg-orange-50 rounded-xl p-4 border-2 border-orange-200">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">PEmax</span>
+                    <span class="font-bold text-orange-800">呼気筋力（息を吐く力）</span>
+                    <span class="text-xs text-gray-500 ml-1">単位: cmH₂O</span>
                 </div>
-                <div class="min-w-[100px]">
-                    <label class="block text-sm font-bold text-gray-700 mb-1">最大値</label>
-                    <input type="text" id="respMuscle_max" readonly class="w-full px-2 py-2 border-2 rounded-lg auto-field text-center" value="—">
+                <div class="flex gap-3 flex-wrap items-end">
+                    <div class="flex-1 min-w-[90px]">
+                        <label class="block text-sm text-gray-600 mb-1">1回目</label>
+                        <div class="flex items-center gap-1"><input type="number" id="pemax_1" step="0.1" placeholder="値" onchange="calcAvgField('pemax',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('pemax_1')">🎤</button></div>
+                    </div>
+                    <div class="flex-1 min-w-[90px]">
+                        <label class="block text-sm text-gray-600 mb-1">2回目</label>
+                        <div class="flex items-center gap-1"><input type="number" id="pemax_2" step="0.1" placeholder="値" onchange="calcAvgField('pemax',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('pemax_2')">🎤</button></div>
+                    </div>
+                    <div class="flex-1 min-w-[90px]">
+                        <label class="block text-sm text-gray-600 mb-1">3回目</label>
+                        <div class="flex items-center gap-1"><input type="number" id="pemax_3" step="0.1" placeholder="値" onchange="calcAvgField('pemax',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('pemax_3')">🎤</button></div>
+                    </div>
+                    <div class="min-w-[100px]">
+                        <label class="block text-sm font-bold text-orange-700 mb-1">平均値</label>
+                        <input type="text" id="pemax_avg" readonly class="w-full px-2 py-2 border-2 rounded-lg auto-field text-center" value="—">
+                    </div>
                 </div>
             </div>
         </div>
@@ -534,7 +572,7 @@
                 </div>
                 <div>
                     <h4 class="font-bold text-gray-700 mb-2">🎵 音声波形モニター</h4>
-                    <div class="bg-gray-900 rounded-xl p-6 h-48 flex items-end justify-around gap-2">
+                    <div id="waveContainer" class="wave-container bg-gray-900 rounded-xl p-6 h-48 flex items-end justify-around gap-2">
                         <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
                         <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
                         <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
@@ -714,14 +752,76 @@
     <div class="bg-white rounded-2xl shadow-xl p-6">
         <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
             <h2 class="text-2xl font-bold text-gray-800 border-b-4 border-indigo-500 pb-2">📋 記録済みセッション一覧</h2>
-            <div class="flex gap-3">
-                <span class="text-lg font-semibold text-gray-700">総件数: <span id="totalRecords" class="text-indigo-600">0</span>件</span>
-                <button onclick="exportData()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow">📤 JSON出力</button>
+            <div class="flex gap-2 flex-wrap">
+                <span class="text-lg font-semibold text-gray-700 flex items-center">総件数: <span id="totalRecords" class="text-indigo-600 ml-1">0</span>件</span>
+                <button onclick="exportCSV()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow">📊 CSV出力</button>
+                <button onclick="exportData()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow">📤 JSON出力</button>
                 <button onclick="clearAllRecords()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow">🗑️ 全削除</button>
             </div>
         </div>
-        <div id="recordsList" class="grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar" style="max-height:600px;overflow-y:auto">
-            <p class="col-span-full text-center text-gray-400 py-10">まだデータがありません</p>
+        <div class="overflow-x-auto custom-scrollbar" style="max-height:600px;overflow-y:auto">
+            <table class="w-full text-sm border-collapse" id="recordsTable">
+                <thead class="sticky top-0 bg-indigo-50 z-10">
+                    <tr>
+                        <th class="border border-gray-200 px-2 py-2 text-left text-xs font-bold text-gray-600 whitespace-nowrap">#</th>
+                        <th class="border border-gray-200 px-2 py-2 text-left text-xs font-bold text-gray-600 whitespace-nowrap">氏名</th>
+                        <th class="border border-gray-200 px-2 py-2 text-left text-xs font-bold text-gray-600 whitespace-nowrap">ID</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">検査日</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">性別</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">年齢</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">BMI</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">SPPB</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">握力L</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">握力R</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">PImax</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">PEmax</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">pa</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">ta</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">ka</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">舌圧max</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">フレイル</th>
+                        <th class="border border-gray-200 px-2 py-2 text-xs font-bold text-gray-600 whitespace-nowrap">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsList">
+                    <tr><td colspan="18" class="text-center text-gray-400 py-10">まだデータがありません</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     PINロックモーダル（個人情報保護法 第20条 安全管理措置）
+     ========================================== -->
+<div id="pinModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;flex-direction:column;">
+    <div style="background:#fff;border-radius:1.25rem;padding:2rem;max-width:420px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <div style="text-align:center;margin-bottom:1rem;">
+            <div style="font-size:3rem;">🔐</div>
+            <h2 id="pinModalTitle" style="font-size:1.2rem;font-weight:800;color:#1e40af;margin:0.5rem 0;">アクセスPINを設定してください</h2>
+            <p id="pinModalDesc" style="font-size:0.82rem;color:#6b7280;white-space:pre-line;line-height:1.5;"></p>
+        </div>
+        <div style="margin-bottom:1rem;">
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:#374151;margin-bottom:0.3rem;">PIN（4〜8桁の数字または文字）</label>
+            <input id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="••••"
+                style="width:100%;padding:0.75rem;font-size:1.5rem;text-align:center;border:2px solid #d1d5db;border-radius:0.75rem;letter-spacing:0.3em;box-sizing:border-box;"
+                onkeydown="if(event.key==='Enter')submitPin()">
+        </div>
+        <div id="pinConfirmRow" style="margin-bottom:1rem;">
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:#374151;margin-bottom:0.3rem;">PIN（確認）</label>
+            <input id="pinConfirmInput" type="password" inputmode="numeric" maxlength="8" placeholder="••••"
+                style="width:100%;padding:0.75rem;font-size:1.5rem;text-align:center;border:2px solid #d1d5db;border-radius:0.75rem;letter-spacing:0.3em;box-sizing:border-box;"
+                onkeydown="if(event.key==='Enter')submitPin()">
+        </div>
+        <button id="pinSubmitBtn" onclick="submitPin()"
+            style="width:100%;padding:0.9rem;background:#1d4ed8;color:#fff;font-size:1rem;font-weight:800;border:none;border-radius:0.75rem;cursor:pointer;margin-bottom:0.75rem;">
+            PINを設定して開始
+        </button>
+        <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:0.5rem;padding:0.75rem;font-size:0.75rem;color:#92400e;line-height:1.5;">
+            <strong>⚠️ 重要:</strong> このPINはデータの暗号化（AES-256-GCM）に使用されます。<br>
+            PINを忘れた場合、保存済みデータは復元できません。<br>
+            データは <strong>このデバイスのみ</strong> に保存され、外部に送信されません。<br>
+            個人情報保護法第20条に基づく安全管理措置として実施しています。
         </div>
     </div>
 </div>
@@ -793,6 +893,14 @@ let diadochoResults = { pa: null, ta: null, ka: null };
 let inlineCameraTarget = null;
 let cognitiveImages = { moca: [], fab: [] };
 
+// ==========================================
+// データベース定数
+// ==========================================
+const DB_KEY       = 'medapp_db_v1';      // 暗号化済みセッションDB
+const SALT_KEY     = 'medapp_salt_v1';    // PBKDF2ソルト（非機密）
+const PIN_SESSION  = 'medapp_pin_active'; // sessionStorage: PIN確認済みフラグ
+let   cryptoKey    = null;                // 派生鍵（メモリのみ・タブ閉じで消失）
+
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 if (SpeechRecognition) {
@@ -817,24 +925,141 @@ function calcBMI() {
 }
 
 // ==========================================
+// ★ 暗号化ユーティリティ（AES-GCM + PBKDF2）
+// 個人情報保護法 第20条 安全管理措置 準拠
+// ==========================================
+async function deriveKey(pin, saltBytes) {
+    const enc = new TextEncoder();
+    const keyMat = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: saltBytes, iterations: 150000, hash: 'SHA-256' },
+        keyMat,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+    );
+}
+async function encryptJSON(obj, key) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = new TextEncoder();
+    const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(JSON.stringify(obj)));
+    const combined = new Uint8Array(12 + cipher.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(cipher), 12);
+    // Base64エンコード（バイト配列 → 安全な文字列）
+    return btoa(String.fromCharCode(...combined));
+}
+async function decryptJSON(b64, key) {
+    const combined = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const iv   = combined.slice(0, 12);
+    const data = combined.slice(12);
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
+    return JSON.parse(new TextDecoder().decode(plain));
+}
+
+// ==========================================
+// PIN 管理
+// ==========================================
+async function initSecurity() {
+    const saltRaw = localStorage.getItem(SALT_KEY);
+    if (!saltRaw) {
+        // 初回: ソルト生成 + PIN設定モーダル表示
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        localStorage.setItem(SALT_KEY, btoa(String.fromCharCode(...salt)));
+        showPinModal('setup');
+    } else {
+        // 再訪問: PIN入力モーダル表示
+        showPinModal('enter');
+    }
+}
+function showPinModal(mode) {
+    document.getElementById('pinModal').style.display = 'flex';
+    document.getElementById('pinModalTitle').textContent = mode === 'setup'
+        ? '🔐 アクセスPINを設定してください'
+        : '🔐 PINを入力してください';
+    document.getElementById('pinModalDesc').textContent = mode === 'setup'
+        ? '初回起動です。4〜8桁のPINコードを設定してください。\nこのPINはデータの暗号化に使用されます。忘れると復元できません。'
+        : '保存済みデータを読み込むためにPINを入力してください。';
+    document.getElementById('pinConfirmRow').style.display = mode === 'setup' ? '' : 'none';
+    document.getElementById('pinSubmitBtn').textContent = mode === 'setup' ? 'PINを設定して開始' : 'ロック解除';
+    document.getElementById('pinModal').dataset.mode = mode;
+}
+async function submitPin() {
+    const pin  = document.getElementById('pinInput').value;
+    const pin2 = document.getElementById('pinConfirmInput').value;
+    const mode = document.getElementById('pinModal').dataset.mode;
+    if (pin.length < 4) { alert('PINは4文字以上で入力してください'); return; }
+    if (mode === 'setup' && pin !== pin2) { alert('PINが一致しません'); return; }
+
+    const saltB64 = localStorage.getItem(SALT_KEY);
+    const saltBytes = Uint8Array.from(atob(saltB64), c => c.charCodeAt(0));
+
+    try {
+        cryptoKey = await deriveKey(pin, saltBytes);
+        // テスト: 既存DBがあれば復号を試みる（誤PINチェック）
+        const existing = localStorage.getItem(DB_KEY);
+        if (existing) {
+            try {
+                allSessions = await decryptJSON(existing, cryptoKey);
+            } catch {
+                cryptoKey = null;
+                alert('PINが正しくありません。再度入力してください。');
+                return;
+            }
+        } else {
+            allSessions = [];
+        }
+        sessionStorage.setItem(PIN_SESSION, '1');
+        document.getElementById('pinModal').style.display = 'none';
+        document.getElementById('pinInput').value = '';
+        document.getElementById('pinConfirmInput').value = '';
+        updateRecordsList();
+    } catch (e) {
+        alert('エラーが発生しました: ' + e.message);
+    }
+}
+async function persistSessionsToDB() {
+    if (!cryptoKey) return;
+    // 画像データはDBに保持しない（サイズ削減・メモリ上のみ）
+    const slim = allSessions.map(s => ({
+        ...s,
+        images: [],
+        cognitive: { ...s.cognitive, moca: { ...s.cognitive.moca, images: [] }, fab: { ...s.cognitive.fab, images: [] } }
+    }));
+    const enc = await encryptJSON(slim, cryptoKey);
+    localStorage.setItem(DB_KEY, enc);
+}
+
+// ==========================================
 // 途中保存（localStorage）— ID単位で自動保存
 // ==========================================
 const DRAFT_KEY_PREFIX = 'medapp_draft_';
 
-function autoSaveDraft() {
+async function autoSaveDraft() {
     const userId = document.getElementById('userId').value.trim();
-    if (!userId) return;
+    if (!userId || !cryptoKey) return;
     const data = collectSessionDataRaw();
     data._draftTimestamp = new Date().toISOString();
-    localStorage.setItem(DRAFT_KEY_PREFIX + userId, JSON.stringify(data));
+    // 下書きも暗号化して保存
+    try {
+        const enc = await encryptJSON(data, cryptoKey);
+        localStorage.setItem(DRAFT_KEY_PREFIX + userId, enc);
+    } catch { /* 暗号化失敗は無視 */ }
 }
 
-function loadSessionById() {
+async function loadSessionById() {
     const userId = document.getElementById('userId').value.trim();
     if (!userId) { alert('利用者IDを入力してください'); return; }
+    if (!cryptoKey) { alert('PINが設定されていません。ページを再読み込みしてください。'); return; }
     const raw = localStorage.getItem(DRAFT_KEY_PREFIX + userId);
     if (!raw) { alert(`ID「${userId}」の途中記録は見つかりませんでした`); return; }
-    const data = JSON.parse(raw);
+    let data;
+    try {
+        data = await decryptJSON(raw, cryptoKey);
+    } catch {
+        // 旧形式（非暗号化）のフォールバック
+        try { data = JSON.parse(raw); } catch { alert('途中記録の読み込みに失敗しました（データが壊れています）'); return; }
+    }
     if (!confirm(`ID「${userId}」(${data.userName || '名前未入力'}) の途中記録を読み込みますか？\n保存日時: ${data._draftTimestamp ? new Date(data._draftTimestamp).toLocaleString('ja-JP') : '不明'}`)) return;
     restoreSessionData(data);
     alert('途中記録を読み込みました');
@@ -888,10 +1113,19 @@ function restoreSessionData(d) {
         calcAvg('grip_L','kg',2); calcAvg('grip_R','kg',2);
     }
 
-    // 呼吸筋力
-    if (d.physical?.respMuscle?.trials) {
-        d.physical.respMuscle.trials.forEach((v,i) => { if (v) document.getElementById(`respMuscle_${i+1}`).value = v; });
-        highlightMax('respMuscle',3); calcMaxField('respMuscle',3);
+    // 呼吸筋力 (PImax / PEmax)
+    if (d.physical?.pimax?.trials) {
+        d.physical.pimax.trials.forEach((v,i) => { if (v) document.getElementById(`pimax_${i+1}`).value = v; });
+        calcAvgField('pimax',3);
+    }
+    if (d.physical?.pemax?.trials) {
+        d.physical.pemax.trials.forEach((v,i) => { if (v) document.getElementById(`pemax_${i+1}`).value = v; });
+        calcAvgField('pemax',3);
+    }
+    // 旧データ互換（respMuscle → pimax へマイグレーション）
+    if (d.physical?.respMuscle?.trials && !d.physical?.pimax) {
+        d.physical.respMuscle.trials.forEach((v,i) => { if (v) document.getElementById(`pimax_${i+1}`).value = v; });
+        calcAvgField('pimax',3);
     }
     if (d.physical?.checks?.thighEcho !== undefined) document.getElementById('chk_thighEcho').checked = d.physical.checks.thighEcho;
 
@@ -985,7 +1219,8 @@ function collectSessionDataRaw() {
                 right: [document.getElementById('grip_R1').value||null, document.getElementById('grip_R2').value||null],
                 rightAvg: document.getElementById('grip_R_avg').value,
             },
-            respMuscle: { trials: [document.getElementById('respMuscle_1').value||null, document.getElementById('respMuscle_2').value||null, document.getElementById('respMuscle_3').value||null], max: document.getElementById('respMuscle_max').value },
+            pimax: { trials: [document.getElementById('pimax_1').value||null, document.getElementById('pimax_2').value||null, document.getElementById('pimax_3').value||null], avg: document.getElementById('pimax_avg').value },
+            pemax: { trials: [document.getElementById('pemax_1').value||null, document.getElementById('pemax_2').value||null, document.getElementById('pemax_3').value||null], avg: document.getElementById('pemax_avg').value },
         },
         swallowing: {
             geniohyoidEcho: document.getElementById('chk_geniohyoid').checked,
@@ -1014,8 +1249,9 @@ function collectSessionDataRaw() {
 window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('examDate').valueAsDate = new Date();
     document.getElementById('oralTimer').textContent = oralTestDuration.toFixed(1);
-    updateRecordsList();
-    // 30秒ごとに途中自動保存
+    // PIN & 暗号化DB 初期化（個人情報保護法 第20条 安全管理措置）
+    initSecurity();
+    // 30秒ごとに途中自動保存（暗号化済み）
     setInterval(autoSaveDraft, 30000);
 });
 
@@ -1130,6 +1366,15 @@ function calcAvg(prefix, unit, count) {
         if (!isNaN(v)) { sum += v; n++; }
     }
     document.getElementById(`${prefix}_avg`).value = n === count ? (sum / count).toFixed(1) : '—';
+}
+// PImax / PEmax 用: n回入力中何回でも平均を表示（全回揃わなくても平均を更新）
+function calcAvgField(prefix, count) {
+    let sum = 0, n = 0;
+    for (let i = 1; i <= count; i++) {
+        const v = parseFloat(document.getElementById(`${prefix}_${i}`).value);
+        if (!isNaN(v)) { sum += v; n++; }
+    }
+    document.getElementById(`${prefix}_avg`).value = n > 0 ? (sum / n).toFixed(1) : '—';
 }
 
 // ==========================================
@@ -1298,30 +1543,89 @@ async function startOralTest() {
     const target = document.getElementById('oralTarget').value;
     const label = document.getElementById('oralTarget').selectedOptions[0].textContent;
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        // マイク権限を取得
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: false });
+
+        // AudioContext 作成 & 必ず resume（iOS/Chrome でサスペンド状態になる対策）
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        await audioContext.resume();
+
         analyser = audioContext.createAnalyser();
+        analyser.fftSize = 1024;          // 時間分解能を上げる
+        analyser.smoothingTimeConstant = 0.3;
         microphone = audioContext.createMediaStreamSource(stream);
-        analyser.fftSize = 256;
         microphone.connect(analyser);
-        const bufLen = analyser.frequencyBinCount, dataArr = new Uint8Array(bufLen);
+
+        // 時間領域バッファ（波形データ用）
+        const timeBuf = new Uint8Array(analyser.fftSize);
+        // 周波数バッファ（波形バー表示用）
+        const freqBuf = new Uint8Array(analyser.frequencyBinCount);
+
         oralCount = 0; lastPeakTime = 0;
+        let oralEnvelope = 0; // 平滑化エネルギー
+        let inPeak = false;   // ピーク状態フラグ（ダブルカウント防止）
+
         document.getElementById('oralCount').textContent = '0';
         document.getElementById('oralRate').textContent = '0.0';
         document.getElementById('oralStatus').textContent = `測定中: ${label}`;
+        document.getElementById('waveContainer').classList.add('live');
+
         const btn = document.getElementById('oralStartBtn');
         btn.disabled = true; btn.classList.add('opacity-50');
+
         let timeLeft = oralTestDuration;
         document.getElementById('oralTimer').textContent = timeLeft.toFixed(1);
-        const timerInt = setInterval(() => { timeLeft -= 0.1; document.getElementById('oralTimer').textContent = timeLeft <= 0 ? '0.0' : timeLeft.toFixed(1); if (timeLeft <= 0) clearInterval(timerInt); }, 100);
+        const timerInt = setInterval(() => {
+            timeLeft -= 0.1;
+            document.getElementById('oralTimer').textContent = timeLeft <= 0 ? '0.0' : timeLeft.toFixed(1);
+            if (timeLeft <= 0) clearInterval(timerInt);
+        }, 100);
+
         oralTestInterval = setInterval(() => {
-            analyser.getByteFrequencyData(dataArr);
-            const avg = dataArr.reduce((a,b) => a+b, 0) / bufLen;
+            // === 時間領域データでRMS算出（実際の音圧エネルギー）===
+            analyser.getByteTimeDomainData(timeBuf);
+            let sum = 0;
+            for (let i = 0; i < timeBuf.length; i++) {
+                const norm = (timeBuf[i] - 128) / 128.0;
+                sum += norm * norm;
+            }
+            const rms = Math.sqrt(sum / timeBuf.length) * 100; // 0〜100 スケール
+
+            // エンベロープ平滑化（急峻な変化を滑らかに）
+            oralEnvelope = oralEnvelope * 0.75 + rms * 0.25;
+
+            // ピーク検出（閾値超え → ピーク開始、閾値の60%以下 → ピーク終了）
             const now = Date.now();
-            if (avg > oralThreshold && now - lastPeakTime > 200) { oralCount++; lastPeakTime = now; document.getElementById('oralCount').textContent = oralCount; }
+            if (oralEnvelope > oralThreshold && !inPeak) {
+                if (now - lastPeakTime > 150) { // 最小音節間隔150ms（≒最大6.7回/秒）
+                    oralCount++;
+                    lastPeakTime = now;
+                    document.getElementById('oralCount').textContent = oralCount;
+                }
+                inPeak = true;
+            } else if (oralEnvelope < oralThreshold * 0.6) {
+                inPeak = false;
+            }
+
+            // === 周波数データで波形バーをリアルタイム表示 ===
+            analyser.getByteFrequencyData(freqBuf);
+            const waveBars = document.querySelectorAll('#waveContainer .wave-bar');
+            const binPerBar = Math.floor(freqBuf.length / waveBars.length);
+            waveBars.forEach((bar, idx) => {
+                let avg = 0;
+                for (let i = idx * binPerBar; i < (idx + 1) * binPerBar; i++) avg += freqBuf[i];
+                avg /= binPerBar;
+                bar.style.height = `${Math.max(5, (avg / 255) * 100)}%`;
+            });
         }, 50);
+
         oralTestTimeout = setTimeout(() => stopOralTest(stream, timerInt), oralTestDuration * 1000);
-    } catch (e) { alert('マイクへのアクセスに失敗しました。'); }
+    } catch (e) {
+        const msg = e.name === 'NotAllowedError' ? 'マイクの使用が許可されていません。ブラウザの設定でマイクを許可してください。'
+                  : e.name === 'NotFoundError'   ? 'マイクが見つかりません。デバイスにマイクが接続されているか確認してください。'
+                  : `マイクへのアクセスに失敗しました。(${e.name})`;
+        alert(msg);
+    }
 }
 function stopOralTest(stream, timerInt) {
     if (oralTestInterval) { clearInterval(oralTestInterval); oralTestInterval = null; }
@@ -1329,6 +1633,9 @@ function stopOralTest(stream, timerInt) {
     if (timerInt) clearInterval(timerInt);
     if (audioContext) { audioContext.close(); audioContext = null; }
     if (stream) stream.getTracks().forEach(t => t.stop());
+    // 波形バーをリセット
+    document.getElementById('waveContainer').classList.remove('live');
+    document.querySelectorAll('#waveContainer .wave-bar').forEach(b => b.style.height = '20%');
     const rate = (oralCount / oralTestDuration).toFixed(1);
     document.getElementById('oralRate').textContent = rate;
     document.getElementById('oralStatus').textContent = '測定完了';
@@ -1366,39 +1673,84 @@ function collectSessionData() {
     data.images = capturedImagesData.map(img => ({ data: img.data, category: img.category, categoryLabel: img.categoryLabel, capturedAt: img.timestamp }));
     return data;
 }
-function saveSession() {
+async function saveSession() {
+    if (!cryptoKey) { alert('PINが設定されていません。ページを再読み込みしてください。'); return; }
     const s = collectSessionData();
     if (!s) return;
+    // 監査ログ用フィールドを付加
+    s.savedAt = new Date().toISOString();
+    s.savedAtLocal = new Date().toLocaleString('ja-JP');
     allSessions.unshift(s);
     // 途中記録を削除（正式保存したため）
     localStorage.removeItem(DRAFT_KEY_PREFIX + s.userId);
+    // 暗号化してDBへ永続保存
+    await persistSessionsToDB();
     updateRecordsList();
     alert(`セッションを保存しました (${s.userName})`);
 }
 
 // ==========================================
-// データ一覧
+// データ一覧（テーブル表示・ログ蓄積DB）
 // ==========================================
 function updateRecordsList() {
-    const c = document.getElementById('recordsList');
+    const tbody = document.getElementById('recordsList');
     document.getElementById('totalRecords').textContent = allSessions.length;
-    if (!allSessions.length) { c.innerHTML = '<p class="col-span-full text-center text-gray-400 py-10">まだデータがありません</p>'; return; }
-    c.innerHTML = allSessions.map((s,i) => {
-        const sexLabel = {male:'男性',female:'女性'}[s.userSex] || '';
-        const profile = [sexLabel, s.userAge ? `${s.userAge}歳` : '', s.userBMI && s.userBMI !== '—' ? `BMI:${s.userBMI}` : ''].filter(Boolean).join(' / ');
-        const sppb = s.physical.sppb.total !== null ? `SPPB: ${s.physical.sppb.total}/12` : '';
-        const grip = (s.physical.grip.leftAvg !== '—' || s.physical.grip.rightAvg !== '—') ? `握力: L${s.physical.grip.leftAvg} / R${s.physical.grip.rightAvg} kg` : '';
-        const diad = (s.swallowing.diadochokinesis.pa!==null||s.swallowing.diadochokinesis.ta!==null||s.swallowing.diadochokinesis.ka!==null) ? `パタカ: pa${s.swallowing.diadochokinesis.pa??'-'} ta${s.swallowing.diadochokinesis.ta??'-'} ka${s.swallowing.diadochokinesis.ka??'-'}` : '';
-        const imgs = s.images.length + s.cognitive.moca.images.length + s.cognitive.fab.images.length;
-        return `<div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-            <div class="flex justify-between items-start mb-2"><span class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">セッション</span><span class="text-xs text-gray-500">#${allSessions.length-i}</span></div>
-            <p class="font-bold text-lg mb-1">${s.userName} (${s.userId})</p>
-            ${profile ? `<p class="text-sm text-gray-700 mb-1">${profile}</p>` : ''}
-            <p class="text-xs text-gray-600 mb-2">${s.examDate} ${s.timestampLocal}</p>
-            ${sppb ? `<p class="text-sm">${sppb}</p>` : ''}${grip ? `<p class="text-sm">${grip}</p>` : ''}${diad ? `<p class="text-sm">${diad}</p>` : ''}${imgs ? `<p class="text-sm">📷 ${imgs}枚</p>` : ''}
-        </div>`;
+    if (!allSessions.length) {
+        tbody.innerHTML = '<tr><td colspan="18" class="text-center text-gray-400 py-10">まだデータがありません</td></tr>';
+        return;
+    }
+    tbody.innerHTML = allSessions.map((s, i) => {
+        const no      = allSessions.length - i;
+        const sex     = {male:'男',female:'女'}[s.userSex] || '—';
+        const sppb    = s.physical?.sppb?.total ?? '—';
+        const gripL   = s.physical?.grip?.leftAvg  ?? '—';
+        const gripR   = s.physical?.grip?.rightAvg ?? '—';
+        const pimax   = s.physical?.pimax?.avg ?? '—';
+        const pemax   = s.physical?.pemax?.avg ?? '—';
+        const pa      = s.swallowing?.diadochokinesis?.pa  ?? '—';
+        const ta      = s.swallowing?.diadochokinesis?.ta  ?? '—';
+        const ka      = s.swallowing?.diadochokinesis?.ka  ?? '—';
+        const tongP   = s.swallowing?.tonguePressure?.max  ?? '—';
+        // フレイル判定
+        const frailGrip = (typeof gripL === 'number' ? gripL : parseFloat(gripL)) < 20
+                       || (typeof gripR === 'number' ? gripR : parseFloat(gripR)) < 20;
+        const frailSppb = typeof sppb === 'number' ? sppb <= 6 : parseInt(sppb) <= 6;
+        const frailLabel = (!isNaN(parseFloat(gripL)) && !isNaN(parseInt(sppb)))
+            ? (frailGrip && frailSppb ? '<span class="text-red-600 font-bold">フレイル</span>'
+              : (frailGrip || frailSppb ? '<span class="text-yellow-600 font-bold">プレ</span>' : '<span class="text-green-600">正常</span>'))
+            : '—';
+        const rowClass = i % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+        return `<tr class="${rowClass} hover:bg-blue-50 text-xs">
+            <td class="border border-gray-200 px-2 py-1 text-center text-gray-500">${no}</td>
+            <td class="border border-gray-200 px-2 py-1 font-semibold whitespace-nowrap">${escHtml(s.userName||'')}</td>
+            <td class="border border-gray-200 px-2 py-1 text-gray-600 whitespace-nowrap">${escHtml(s.userId||'')}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center whitespace-nowrap">${s.examDate||'—'}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center">${sex}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center">${s.userAge||'—'}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center">${s.userBMI||'—'}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center font-bold">${sppb}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center">${gripL}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center">${gripR}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center text-blue-700">${pimax}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center text-orange-600">${pemax}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center">${pa}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center">${ta}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center">${ka}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center">${tongP}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center">${frailLabel}</td>
+            <td class="border border-gray-200 px-2 py-1 text-center"><button onclick="deleteSession(${i})" class="text-red-500 hover:text-red-700 font-bold text-xs">削除</button></td>
+        </tr>`;
     }).join('');
 }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function deleteSession(idx) {
+    if (!confirm('このセッションを削除しますか？')) return;
+    allSessions.splice(idx, 1);
+    await persistSessionsToDB();
+    updateRecordsList();
+}
+
 function exportData() {
     if (!allSessions.length) { alert('データがありません'); return; }
     const blob = new Blob([JSON.stringify(allSessions, null, 2)], { type: 'application/json' });
@@ -1406,7 +1758,94 @@ function exportData() {
     const a = document.createElement('a'); a.href = url; a.download = `medical-session-${Date.now()}.json`; a.click();
     URL.revokeObjectURL(url);
 }
-function clearAllRecords() { if (confirm('全てのデータを削除しますか？')) { allSessions = []; updateRecordsList(); } }
+
+// CSV出力（分析用フラットテーブル）
+function exportCSV() {
+    if (!allSessions.length) { alert('データがありません'); return; }
+    const headers = [
+        '連番','保存日時','検査日','利用者ID','氏名','性別','年齢','身長(cm)','体重(kg)','BMI',
+        'SPPB合計','SPPB_バランス点','SPPB_歩行点','SPPB_椅子点',
+        '5m歩行自然1(秒)','5m歩行自然2(秒)','5m歩行最大1(秒)','5m歩行最大2(秒)',
+        '膝伸展L1(NM)','膝伸展L2(NM)','膝伸展L平均','膝伸展R1(NM)','膝伸展R2(NM)','膝伸展R平均',
+        '握力L1(kg)','握力L2(kg)','握力L平均','握力R1(kg)','握力R2(kg)','握力R平均',
+        'PImax1(cmH2O)','PImax2(cmH2O)','PImax3(cmH2O)','PImax平均',
+        'PEmax1(cmH2O)','PEmax2(cmH2O)','PEmax3(cmH2O)','PEmax平均',
+        '体組成','骨密度','重心動揺','四肢血圧','脈波','血管内皮機能','大腿筋エコー',
+        'DDK_pa(回/秒)','DDK_ta(回/秒)','DDK_ka(回/秒)',
+        '舌圧1(kPa)','舌圧2(kPa)','舌圧3(kPa)','舌圧最大',
+        '口腔乾燥1','口腔乾燥2','口腔乾燥3','口腔乾燥最大',
+        '残存歯数','TCI合計','TCI(%)',
+        'オトガイ舌骨筋エコー','MoCA実施','FAB実施',
+        'フレイル判定','オーラルフレイル判定'
+    ];
+    const rows = allSessions.map((s, i) => {
+        const p = s.physical || {};
+        const sw = s.swallowing || {};
+        const cog = s.cognitive || {};
+        const sppb = p.sppb || {};
+        const grip = p.grip || {};
+        const knee = p.kneeExtension || {};
+        const w5 = p.walk5m || {};
+        const pi = p.pimax || {};
+        const pe = p.pemax || {};
+        const diad = sw.diadochokinesis || {};
+        const tp = sw.tonguePressure || {};
+        const mu = sw.mucus || {};
+        const chk = p.checks || {};
+        // フレイル判定
+        const gripMax = Math.max(parseFloat(grip.leftAvg)||0, parseFloat(grip.rightAvg)||0);
+        const sppbTotal = sppb.total ?? null;
+        const frailStr = (gripMax > 0 && sppbTotal !== null)
+            ? (gripMax < 20 && sppbTotal <= 6 ? 'フレイル' : (gripMax < 20 || sppbTotal <= 6 ? 'プレフレイル' : '正常')) : '未判定';
+        const row = [
+            allSessions.length - i,
+            s.savedAtLocal || s.timestampLocal || '',
+            s.examDate || '',
+            s.userId || '',
+            s.userName || '',
+            {male:'男性',female:'女性'}[s.userSex] || '',
+            s.userAge || '',
+            s.userHeight || '',
+            s.userWeight || '',
+            s.userBMI || '',
+            sppb.total ?? '',
+            sppb.balance?.score ?? '',
+            sppb.gait?.score ?? '',
+            sppb.chair?.score ?? '',
+            w5.natural?.[0] ?? '', w5.natural?.[1] ?? '',
+            w5.max?.[0] ?? '', w5.max?.[1] ?? '',
+            knee.left?.[0] ?? '', knee.left?.[1] ?? '', knee.leftAvg ?? '',
+            knee.right?.[0] ?? '', knee.right?.[1] ?? '', knee.rightAvg ?? '',
+            grip.left?.[0] ?? '', grip.left?.[1] ?? '', grip.leftAvg ?? '',
+            grip.right?.[0] ?? '', grip.right?.[1] ?? '', grip.rightAvg ?? '',
+            pi.trials?.[0] ?? '', pi.trials?.[1] ?? '', pi.trials?.[2] ?? '', pi.avg ?? '',
+            pe.trials?.[0] ?? '', pe.trials?.[1] ?? '', pe.trials?.[2] ?? '', pe.avg ?? '',
+            chk.bodyComp?1:0, chk.boneDensity?1:0, chk.postural?1:0,
+            chk.limbBP?1:0, chk.pulseWave?1:0, chk.endothelial?1:0, chk.thighEcho?1:0,
+            diad.pa ?? '', diad.ta ?? '', diad.ka ?? '',
+            tp.trials?.[0] ?? '', tp.trials?.[1] ?? '', tp.trials?.[2] ?? '', tp.max ?? '',
+            mu.trials?.[0] ?? '', mu.trials?.[1] ?? '', mu.trials?.[2] ?? '', mu.max ?? '',
+            sw.remainingTeeth ?? '',
+            sw.tci?.total ?? '', sw.tci?.percent ?? '',
+            sw.geniohyoidEcho?1:0, cog.moca?.done?1:0, cog.fab?.done?1:0,
+            frailStr, ''
+        ];
+        return row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+    });
+    const bom = '\uFEFF'; // Excel UTF-8 BOM
+    const csv = bom + headers.map(h => `"${h}"`).join(',') + '\n' + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `medical-db-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function clearAllRecords() {
+    if (!confirm('全てのデータを削除しますか？\n\nこの操作は取り消せません。')) return;
+    allSessions = [];
+    localStorage.removeItem(DB_KEY);
+    updateRecordsList();
+}
 function sendToPleasanterAPI(data) { console.log('Pleasanter API送信予定データ:', data); }
 </script>
 </body>
