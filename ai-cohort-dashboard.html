@@ -39,6 +39,16 @@
     .chat-bubble-user { background:linear-gradient(135deg,#1D4ED8,#2563EB);color:white;border-radius:18px 18px 4px 18px;box-shadow:0 2px 10px rgba(29,78,216,0.28); }
     .chat-bubble-ai { background:white;border:1px solid #E2E8F0;border-radius:18px 18px 18px 4px;box-shadow:0 1px 4px rgba(0,0,0,0.05); }
     .stat-box { border-radius:12px;padding:14px 16px; }
+    .db-tmpl-card { border:2px solid #E2E8F0;border-radius:13px;padding:14px;cursor:pointer;background:white;transition:all 0.18s;position:relative; }
+    .db-tmpl-card:hover { border-color:#BFDBFE;background:#F8FBFF; }
+    .db-tmpl-card.sel-survival { border-color:#1D4ED8;background:#EFF6FF; }
+    .db-tmpl-card.sel-ml       { border-color:#7C3AED;background:#F5F3FF; }
+    .db-tmpl-card.sel-eda      { border-color:#059669;background:#ECFDF5; }
+    .db-tmpl-card.sel-custom   { border-color:#475569;background:#F8FAFC; }
+    .db-job-step-done  { background:#1D4ED8;color:white; }
+    .db-job-step-idle  { background:#F1F5F9;color:#CBD5E1;border:1px solid #E2E8F0; }
+    @keyframes dbSpin  { from{transform:rotate(0deg)}to{transform:rotate(360deg)} }
+    .db-spin { display:inline-block;animation:dbSpin 0.9s linear infinite; }
   </style>
 </head>
 <body>
@@ -335,10 +345,21 @@
     </div>
 
     <!-- Action buttons (hidden initially) -->
-    <div id="actionBtns" style="display:none;gap:10px;">
-      <button class="btn-ghost" style="flex:1;padding:11px;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:11px;">📌 ダッシュボードに保存</button>
-      <button class="btn-ghost" style="flex:1;padding:11px;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:11px;">📤 持出申請（エクスポート）</button>
-      <button style="flex:1;padding:11px;font-size:12.5px;font-weight:700;color:white;border:none;border-radius:11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,#059669,#10B981);box-shadow:0 3px 12px rgba(5,150,105,0.30);">📄 申請書に反映する</button>
+    <div id="actionBtns" style="display:none;flex-direction:column;gap:10px;">
+      <div style="display:flex;gap:10px;">
+        <button class="btn-ghost" style="flex:1;padding:11px;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:11px;">📌 ダッシュボードに保存</button>
+        <button class="btn-ghost" style="flex:1;padding:11px;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:11px;">📤 持出申請（エクスポート）</button>
+        <button style="flex:1;padding:11px;font-size:12.5px;font-weight:700;color:white;border:none;border-radius:11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,#059669,#10B981);box-shadow:0 3px 12px rgba(5,150,105,0.30);">📄 申請書に反映する</button>
+      </div>
+      <!-- Databricks launch button -->
+      <button onclick="openDBModal()" style="width:100%;padding:14px;font-size:13.5px;font-weight:700;color:white;border:none;border-radius:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#4338ca 100%);box-shadow:0 4px 20px rgba(67,56,202,0.40),inset 0 1px 0 rgba(255,255,255,0.12);transition:all 0.18s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 7px 28px rgba(67,56,202,0.52),inset 0 1px 0 rgba(255,255,255,0.12)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(67,56,202,0.40),inset 0 1px 0 rgba(255,255,255,0.12)'">
+        <svg width="18" height="18" viewBox="0 0 32 32" fill="none" style="flex-shrink:0;">
+          <polygon points="16,3 29,10 29,22 16,29 3,22 3,10" fill="none" stroke="rgba(252,100,60,0.95)" stroke-width="2.5"/>
+          <polygon points="16,8 24,12.5 24,19.5 16,24 8,19.5 8,12.5" fill="rgba(252,100,60,0.25)" stroke="rgba(252,100,60,0.75)" stroke-width="1.5"/>
+        </svg>
+        <span>Databricks で分析を開始</span>
+        <svg width="14" height="14" fill="rgba(255,255,255,0.65)" viewBox="0 0 24 24" style="margin-left:2px;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </button>
     </div>
   </main>
 
@@ -400,6 +421,45 @@
   </aside>
 
 </div><!-- end grid -->
+
+<!-- ===== DATABRICKS MODAL ===== -->
+<div id="dbModal" onclick="if(event.target===this)closeDBModal()" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.68);backdrop-filter:blur(6px);z-index:999;align-items:center;justify-content:center;padding:16px;">
+  <div onclick="event.stopPropagation()" style="background:white;border-radius:20px;width:min(820px,100%);max-height:93vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.45),0 0 0 1px rgba(255,255,255,0.05);" class="slide-up">
+
+    <!-- Modal Header -->
+    <div style="background:linear-gradient(135deg,#0F2044 0%,#1e1b4b 40%,#312e81 100%);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:13px;">
+        <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.10);border:1.5px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+            <polygon points="16,3 29,10 29,22 16,29 3,22 3,10" fill="none" stroke="rgba(252,100,60,0.95)" stroke-width="2.5"/>
+            <polygon points="16,8 24,12.5 24,19.5 16,24 8,19.5 8,12.5" fill="rgba(252,100,60,0.25)" stroke="rgba(252,100,60,0.75)" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div>
+          <div style="color:white;font-weight:700;font-size:15px;letter-spacing:-0.01em;">Databricks 分析ジョブ投入</div>
+          <div style="color:rgba(147,197,253,0.70);font-size:10.5px;margin-top:2px;">コホートデータをエクスポートし、ノートブック分析を開始します</div>
+        </div>
+      </div>
+      <button onclick="closeDBModal()" style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.13);color:rgba(255,255,255,0.65);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:background 0.15s;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,0.16)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">✕</button>
+    </div>
+
+    <!-- Step Indicator -->
+    <div id="dbStepper" style="padding:16px 24px 0;background:white;flex-shrink:0;"></div>
+
+    <!-- Step Content -->
+    <div id="dbContent" style="flex:1;overflow-y:auto;padding:20px 24px;"></div>
+
+    <!-- Footer -->
+    <div style="padding:13px 22px;border-top:1.5px solid #F1F5F9;background:white;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <button id="dbPrevBtn" onclick="dbStepPrev()" style="padding:9px 20px;border-radius:10px;font-size:12.5px;font-weight:600;background:white;border:1.5px solid #E2E8F0;color:#475569;cursor:pointer;font-family:inherit;transition:all 0.15s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">← 戻る</button>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span id="dbStepLabel" style="font-size:11px;color:#94A3B8;"></span>
+        <button onclick="closeDBModal()" style="padding:9px 18px;border-radius:10px;font-size:12.5px;font-weight:600;background:white;border:1.5px solid #E2E8F0;color:#64748B;cursor:pointer;font-family:inherit;transition:all 0.15s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">キャンセル</button>
+        <button id="dbNextBtn" onclick="dbStepNext()" class="btn-run" style="padding:9px 24px;font-size:12.5px;">次へ →</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ===== JAVASCRIPT ===== -->
 <script>
@@ -848,6 +908,458 @@ function clearChat() {
 const s = document.createElement('style');
 s.textContent = '@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}';
 document.head.appendChild(s);
+
+// ────────────────────────────────────────
+// DATABRICKS MODAL
+// ────────────────────────────────────────
+let dbStep = 1;
+let dbTemplate = null;
+const DB_STEPS = ['ワークスペース接続', 'データ出力設定', '分析テンプレート', '実行・確認'];
+
+function openDBModal() {
+  dbStep = 1;
+  dbTemplate = null;
+  document.getElementById('dbModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderDBStep();
+}
+function closeDBModal() {
+  document.getElementById('dbModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function dbStepNext() {
+  if (dbStep < 4) { dbStep++; renderDBStep(); document.getElementById('dbContent').scrollTop = 0; }
+}
+function dbStepPrev() {
+  if (dbStep > 1) { dbStep--; renderDBStep(); document.getElementById('dbContent').scrollTop = 0; }
+}
+
+function renderDBStepper() {
+  const colors = { active:'#4338ca', done:'#4338ca', idle:'#E2E8F0' };
+  document.getElementById('dbStepper').innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:0;margin-bottom:16px;">
+      ${DB_STEPS.map((label, i) => {
+        const n = i + 1, active = n === dbStep, done = n < dbStep;
+        return `
+          ${i > 0 ? `<div style="flex:1;height:2px;margin-top:15px;background:${done?colors.done:'#E2E8F0'};transition:background 0.3s;min-width:12px;"></div>` : ''}
+          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;">
+            <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:all 0.2s;
+              ${done   ? 'background:#4338ca;color:white;'
+                       : active ? 'background:#4338ca;color:white;box-shadow:0 0 0 5px rgba(67,56,202,0.16);'
+                       : 'background:#F1F5F9;color:#94A3B8;'}">
+              ${done ? '✓' : n}
+            </div>
+            <div style="font-size:9.5px;font-weight:${active?700:500};color:${active?'#4338ca':done?'#475569':'#94A3B8'};white-space:nowrap;text-align:center;">${label}</div>
+          </div>`;
+      }).join('')}
+    </div>`;
+  document.getElementById('dbStepLabel').textContent = `${dbStep} / ${DB_STEPS.length}`;
+  document.getElementById('dbPrevBtn').style.visibility = dbStep > 1 ? 'visible' : 'hidden';
+  const nb = document.getElementById('dbNextBtn');
+  if (dbStep === 4) { nb.style.display = 'none'; } else {
+    nb.style.display = '';
+    nb.textContent = dbStep === 3 ? '確認へ →' : '次へ →';
+  }
+}
+
+function renderDBStep() {
+  renderDBStepper();
+  const el = document.getElementById('dbContent');
+  el.innerHTML = [dbStep1HTML, dbStep2HTML, dbStep3HTML, dbStep4HTML][dbStep - 1]();
+}
+
+// ── Step 1: Workspace Connection ──────────────────────
+function dbStep1HTML() {
+  return `
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="background:rgba(67,56,202,0.05);border:1px solid rgba(67,56,202,0.18);border-radius:12px;padding:13px 16px;display:flex;gap:10px;">
+      <svg width="15" height="15" fill="#4338ca" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      <div style="font-size:11.5px;color:#312e81;line-height:1.75;">Databricks ワークスペースへの接続情報を入力してください。トークンはブラウザのセッション内のみ保持され、外部サーバーへの送信は行いません。</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="grid-column:1/-1;">
+        <label class="label-sm" style="display:block;margin-bottom:6px;">Workspace URL</label>
+        <div style="position:relative;">
+          <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:11px;color:#94A3B8;font-family:monospace;">https://</span>
+          <input id="dbUrl" type="text" value="adb-7890123456789012.12.azuredatabricks.net"
+            style="width:100%;padding:9px 10px 9px 60px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:9px;background:#F8FAFC;color:#0F172A;font-family:monospace;box-sizing:border-box;">
+        </div>
+      </div>
+      <div>
+        <label class="label-sm" style="display:block;margin-bottom:6px;">アクセストークン（PAT）</label>
+        <input id="dbPat" type="password" placeholder="dapi••••••••••••••••••••"
+          style="width:100%;padding:9px 12px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:9px;background:#F8FAFC;color:#0F172A;font-family:monospace;box-sizing:border-box;">
+      </div>
+      <div>
+        <label class="label-sm" style="display:block;margin-bottom:6px;">クラスターID（省略可）</label>
+        <input id="dbClusterId" type="text" placeholder="0123-456789-abcdefgh"
+          style="width:100%;padding:9px 12px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:9px;background:#F8FAFC;color:#0F172A;font-family:monospace;box-sizing:border-box;">
+      </div>
+      <div>
+        <label class="label-sm" style="display:block;margin-bottom:6px;">Unity Catalog</label>
+        <select style="width:100%;padding:9px 12px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:9px;background:white;color:#0F172A;cursor:pointer;font-family:inherit;box-sizing:border-box;">
+          <option>mhlw_research</option><option>ndb_analytics</option><option>hive_metastore</option>
+        </select>
+      </div>
+      <div>
+        <label class="label-sm" style="display:block;margin-bottom:6px;">スキーマ（DB）</label>
+        <select style="width:100%;padding:9px 12px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:9px;background:white;color:#0F172A;cursor:pointer;font-family:inherit;box-sizing:border-box;">
+          <option>cohort_research</option><option>analysis_staging</option><option>ndb_extract</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Connection test -->
+    <div style="background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:11px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:14px;">
+      <div>
+        <div style="font-size:12.5px;font-weight:600;color:#0F172A;">接続テスト</div>
+        <div id="dbConnStatus" style="font-size:11px;color:#94A3B8;margin-top:3px;">未テスト — トークン入力後にテストしてください</div>
+      </div>
+      <button onclick="testDBConn()" style="padding:8px 18px;border-radius:8px;font-size:12px;font-weight:600;background:white;border:1.5px solid #E2E8F0;color:#475569;cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap;flex-shrink:0;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='white'">接続テスト実行</button>
+    </div>
+
+    <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.22);border-radius:10px;padding:12px 14px;font-size:11px;color:#78350F;line-height:1.75;">
+      🔒 <strong>セキュリティ：</strong> アクセストークンはブラウザのメモリにのみ保持されます。VPN 経由・IPアドレス制限付きワークスペースでの利用を推奨します。
+    </div>
+  </div>`;
+}
+
+function testDBConn() {
+  const el = document.getElementById('dbConnStatus');
+  el.innerHTML = '<span class="db-spin">⟳</span>&ensp;接続確認中…';
+  el.style.color = '#64748B';
+  setTimeout(() => {
+    el.innerHTML = '<span style="color:#059669;font-weight:700;">✓ 接続成功</span>&ensp;<span style="color:#94A3B8;">Databricks Runtime 15.4 ML / Unity Catalog 有効</span>';
+    el.style.color = '';
+  }, 1400);
+}
+
+// ── Step 2: Export Settings ────────────────────────────
+function dbStep2HTML() {
+  const n = calcN();
+  const tbl = 'cohort_' + (selTags.map(t => t.code.toLowerCase()).join('_') || 'all')
+              + '_' + new Date().getFullYear()
+              + '_q' + Math.ceil((new Date().getMonth() + 1) / 3);
+  const gb = (n * 0.00012).toFixed(1);
+  const tagStr = selTags.map(t => t.label).join('・') || '（未設定）';
+
+  return `
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <!-- Cohort badge -->
+    <div style="background:linear-gradient(135deg,#EFF6FF,#F0F9FF);border:1px solid #BFDBFE;border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:14px;">
+      <div style="width:42px;height:42px;background:#1D4ED8;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px;">👥</div>
+      <div style="flex:1;">
+        <div style="font-size:12.5px;font-weight:700;color:#1E3A8A;">エクスポート対象コホート</div>
+        <div style="font-size:11px;color:#3B82F6;margin-top:3px;">${tagStr}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:22px;font-weight:900;color:#1D4ED8;letter-spacing:-0.03em;">${n.toLocaleString('ja-JP')}<span style="font-size:11px;font-weight:600;color:#3B82F6;margin-left:3px;">名</span></div>
+        <div style="font-size:10px;color:#64748B;">推定 ${gb} GB</div>
+      </div>
+    </div>
+
+    <!-- Table name -->
+    <div>
+      <label class="label-sm" style="display:block;margin-bottom:6px;">出力テーブル名</label>
+      <input id="dbTableName" type="text" value="${tbl}"
+        style="width:100%;padding:9px 12px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:9px;background:#F8FAFC;color:#0F172A;font-family:monospace;box-sizing:border-box;">
+      <div style="font-size:10.5px;color:#94A3B8;margin-top:4px;">完全修飾名:&ensp;<code style="color:#475569;background:#F1F5F9;padding:1px 6px;border-radius:4px;">mhlw_research.cohort_research.${tbl}</code></div>
+    </div>
+
+    <!-- Format -->
+    <div>
+      <label class="label-sm" style="display:block;margin-bottom:8px;">出力形式</label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        ${[
+          {val:'delta',  label:'Delta Table', sub:'推奨 · ACID保証',    icon:'△', color:'#1D4ED8', bg:'#EFF6FF', checked:true},
+          {val:'parquet',label:'Parquet',      sub:'高速読み込み',        icon:'⬡', color:'#7C3AED', bg:'#F5F3FF', checked:false},
+          {val:'csv',    label:'CSV',          sub:'汎用・外部連携向け',  icon:'☰', color:'#059669', bg:'#ECFDF5', checked:false},
+        ].map(f => `
+          <label style="display:flex;flex-direction:column;gap:5px;padding:11px 13px;border:2px solid ${f.checked?f.color:'#E2E8F0'};border-radius:10px;cursor:pointer;background:${f.checked?f.bg:'white'};transition:all 0.15s;">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <input type="radio" name="dbFmt" value="${f.val}" ${f.checked?'checked':''} style="accent-color:${f.color};">
+              <span style="font-size:14px;">${f.icon}</span>
+              <span style="font-size:12px;font-weight:700;color:#0F172A;">${f.label}</span>
+            </div>
+            <span style="font-size:10.5px;color:#64748B;padding-left:22px;">${f.sub}</span>
+          </label>`).join('')}
+      </div>
+    </div>
+
+    <!-- Columns -->
+    <div>
+      <label class="label-sm" style="display:block;margin-bottom:8px;">出力カラム設定</label>
+      <div style="border:1.5px solid #E2E8F0;border-radius:11px;overflow:hidden;">
+        ${[
+          {col:'patient_id',          label:'patient_id — 疑似ID（匿名化済み）',     note:'必須',   color:'#059669', checked:true,  locked:true},
+          {col:'age_group',           label:'age_group — 年齢群（10歳刻み）',         note:'推奨',   color:'#1D4ED8', checked:true,  locked:false},
+          {col:'gender',              label:'gender — 性別（M/F）',                   note:'推奨',   color:'#1D4ED8', checked:true,  locked:false},
+          {col:'diagnosis_codes',     label:'diagnosis_codes — 傷病名コード（ICD-10）',note:'推奨',  color:'#1D4ED8', checked:true,  locked:false},
+          {col:'prescription_history',label:'prescription_history — 処方歴（YM別）',  note:'推奨',   color:'#1D4ED8', checked:true,  locked:false},
+          {col:'checkup_data',        label:'checkup_data — 特定健診値（血圧・腹囲等）',note:'推奨', color:'#1D4ED8', checked:true,  locked:false},
+          {col:'region_code',         label:'region_code — 地域コード',               note:'⚠ 要確認',color:'#D97706',checked:false, locked:false},
+          {col:'income_bracket',      label:'income_bracket — 所得階層',              note:'⚠ 準識別子',color:'#DC2626',checked:false,locked:false},
+        ].map((c, i, arr) => `
+          <label style="display:flex;align-items:center;gap:10px;padding:9px 14px;${i<arr.length-1?'border-bottom:1px solid #F1F5F9;':''}cursor:${c.locked?'default':'pointer'};background:${c.locked?'#F9FFF9':'white'};">
+            <input type="checkbox" ${c.checked?'checked':''} ${c.locked?'disabled':''} style="width:14px;height:14px;accent-color:${c.color};flex-shrink:0;">
+            <span style="font-size:11.5px;font-family:monospace;color:#0F172A;flex:1;">${c.label}</span>
+            <span style="font-size:10px;color:${c.color};background:${c.color==='#059669'?'rgba(5,150,105,0.10)':c.color==='#D97706'?'rgba(217,119,6,0.10)':c.color==='#DC2626'?'rgba(220,38,38,0.10)':'rgba(29,78,216,0.07)'};padding:2px 8px;border-radius:5px;font-weight:700;flex-shrink:0;">${c.note}</span>
+          </label>`).join('')}
+      </div>
+    </div>
+
+    <!-- Privacy -->
+    <div style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.22);border-radius:11px;padding:14px 16px;">
+      <div style="font-size:12px;font-weight:700;color:#78350F;margin-bottom:10px;">🔒 プライバシー保護設定</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${[
+          {label:'k-匿名化処理（k=5）',         note:'同一属性組み合わせが5件未満の場合は非出力',         checked:true},
+          {label:'セル抑制（n &lt; 10）',        note:'集計値10未満のセルを「＊」に置換',                 checked:true},
+          {label:'準識別子ハッシュ化（SHA-256）',note:'生年月日・住所コードをハッシュ化',                 checked:true},
+          {label:'差分プライバシー（ε=1.0）',    note:'ノイズ付加による統計的匿名化（Beta）',             checked:false},
+        ].map(p => `
+          <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;">
+            <input type="checkbox" ${p.checked?'checked':''} style="width:14px;height:14px;accent-color:#D97706;flex-shrink:0;margin-top:2px;">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:#78350F;">${p.label}</div>
+              <div style="font-size:10.5px;color:#92400E;margin-top:1px;">${p.note}</div>
+            </div>
+          </label>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Step 3: Analysis Template ─────────────────────────
+const DB_TEMPLATES = [
+  {id:'survival', icon:'📈', title:'生存時間分析',         sub:'Kaplan-Meier / Cox比例ハザード',
+   desc:'イベント発生（入院・投薬開始・合併症）までの時間を分析。ハザード比・95%CI・ログランク検定を自動算出します。',
+   tags:['Python','lifelines','matplotlib'], time:'~15分', color:'#1D4ED8', bg:'#EFF6FF'},
+  {id:'ml',       icon:'🤖', title:'機械学習 予後予測',    sub:'XGBoost / Random Forest + SHAP',
+   desc:'合併症発症・再入院リスクを予測するモデルを構築。SHAP値による特徴量重要度の可視化と交差検証付き。',
+   tags:['Python','XGBoost','SHAP','sklearn'], time:'~30分', color:'#7C3AED', bg:'#F5F3FF'},
+  {id:'eda',      icon:'📊', title:'記述統計・可視化 EDA', sub:'基本統計量・分布・相関分析',
+   desc:'研究計画書・論文向けの基本統計表・分布グラフ・Spearman相関マトリクスを自動生成。PDF出力対応。',
+   tags:['Python','pandas','seaborn','fpdf'], time:'~10分', color:'#059669', bg:'#ECFDF5'},
+  {id:'custom',   icon:'⚙️', title:'カスタムノートブック', sub:'既存ノートブックのパスを指定して実行',
+   desc:'Databricks上の既存ノートブックのパスを入力。コホートデータをパラメータとして渡します。任意言語・任意ロジック対応。',
+   tags:['任意言語'], time:'不定', color:'#475569', bg:'#F8FAFC'},
+];
+
+function dbStep3HTML() {
+  return `
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div style="font-size:12px;color:#475569;line-height:1.75;">実行する分析テンプレートを選択してください。選択後、クラスター設定を調整できます。</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      ${DB_TEMPLATES.map(t => `
+        <div class="db-tmpl-card${dbTemplate===t.id?' sel-'+t.id:''}" id="tmpl_${t.id}" onclick="selectDBTemplate('${t.id}')">
+          ${dbTemplate===t.id?`<div style="position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:${t.color};display:flex;align-items:center;justify-content:center;font-size:12px;color:white;font-weight:700;">✓</div>`:''}
+          <div style="font-size:24px;margin-bottom:8px;">${t.icon}</div>
+          <div style="font-size:13px;font-weight:700;color:#0F172A;">${t.title}</div>
+          <div style="font-size:10.5px;color:${t.color};font-weight:600;margin-top:2px;">${t.sub}</div>
+          <div style="font-size:11px;color:#64748B;margin-top:7px;line-height:1.65;">${t.desc}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;align-items:center;">
+            ${t.tags.map(tag=>`<span style="font-size:9.5px;padding:2px 7px;border-radius:4px;background:${t.bg};border:1px solid ${t.color}40;color:${t.color};font-weight:600;font-family:monospace;">${tag}</span>`).join('')}
+            <span style="font-size:9.5px;padding:2px 7px;border-radius:4px;background:#F1F5F9;color:#64748B;font-weight:600;margin-left:auto;">⏱ ${t.time}</span>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Cluster settings -->
+    <div style="border:1.5px solid #E2E8F0;border-radius:12px;padding:15px 16px;">
+      <div style="font-size:12.5px;font-weight:700;color:#0F172A;margin-bottom:12px;">クラスター・実行設定</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label class="label-sm" style="display:block;margin-bottom:5px;">クラスタータイプ</label>
+          <select style="width:100%;padding:8px 11px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:8px;background:white;color:#0F172A;cursor:pointer;font-family:inherit;">
+            <option>Standard_DS3_v2（8コア 28GB）</option>
+            <option>Standard_DS4_v2（16コア 56GB）</option>
+            <option>既存クラスターを使用（IDで指定）</option>
+          </select>
+        </div>
+        <div>
+          <label class="label-sm" style="display:block;margin-bottom:5px;">最大実行時間</label>
+          <select style="width:100%;padding:8px 11px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:8px;background:white;color:#0F172A;cursor:pointer;font-family:inherit;">
+            <option>1時間</option><option selected>2時間</option><option>4時間</option><option>8時間</option>
+          </select>
+        </div>
+        <div>
+          <label class="label-sm" style="display:block;margin-bottom:5px;">実行タイミング</label>
+          <select style="width:100%;padding:8px 11px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:8px;background:white;color:#0F172A;cursor:pointer;font-family:inherit;">
+            <option selected>今すぐ実行</option>
+            <option>夜間バッチ（翌日 02:00）</option>
+            <option>カスタムスケジュール</option>
+          </select>
+        </div>
+        <div>
+          <label class="label-sm" style="display:block;margin-bottom:5px;">完了通知</label>
+          <select style="width:100%;padding:8px 11px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:8px;background:white;color:#0F172A;cursor:pointer;font-family:inherit;">
+            <option>Eメール通知</option><option selected>Slack チャンネル通知</option><option>通知なし</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function selectDBTemplate(id) {
+  dbTemplate = id;
+  document.getElementById('dbContent').innerHTML = dbStep3HTML();
+}
+
+// ── Step 4: Execute & Confirm ─────────────────────────
+function dbStep4HTML() {
+  const n = calcN();
+  const lo = Math.min(+document.getElementById('ageMin').value, +document.getElementById('ageMax').value);
+  const hi = Math.max(+document.getElementById('ageMin').value, +document.getElementById('ageMax').value);
+  const tmplLabel = dbTemplate ? DB_TEMPLATES.find(t=>t.id===dbTemplate)?.title : '記述統計・可視化 EDA';
+  const tbl = 'cohort_' + (selTags.map(t=>t.code.toLowerCase()).join('_')||'all')
+              + '_' + new Date().getFullYear()
+              + '_q' + Math.ceil((new Date().getMonth()+1)/3);
+  const tagStr = selTags.map(t=>t.label).join(` ${logic} `) || '（未設定）';
+  const gStr = gender==='all'?'全性別':gender==='male'?'男性':'女性';
+
+  return `
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <!-- Summary -->
+    <div style="border:1.5px solid #E2E8F0;border-radius:13px;overflow:hidden;">
+      <div style="padding:11px 16px;background:#F8FAFC;border-bottom:1px solid #F1F5F9;font-size:12px;font-weight:700;color:#0F172A;display:flex;align-items:center;gap:7px;">
+        <svg width="13" height="13" fill="#4338ca" viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .89-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.11-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+        ジョブ投入サマリー
+      </div>
+      <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+        ${[
+          {label:'コホート定義',        val:tagStr},
+          {label:'年齢・性別',           val:`${lo}〜${hi}歳 / ${gStr}`},
+          {label:'観察期間',             val:`${document.getElementById('obsStart').value}〜${document.getElementById('obsEnd').value}年`},
+          {label:'推定対象者数',         val:`約 ${n.toLocaleString('ja-JP')} 名`},
+          {label:'出力テーブル',         val:`mhlw_research.cohort_research.${tbl}`},
+          {label:'分析テンプレート',     val:tmplLabel||'記述統計・可視化 EDA'},
+          {label:'クラスター',           val:'Standard_DS3_v2（8コア 28GB）'},
+          {label:'最大実行時間',         val:'2時間'},
+        ].map(r=>`
+          <div>
+            <div style="font-size:9.5px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">${r.label}</div>
+            <div style="font-size:12px;color:#0F172A;font-weight:500;word-break:break-all;">${r.val}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Launch area -->
+    <div id="dbJobArea">
+      <div style="background:linear-gradient(135deg,#0F2044,#1e1b4b 50%,#312e81);border-radius:14px;padding:22px;text-align:center;">
+        <div style="font-size:12.5px;color:rgba(255,255,255,0.80);margin-bottom:6px;font-weight:600;">準備完了 — ジョブを投入して分析を開始します</div>
+        <div style="font-size:11px;color:rgba(147,197,253,0.65);margin-bottom:18px;line-height:1.7;">実行後はこの画面でリアルタイムに進行状況を確認できます。<br>ノートブックの結果は Databricks Workspace に保存されます。</div>
+        <button onclick="launchDBJob()" style="padding:14px 40px;font-size:14px;font-weight:700;color:white;border:none;border-radius:12px;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,#ea580c,#f97316,#fb923c);box-shadow:0 4px 22px rgba(249,115,22,0.50),inset 0 1px 0 rgba(255,255,255,0.15);transition:all 0.18s;display:inline-flex;align-items:center;gap:9px;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 7px 30px rgba(249,115,22,0.65)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 22px rgba(249,115,22,0.50)'">
+          🚀&ensp;Databricks ジョブを投入
+        </button>
+      </div>
+    </div>
+
+    <!-- Compliance -->
+    <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.22);border-radius:10px;padding:12px 14px;font-size:11px;color:#78350F;line-height:1.8;">
+      ⚠️ <strong>データ持出申請の確認：</strong> 本ジョブは倫理審査承認・データ利用申請が完了している場合のみ実行してください。実行ログは自動的に監査証跡として記録されます。<br>
+      <span style="color:#B45309;font-weight:700;cursor:pointer;text-decoration:underline;">→ 申請書に反映する（連動）</span>
+    </div>
+  </div>`;
+}
+
+// ── Job Execution Simulation ───────────────────────────
+const DB_JOB_STEPS = [
+  {icon:'🔍', label:'コホート条件を SQL 化…',        pct:12},
+  {icon:'📦', label:'NDB からデータ抽出中…',          pct:32},
+  {icon:'🔒', label:'k-匿名化・プライバシー処理…',    pct:54},
+  {icon:'💾', label:'Delta Lake へ書き込み中…',       pct:72},
+  {icon:'📓', label:'ノートブックへデータを渡す…',    pct:88},
+  {icon:'✅', label:'ジョブ完了！',                   pct:100},
+];
+
+function launchDBJob() {
+  document.getElementById('dbNextBtn').style.display = 'none';
+  document.getElementById('dbPrevBtn').style.visibility = 'hidden';
+  const runId = '#' + (Math.floor(Math.random() * 90000) + 10000);
+  let idx = 0;
+
+  function nextStep() {
+    if (idx >= DB_JOB_STEPS.length) return;
+    const cur = DB_JOB_STEPS[idx++];
+    renderJobProgress(cur, runId);
+    if (cur.pct < 100) setTimeout(nextStep, 700 + Math.random() * 600);
+    else setTimeout(() => renderJobComplete(runId), 400);
+  }
+  renderJobProgress({icon:'⟳', label:'ジョブを投入中…', pct:4}, runId);
+  setTimeout(nextStep, 500);
+}
+
+function renderJobProgress(cur, runId) {
+  const area = document.getElementById('dbJobArea');
+  if (!area) return;
+  area.innerHTML = `
+    <div style="border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;">
+      <div style="padding:12px 16px;background:linear-gradient(135deg,#0F2044,#1e1b4b);display:flex;align-items:center;gap:10px;">
+        <div style="width:9px;height:9px;border-radius:50%;background:#4ADE80;box-shadow:0 0 8px rgba(74,222,128,0.75);flex-shrink:0;"></div>
+        <span style="color:white;font-weight:600;font-size:13px;">ジョブ実行中</span>
+        <span style="color:rgba(147,197,253,0.65);font-size:10.5px;font-family:monospace;margin-left:auto;">Run ID: ${runId}</span>
+      </div>
+      <div style="padding:16px;">
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;color:#475569;margin-bottom:7px;">
+            <span>${cur.icon}&ensp;${cur.label}</span>
+            <span style="font-weight:700;color:#4338ca;">${cur.pct}%</span>
+          </div>
+          <div style="height:9px;border-radius:5px;background:#F1F5F9;overflow:hidden;">
+            <div style="height:100%;border-radius:5px;width:${cur.pct}%;background:linear-gradient(to right,#4338ca,#818cf8);transition:width 0.55s cubic-bezier(0.22,1,0.36,1);"></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${DB_JOB_STEPS.map(s => {
+            const done = s.pct <= cur.pct;
+            return `<div style="display:flex;align-items:center;gap:9px;font-size:11.5px;">
+              <div style="width:18px;height:18px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;${done?'background:#4338ca;color:white;':'background:#F1F5F9;color:#CBD5E1;'}">
+                ${done?'✓':''}
+              </div>
+              <span style="color:${done?'#0F172A':'#CBD5E1'};font-weight:${done?500:400};">${s.label}</span>
+            </div>`;}).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderJobComplete(runId) {
+  const area = document.getElementById('dbJobArea');
+  if (!area) return;
+  const tbl = 'cohort_' + (selTags.map(t=>t.code.toLowerCase()).join('_')||'all')
+              + '_' + new Date().getFullYear()
+              + '_q' + Math.ceil((new Date().getMonth()+1)/3);
+  area.innerHTML = `
+    <div style="border:2px solid #059669;border-radius:14px;overflow:hidden;">
+      <div style="padding:13px 16px;background:linear-gradient(135deg,#064e3b,#059669);display:flex;align-items:center;gap:10px;">
+        <div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">✅</div>
+        <span style="color:white;font-weight:700;font-size:13.5px;">ジョブ完了</span>
+        <span style="color:rgba(110,231,183,0.75);font-size:10.5px;font-family:monospace;margin-left:auto;">Run ID: ${runId}&ensp;·&ensp;処理時間: 約4分12秒</span>
+      </div>
+      <div style="padding:16px 18px;background:#ECFDF5;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+          <div style="background:white;border:1px solid #A7F3D0;border-radius:10px;padding:12px 14px;">
+            <div style="font-size:9.5px;color:#059669;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">出力レコード数</div>
+            <div style="font-size:22px;font-weight:900;color:#065F46;letter-spacing:-0.02em;">${calcN().toLocaleString('ja-JP')}<span style="font-size:11px;font-weight:600;margin-left:3px;">件</span></div>
+          </div>
+          <div style="background:white;border:1px solid #A7F3D0;border-radius:10px;padding:12px 14px;">
+            <div style="font-size:9.5px;color:#059669;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Delta Table</div>
+            <div style="font-size:10.5px;font-weight:600;color:#065F46;font-family:monospace;word-break:break-all;">${tbl}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="closeDBModal()" style="flex:1;padding:11px;border-radius:10px;font-size:12.5px;font-weight:700;background:white;border:2px solid #059669;color:#059669;cursor:pointer;font-family:inherit;transition:all 0.15s;" onmouseover="this.style.background='#ECFDF5'" onmouseout="this.style.background='white'">✓ 閉じる</button>
+          <button style="flex:1.6;padding:11px;border-radius:10px;font-size:12.5px;font-weight:700;color:white;border:none;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,#059669,#10B981);box-shadow:0 3px 14px rgba(5,150,105,0.35);display:flex;align-items:center;justify-content:center;gap:6px;">
+            <svg width="13" height="13" fill="white" viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+            Databricks で開く →
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
 </script>
 </body>
 </html>
