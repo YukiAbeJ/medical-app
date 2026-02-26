@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>医療等情報活用基盤ポータル</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', system-ui, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(145deg, #dce9ff 0%, #e4ebff 25%, #e8f5f0 55%, #fef3e8 100%);
+      background-attachment: fixed;
+    }
+
+    /* ── 背景デコレーションブロブ ── */
+    .blob {
+      position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+      filter: blur(90px); opacity: 0; animation: blobIn 1.2s ease-out forwards;
+    }
+    .blob-1 { width: 560px; height: 560px; top: -120px; left: -140px; background: #3769AF; opacity: 0; animation-delay: 0.1s; }
+    .blob-2 { width: 420px; height: 420px; top: -60px;  right: -100px; background: #F97316; opacity: 0; animation-delay: 0.25s; }
+    .blob-3 { width: 480px; height: 480px; bottom: -80px; left: 38%;  background: #10B981; opacity: 0; animation-delay: 0.4s; }
+    @keyframes blobIn { to { opacity: 0.09; } }
+
+    #root { position: relative; z-index: 1; }
+
+    /* ── グラスカード ── */
+    .glass {
+      background: rgba(255,255,255,0.68);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid rgba(255,255,255,0.82);
+      box-shadow: 0 4px 32px rgba(26,54,93,0.07), 0 1px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.95);
+      border-radius: 16px;
+    }
+    .glass-dark {
+      background: rgba(10,18,40,0.88);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .glass-blue {
+      background: rgba(22,46,90,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.09);
+    }
+    .glass-banner {
+      background: linear-gradient(135deg, rgba(22,46,90,0.90) 0%, rgba(40,68,116,0.85) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      box-shadow: 0 8px 40px rgba(26,54,93,0.22), 0 2px 8px rgba(0,0,0,0.10);
+      position: relative; overflow: hidden;
+    }
+    .glass-banner::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 55%;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent);
+      pointer-events: none;
+    }
+
+    /* ── インタラクション ── */
+    .btn-primary {
+      background: linear-gradient(135deg, #F97316, #EA6C10);
+      color: white; border: none; border-radius: 11px;
+      font-weight: 700; cursor: pointer; font-family: inherit;
+      box-shadow: 0 3px 12px rgba(249,115,22,0.40), inset 0 1px 0 rgba(255,255,255,0.18);
+      transition: all 0.18s ease;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(249,115,22,0.50), inset 0 1px 0 rgba(255,255,255,0.18); }
+    .btn-outline {
+      background: rgba(255,255,255,0.70); color: #1A365D;
+      border: 1.5px solid rgba(26,54,93,0.25); border-radius: 11px;
+      font-weight: 700; cursor: pointer; font-family: inherit;
+      backdrop-filter: blur(8px); transition: all 0.18s ease;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.90); border-color: #1A365D; transform: translateY(-1px); }
+    .action-card {
+      background: rgba(255,255,255,0.58); border: 1px solid rgba(255,255,255,0.80);
+      border-radius: 14px; backdrop-filter: blur(12px);
+      box-shadow: 0 2px 12px rgba(26,54,93,0.06); cursor: pointer;
+      transition: all 0.20s ease; text-align: left;
+    }
+    .action-card:hover { background: rgba(255,255,255,0.82); transform: translateY(-2px); box-shadow: 0 6px 28px rgba(26,54,93,0.13); border-color: rgba(26,54,93,0.22); }
+    .action-card-hot {
+      background: linear-gradient(135deg, rgba(26,54,93,0.90), rgba(40,68,116,0.86));
+      border: 1px solid rgba(255,255,255,0.14); border-radius: 14px;
+      cursor: pointer; text-align: left; transition: all 0.20s ease;
+      box-shadow: 0 4px 20px rgba(26,54,93,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .action-card-hot:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(26,54,93,0.38); }
+
+    /* ── インプット ── */
+    .input-glass {
+      background: rgba(255,255,255,0.70); backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(255,255,255,0.80);
+      box-shadow: 0 1px 4px rgba(26,54,93,0.05), inset 0 1px 2px rgba(0,0,0,0.03);
+      border-radius: 10px; outline: none; transition: all 0.18s ease;
+    }
+    .input-glass:focus { border-color: rgba(26,54,93,0.55); background: rgba(255,255,255,0.88); box-shadow: 0 0 0 3px rgba(26,54,93,0.10); }
+    select.input-glass { cursor: pointer; }
+
+    /* ── タグチップ ── */
+    .chip-disease { background: rgba(55,105,175,0.12); color: #1A365D; border: 1px solid rgba(55,105,175,0.22); }
+    .chip-drug    { background: rgba(249,115,22,0.10); color: #9A3412; border: 1px solid rgba(249,115,22,0.22); }
+
+    /* ── スクロールバー ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(26,54,93,0.20); border-radius: 10px; }
+
+    /* ── アニメーション ── */
+    @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.35} }
+    @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin    { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    @keyframes countUp { from{opacity:0.2;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }
+    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+    .slide-up   { animation: slideUp 0.28s cubic-bezier(0.22,1,0.36,1); }
+    .fade-in    { animation: fadeIn  0.30s ease-out; }
+    .pulse      { animation: pulse 2.2s infinite; }
+    .spin       { animation: spin 1s linear infinite; }
+    .count-anim { animation: countUp 0.38s cubic-bezier(0.22,1,0.36,1); }
+
+    button { font-family: inherit; }
+    input, select, textarea { font-family: inherit; }
+    pre { font-family: 'Consolas', 'Monaco', monospace; }
+  </style>
+</head>
+<body>
+<!-- 背景ブロブ -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+const C = {
+  primary: '#1A365D', primaryMid: '#2D4A7A', primaryLight: '#3769AF',
+  accent: '#F97316', accentDark: '#EA6C10',
+  success: '#059669', warning: '#D97706', danger: '#DC2626',
+  text: '#0F1F3D', textMid: '#3D5280', textLight: '#8096B8',
+  border: 'rgba(26,54,93,0.12)', borderLight: 'rgba(255,255,255,0.80)',
+};
+
+/* ── グラスカード ── */
+const Card = ({ children, style, className = '' }) => (
+  <div className={`glass ${className}`} style={{ padding: 20, ...style }}>
+    {children}
+  </div>
+);
+
+const SectionTitle = ({ children, sub }) => (
+  <div style={{ marginBottom: 14 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ width: 3, height: 18, borderRadius: 2, background: `linear-gradient(to bottom, ${C.accent}, #FBBF24)`, flexShrink: 0 }} />
+      <span style={{ fontSize: 13, fontWeight: 700, color: C.text, letterSpacing: '0.01em' }}>{children}</span>
+    </div>
+    {sub && <p style={{ fontSize: 11, color: C.textLight, marginTop: 3, marginLeft: 11 }}>{sub}</p>}
+  </div>
+);
+
+/* ──────────────────────────────────────────
+   n数計算ロジック
+────────────────────────────────────────── */
+function calcN(tags, logic, ageMin, ageMax, gender, yearStart, yearEnd) {
+  const BASE = 500000;
+  const lo = Math.min(ageMin, ageMax), hi = Math.max(ageMin, ageMax);
+  const ageFactor    = Math.max(0.005, (hi - lo) / 100);
+  const genderFactor = gender === 'all' ? 1.0 : 0.47;
+  const yearFactor   = Math.max(1, parseInt(yearEnd) - parseInt(yearStart) + 1) / 6;
+  let condFactor;
+  if (tags.length === 0)        condFactor = 0.85;
+  else if (logic === 'AND')     condFactor = Math.pow(0.60, tags.length);
+  else                          condFactor = Math.min(0.90, 0.24 * tags.length + 0.06);
+  return Math.max(0, Math.round(BASE * ageFactor * genderFactor * yearFactor * condFactor));
+}
+
+/* ── ピラミッドチャート ── */
+function PyramidChart({ ageMin = 0, ageMax = 100, gender = 'all' }) {
+  const lo = Math.min(ageMin, ageMax), hi = Math.max(ageMin, ageMax);
+  const ALL_ROWS = [
+    { label:'80歳以上', minA:80, maxA:100, mBase:38, fBase:62 },
+    { label:'70-79歳',  minA:70, maxA:79,  mBase:72, fBase:85 },
+    { label:'60-69歳',  minA:60, maxA:69,  mBase:90, fBase:82 },
+    { label:'50-59歳',  minA:50, maxA:59,  mBase:78, fBase:70 },
+    { label:'40-49歳',  minA:40, maxA:49,  mBase:58, fBase:52 },
+    { label:'30-39歳',  minA:30, maxA:39,  mBase:32, fBase:28 },
+    { label:'20-29歳',  minA:20, maxA:29,  mBase:18, fBase:15 },
+  ];
+  const rows = ALL_ROWS.map(r => ({
+    ...r,
+    active: r.maxA >= lo && r.minA <= hi,
+    m: gender === 'female' ? 0 : r.mBase,
+    f: gender === 'male'   ? 0 : r.fBase,
+  }));
+  const BW = 108, LW = 70, rh = 27, pad = 6;
+  const totalW = BW * 2 + LW + 20;
+  const totalH = rows.length * rh + 44;
+  return (
+    <svg viewBox={`0 0 ${totalW} ${totalH}`} width="100%">
+      <defs>
+        <linearGradient id="gradM" x1="1" y1="0" x2="0" y2="0">
+          <stop offset="0%" stopColor="#3769AF" stopOpacity="0.9"/>
+          <stop offset="100%" stopColor="#5B8DD9" stopOpacity="0.75"/>
+        </linearGradient>
+        <linearGradient id="gradF" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#DB2777" stopOpacity="0.75"/>
+          <stop offset="100%" stopColor="#EC4899" stopOpacity="0.9"/>
+        </linearGradient>
+      </defs>
+      {gender !== 'female' && <text x={BW/2} y={14} textAnchor="middle" fontSize={9.5} fill="#3769AF" fontWeight="700" letterSpacing="0.5">男性 (%)</text>}
+      <text x={BW+LW/2+10} y={14} textAnchor="middle" fontSize={9.5} fill={C.textMid} fontWeight="600">年齢層</text>
+      {gender !== 'male'   && <text x={BW+LW+BW/2+20} y={14} textAnchor="middle" fontSize={9.5} fill="#DB2777" fontWeight="700" letterSpacing="0.5">女性 (%)</text>}
+      {rows.map((r, i) => {
+        const y = 20 + i * rh;
+        const mW = (r.m / 100) * (BW - pad);
+        const fW = (r.f / 100) * (BW - pad);
+        const op = r.active ? 1 : 0.18;
+        return (
+          <g key={r.label}>
+            {gender !== 'female' && <rect x={BW - mW - pad} y={y+3} width={mW} height={rh-6} fill="url(#gradM)" rx={4} opacity={op}/>}
+            {gender !== 'male'   && <rect x={BW+LW+20+pad}  y={y+3} width={fW} height={rh-6} fill="url(#gradF)" rx={4} opacity={op}/>}
+            <text x={BW+LW/2+10} y={y+16} textAnchor="middle" fontSize={8.5} fill={r.active ? C.text : C.textLight} fontWeight={r.active ? '600' : '400'}>{r.label}</text>
+            {gender !== 'female' && r.m > 0 && r.active && <text x={BW-mW-pad-3} y={y+16} textAnchor="end" fontSize={7.5} fill={C.textLight}>{r.m}%</text>}
+            {gender !== 'male'   && r.f > 0 && r.active && <text x={BW+LW+fW+26}   y={y+16} textAnchor="start" fontSize={7.5} fill={C.textLight}>{r.f}%</text>}
+          </g>
+        );
+      })}
+      <line x1={BW}       y1={18} x2={BW}       y2={totalH-6} stroke={C.border} strokeDasharray="2,2"/>
+      <line x1={BW+LW+20} y1={18} x2={BW+LW+20} y2={totalH-6} stroke={C.border} strokeDasharray="2,2"/>
+      {rows.some(r => !r.active) && (
+        <text x={totalW/2} y={totalH} textAnchor="middle" fontSize={7.5} fill={C.accent} opacity={0.7}>▲ 網掛け = 選択範囲外</text>
+      )}
+    </svg>
+  );
+}
+
+/* ── 縦棒グラフ ── */
+function BarChart({ data, colorA = '#3769AF', colorB = '#5B8DD9', height = 100 }) {
+  const id = `bg${Math.random().toString(36).slice(2,6)}`;
+  const maxV = Math.max(...data.map(d => d.v), 1);
+  const W = 300, H = height;
+  const bw = (W - 20) / data.length - 5;
+  return (
+    <svg viewBox={`0 0 ${W} ${H + 30}`} width="100%">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={colorA} stopOpacity="0.92"/>
+          <stop offset="100%" stopColor={colorB} stopOpacity="0.65"/>
+        </linearGradient>
+      </defs>
+      {data.map((d, i) => {
+        const bh = Math.max(2, (d.v / maxV) * H);
+        const x  = 10 + i * ((W - 20) / data.length);
+        const y  = H - bh;
+        const lbl = d.v >= 10000 ? `${(d.v/10000).toFixed(1)}万` : d.v >= 1000 ? `${(d.v/1000).toFixed(1)}k` : String(d.v);
+        return (
+          <g key={d.l}>
+            <rect x={x} y={y} width={bw} height={bh} fill={`url(#${id})`} rx={4}/>
+            <text x={x+bw/2} y={y-4} textAnchor="middle" fontSize={7.5} fill={C.textMid} fontWeight="600">{lbl}</text>
+            <text x={x+bw/2} y={H+14} textAnchor="middle" fontSize={8} fill={C.textLight}>{d.l}</text>
+          </g>
+        );
+      })}
+      <line x1={8} y1={H} x2={W} y2={H} stroke={C.border}/>
+    </svg>
+  );
+}
+
+/* ── 折れ線グラフ ── */
+function LineChart({ data }) {
+  if (!data || data.length < 2) return (
+    <div style={{ textAlign:'center', padding:'20px 0', color:C.textLight, fontSize:12 }}>期間を2年以上選択してください</div>
+  );
+  const W = 320, H = 72, px = 16, py = 10;
+  const vals = data.map(d => d.v);
+  const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx - mn || 1;
+  const pts = data.map((d, i) => [
+    px + (i / (data.length - 1)) * (W - px * 2),
+    py + (1 - (d.v - mn) / rng) * (H - py * 2),
+  ]);
+  const line = `M${pts.map(p => p.join(',')).join(' L')}`;
+  const area = `M${pts[0]} L${pts.map(p => p.join(',')).join(' L')} L${pts[pts.length-1][0]},${H-py} L${pts[0][0]},${H-py} Z`;
+  return (
+    <svg viewBox={`0 0 ${W} ${H + 20}`} width="100%">
+      <defs>
+        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#3769AF" stopOpacity="0.20"/>
+          <stop offset="100%" stopColor="#3769AF" stopOpacity="0.01"/>
+        </linearGradient>
+      </defs>
+      <path d={area} fill="url(#lineGrad)"/>
+      <path d={line} stroke="#3769AF" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      {pts.map((p, i) => (
+        <g key={i}>
+          <circle cx={p[0]} cy={p[1]} r={4} fill="white" stroke="#3769AF" strokeWidth="2"/>
+          <text x={p[0]} y={H+15} textAnchor="middle" fontSize={8.5} fill={C.textLight}>{data[i].l}</text>
+          <text x={p[0]} y={p[1]-9} textAnchor="middle" fontSize={8} fill={C.textMid} fontWeight="600">
+            {data[i].v >= 1000 ? `${(data[i].v/1000).toFixed(1)}k` : data[i].v}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/* ══════════════════════════════════════════
+   画面: 類似研究検索
+══════════════════════════════════════════ */
+function ResearchSearchScreen({ setTab }) {
+  const [keyword, setKeyword] = React.useState('');
+  const [filterYear, setFilterYear] = React.useState('all');
+  const [filterDesign, setFilterDesign] = React.useState('all');
+  const [filterData, setFilterData] = React.useState('all');
+  const [selected, setSelected] = React.useState(null);
+
+  const projectConditions = {
+    diseases: ['2型糖尿病 (E11)', '高血圧 (I10)'],
+    drugs: ['メトホルミン'],
+    ageRange: '60〜85歳',
+    period: '2019〜2023年',
+    dataSources: ['NDB', 'DPC', 'レセプト'],
+  };
+
+  const ALL_PAPERS = [
+    {
+      id:1,
+      title:'高齢2型糖尿病患者における心血管イベントとメトホルミン使用の関連：NDBを用いた大規模コホート研究',
+      authors:'山田 健太, 小林 祐子, 渡辺 誠 他',
+      journal:'糖尿病',
+      year:2023,
+      design:'コホート研究',
+      diseases:['2型糖尿病','高血圧'],
+      drugs:['メトホルミン'],
+      ageRange:'65〜85歳',
+      n:18432,
+      dataSources:['NDB'],
+      score:96,
+      abstract:'NDBを用いて高齢2型糖尿病患者18,432例を対象に、メトホルミン使用と心血管イベント発症の関連を後ろ向きコホート研究で検討した。メトホルミン群では非使用群と比較して主要心血管イベントが有意に少なく（HR 0.78, 95%CI 0.71–0.86）、特に65〜75歳層での効果が顕著であった。',
+      matchPoints:['2型糖尿病','高血圧','メトホルミン','高齢者（65歳以上）','NDB'],
+    },
+    {
+      id:2,
+      title:'後期高齢者における血糖コントロールとフレイル発症の縦断的検討：レセプトデータベース解析',
+      authors:'鈴木 美咲, 高橋 一郎, 伊藤 恵子 他',
+      journal:'日本老年医学会雑誌',
+      year:2022,
+      design:'後ろ向きコホート',
+      diseases:['2型糖尿病','フレイル'],
+      drugs:['メトホルミン','DPP-4阻害薬'],
+      ageRange:'75〜90歳',
+      n:9847,
+      dataSources:['レセプト'],
+      score:88,
+      abstract:'後期高齢者9,847例を対象に、HbA1c値とフレイル発症の関係をレセプトデータで解析。HbA1c 7.0–7.9%群でフレイル発症率が最も低く、過度な血糖コントロール（<7.0%）はフレイルリスクを増加させることが示された。',
+      matchPoints:['2型糖尿病','メトホルミン','高齢者（75歳以上）','レセプト'],
+    },
+    {
+      id:3,
+      title:'2型糖尿病合併高血圧患者の心腎アウトカムに関するリアルワールドエビデンス：DPCデータ解析',
+      authors:'中村 誠一, 岡田 浩之, 松本 真理 他',
+      journal:'高血圧研究',
+      year:2023,
+      design:'観察研究（RWE）',
+      diseases:['2型糖尿病','高血圧','CKD'],
+      drugs:['メトホルミン','ARB'],
+      ageRange:'60〜80歳',
+      n:24561,
+      dataSources:['DPC'],
+      score:83,
+      abstract:'DPCデータを用いて2型糖尿病合併高血圧患者24,561例を解析。SGLT2阻害薬とARB併用群で心腎複合エンドポイントの有意な低下を確認（HR 0.71, p<0.001）。60〜70歳の比較的若い高齢者層での心腎保護効果が明らかになった。',
+      matchPoints:['2型糖尿病','高血圧','メトホルミン','DPC'],
+    },
+    {
+      id:4,
+      title:'高齢糖尿病患者における認知機能低下リスクと薬物療法の関連：多施設後ろ向きコホート研究',
+      authors:'田中 哲朗, 佐藤 由美, 木村 正 他',
+      journal:'Geriatrics & Gerontology International',
+      year:2022,
+      design:'多施設コホート',
+      diseases:['2型糖尿病','認知機能低下'],
+      drugs:['メトホルミン','インスリン'],
+      ageRange:'70〜85歳',
+      n:6234,
+      dataSources:['電子カルテ(試)'],
+      score:79,
+      abstract:'多施設の電子カルテデータから高齢糖尿病患者6,234例を抽出し、認知機能低下との関連を検討。メトホルミン長期使用（5年以上）は認知症発症リスクの低下と有意に関連し（OR 0.68, 95%CI 0.56–0.82）、早期介入の重要性が示唆された。',
+      matchPoints:['2型糖尿病','メトホルミン','高齢者','電子カルテ'],
+    },
+    {
+      id:5,
+      title:'経口血糖降下薬の種類別心血管イベントリスク比較：全国レセプトデータを用いた大規模観察研究',
+      authors:'藤井 浩, 西田 明子, 吉田 隆司 他',
+      journal:'Journal of Diabetes Investigation',
+      year:2021,
+      design:'後ろ向きコホート',
+      diseases:['2型糖尿病'],
+      drugs:['メトホルミン','SGLT2阻害薬','DPP-4阻害薬'],
+      ageRange:'60〜89歳',
+      n:52891,
+      dataSources:['NDB','レセプト'],
+      score:75,
+      abstract:'全国レセプトデータ52,891例を対象に、主要経口血糖降下薬別の心血管イベントリスクをIPW法で比較。SGLT2阻害薬群でMACEリスクが最も低く（HR 0.74）、60〜70歳のCKD合併例での有益性が特に顕著であった。',
+      matchPoints:['2型糖尿病','メトホルミン','高齢者','NDB','レセプト'],
+    },
+  ];
+
+  const filtered = ALL_PAPERS.filter(p => {
+    if (keyword) {
+      const kw = keyword.toLowerCase();
+      const hit = p.title.includes(keyword) || p.authors.includes(keyword)
+        || p.diseases.some(d => d.includes(keyword)) || p.drugs.some(d => d.includes(keyword))
+        || p.journal.toLowerCase().includes(kw);
+      if (!hit) return false;
+    }
+    if (filterYear !== 'all' && p.year !== parseInt(filterYear)) return false;
+    if (filterDesign !== 'all' && !p.design.includes(filterDesign)) return false;
+    if (filterData !== 'all' && !p.dataSources.includes(filterData)) return false;
+    return true;
+  });
+
+  const scoreColor = s => s >= 90 ? '#059669' : s >= 80 ? '#3769AF' : s >= 70 ? '#F97316' : '#8096B8';
+
+  return (
+    <div className="slide-up">
+      {/* バナー */}
+      <div className="glass-banner" style={{ padding:'20px 28px', marginBottom:18, color:'white', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ position:'absolute', right:0, top:0, bottom:0, width:260, background:'radial-gradient(ellipse at 60% 50%, rgba(55,105,175,0.28) 0%, transparent 72%)', pointerEvents:'none' }}/>
+        <div style={{ position:'relative' }}>
+          <div style={{ fontSize:11, color:'rgba(147,197,253,0.85)', marginBottom:4, letterSpacing:'0.06em', textTransform:'uppercase' }}>キュレーション済み研究データベース — 2,847件</div>
+          <h2 style={{ fontSize:20, fontWeight:700, letterSpacing:'-0.02em', marginBottom:4 }}>🔍 類似研究検索</h2>
+          <p style={{ fontSize:12, color:'rgba(191,219,254,0.80)' }}>現在の研究条件（高齢者糖尿病コホート）から自動抽出した条件でマッチング</p>
+        </div>
+        <div style={{ position:'relative', display:'flex', gap:12, alignItems:'center' }}>
+          <div style={{ background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.16)', borderRadius:12, padding:'10px 22px', textAlign:'center', backdropFilter:'blur(8px)' }}>
+            <div style={{ fontSize:28, fontWeight:800, lineHeight:1 }}>{filtered.length}</div>
+            <div style={{ fontSize:10, color:'rgba(191,219,254,0.80)', marginTop:2 }}>件ヒット</div>
+          </div>
+          <div style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:12, padding:'10px 22px', textAlign:'center', backdropFilter:'blur(8px)' }}>
+            <div style={{ fontSize:28, fontWeight:800, lineHeight:1 }}>2,847</div>
+            <div style={{ fontSize:10, color:'rgba(191,219,254,0.80)', marginTop:2 }}>件総数</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'290px 1fr', gap:18 }}>
+        {/* 左: 条件パネル */}
+        <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+          <Card style={{ padding:18 }}>
+            <SectionTitle sub="現在のプロジェクト条件から自動引き継ぎ">検索条件</SectionTitle>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div>
+                <div style={{ fontSize:9.5, color:C.textLight, marginBottom:5, fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase' }}>対象疾患</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                  {projectConditions.diseases.map(d => <span key={d} className="chip-disease" style={{ padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:600 }}>{d}</span>)}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize:9.5, color:C.textLight, marginBottom:5, fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase' }}>薬剤</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                  {projectConditions.drugs.map(d => <span key={d} className="chip-drug" style={{ padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:600 }}>{d}</span>)}
+                </div>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:7 }}>
+                {[['年齢範囲', projectConditions.ageRange],['観察期間', projectConditions.period]].map(([l,v]) => (
+                  <div key={l} style={{ background:'rgba(26,54,93,0.06)', borderRadius:9, padding:'8px 10px', border:'1px solid rgba(26,54,93,0.08)' }}>
+                    <div style={{ fontSize:9.5, color:C.textLight, marginBottom:2 }}>{l}</div>
+                    <div style={{ fontSize:11.5, fontWeight:700, color:C.text }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div style={{ fontSize:9.5, color:C.textLight, marginBottom:5, fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase' }}>データソース</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                  {projectConditions.dataSources.map(d => <span key={d} style={{ padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:600, background:'rgba(55,105,175,0.09)', color:C.primaryLight, border:'1px solid rgba(55,105,175,0.18)' }}>{d}</span>)}
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop:14, padding:'9px 12px', background:'rgba(249,115,22,0.07)', border:'1px solid rgba(249,115,22,0.20)', borderRadius:9, fontSize:11, color:'#9A3412', display:'flex', gap:6, alignItems:'center' }}>
+              <span>⚡</span><span>条件はコホート画面と連動しています</span>
+            </div>
+          </Card>
+
+          <Card style={{ padding:18 }}>
+            <SectionTitle>キーワード検索</SectionTitle>
+            <input className="input-glass" value={keyword} onChange={e => setKeyword(e.target.value)}
+              placeholder="疾患名・薬剤・著者名..."
+              style={{ width:'100%', padding:'9px 12px', fontSize:12 }} />
+          </Card>
+
+          <Card style={{ padding:18 }}>
+            <SectionTitle>絞り込み</SectionTitle>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {[
+                ['掲載年', filterYear, setFilterYear, [['all','すべて'],[2023,'2023年'],[2022,'2022年'],[2021,'2021年'],[2020,'2020年']]],
+                ['研究デザイン', filterDesign, setFilterDesign, [['all','すべて'],['コホート','コホート研究'],['観察研究','観察研究'],['多施設','多施設研究']]],
+                ['データソース', filterData, setFilterData, [['all','すべて'],['NDB','NDB'],['DPC','DPC'],['レセプト','レセプト'],['電子カルテ(試)','電子カルテ']]],
+              ].map(([label, val, setter, opts]) => (
+                <div key={label}>
+                  <div style={{ fontSize:11, color:C.textLight, marginBottom:5, fontWeight:600 }}>{label}</div>
+                  <select className="input-glass" value={val} onChange={e => setter(e.target.value)} style={{ width:'100%', padding:'8px 10px', fontSize:12 }}>
+                    {opts.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        {/* 右: 検索結果 */}
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          {filtered.length === 0 ? (
+            <Card style={{ padding:48, textAlign:'center' }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>🔍</div>
+              <div style={{ color:C.textLight, fontSize:14 }}>該当する研究が見つかりませんでした</div>
+              <div style={{ color:C.textLight, fontSize:12, marginTop:6 }}>キーワードを変えて再検索してください</div>
+            </Card>
+          ) : filtered.map(p => {
+            const isSel = selected === p.id;
+            const sc = scoreColor(p.score);
+            return (
+              <div key={p.id} className="glass" onClick={() => setSelected(isSel ? null : p.id)}
+                style={{ padding:0, overflow:'hidden', cursor:'pointer', transition:'box-shadow 0.2s, border-color 0.2s',
+                  border: isSel ? `1.5px solid ${sc}55` : '1px solid rgba(255,255,255,0.82)',
+                  boxShadow: isSel ? `0 6px 36px ${sc}22` : '0 4px 32px rgba(26,54,93,0.07)' }}>
+                {/* 類似度バー */}
+                <div style={{ height:3, background:`linear-gradient(to right, ${sc}, ${sc}66)`, width:`${p.score}%`, transition:'width 0.5s' }}/>
+                <div style={{ padding:'16px 20px' }}>
+                  <div style={{ display:'flex', alignItems:'flex-start', gap:14, marginBottom:10 }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:C.text, lineHeight:1.6, marginBottom:4 }}>{p.title}</div>
+                      <div style={{ fontSize:11.5, color:C.textMid, marginBottom:3 }}>{p.authors}</div>
+                      <div style={{ fontSize:11, color:C.textLight }}>
+                        <span style={{ fontWeight:600, color:C.primaryLight }}>{p.journal}</span>　{p.year}年　<span style={{ background:'rgba(26,54,93,0.07)', padding:'1px 7px', borderRadius:999, fontSize:10.5, fontWeight:600, color:C.textMid }}>{p.design}</span>
+                      </div>
+                    </div>
+                    {/* スコアバッジ */}
+                    <div style={{ flexShrink:0, textAlign:'center', background:sc+'18', border:`2px solid ${sc}44`, borderRadius:14, padding:'10px 16px', minWidth:70, boxShadow:`0 2px 12px ${sc}22` }}>
+                      <div style={{ fontSize:22, fontWeight:800, color:sc, lineHeight:1, letterSpacing:'-0.02em' }}>{p.score}<span style={{ fontSize:12 }}>%</span></div>
+                      <div style={{ fontSize:9.5, color:C.textLight, marginTop:3, fontWeight:600 }}>類似度</div>
+                    </div>
+                  </div>
+
+                  {/* タグ群 */}
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10 }}>
+                    {p.diseases.map(d => <span key={d} className="chip-disease" style={{ padding:'2px 9px', borderRadius:999, fontSize:10.5, fontWeight:600 }}>{d}</span>)}
+                    {p.drugs.map(d => <span key={d} className="chip-drug" style={{ padding:'2px 9px', borderRadius:999, fontSize:10.5, fontWeight:600 }}>{d}</span>)}
+                    <span style={{ padding:'2px 9px', borderRadius:999, fontSize:10.5, fontWeight:600, background:'rgba(26,54,93,0.06)', color:C.textMid, border:'1px solid rgba(26,54,93,0.11)' }}>👥 {p.ageRange}</span>
+                    <span style={{ padding:'2px 9px', borderRadius:999, fontSize:10.5, fontWeight:600, background:'rgba(26,54,93,0.06)', color:C.textMid, border:'1px solid rgba(26,54,93,0.11)' }}>n={p.n.toLocaleString()}</span>
+                    {p.dataSources.map(d => <span key={d} style={{ padding:'2px 9px', borderRadius:999, fontSize:10.5, fontWeight:600, background:'rgba(55,105,175,0.09)', color:C.primaryLight, border:'1px solid rgba(55,105,175,0.18)' }}>{d}</span>)}
+                  </div>
+
+                  {/* マッチポイント */}
+                  <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
+                    <span style={{ fontSize:10, color:C.textLight, fontWeight:600, marginRight:2 }}>マッチ：</span>
+                    {p.matchPoints.map(m => (
+                      <span key={m} style={{ fontSize:10, color:sc, background:sc+'12', border:`1px solid ${sc}28`, borderRadius:999, padding:'1px 7px', fontWeight:700 }}>✓ {m}</span>
+                    ))}
+                  </div>
+
+                  {/* 展開: アブストラクト + アクション */}
+                  {isSel && (
+                    <div className="fade-in">
+                      <div style={{ borderTop:'1px solid rgba(26,54,93,0.09)', margin:'14px 0 0', paddingTop:14 }}>
+                        <div style={{ fontSize:10, color:C.textLight, marginBottom:7, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase' }}>アブストラクト</div>
+                        <p style={{ fontSize:12.5, color:C.textMid, lineHeight:1.80 }}>{p.abstract}</p>
+                      </div>
+                      <div style={{ display:'flex', gap:8, marginTop:14, paddingTop:12, borderTop:'1px solid rgba(26,54,93,0.06)', flexWrap:'wrap' }}>
+                        <button className="btn-primary" style={{ padding:'9px 18px', fontSize:12 }}
+                          onClick={e => { e.stopPropagation(); setTab('cohort'); }}>
+                          📊 コホート条件に反映する
+                        </button>
+                        <button className="btn-outline" style={{ padding:'9px 18px', fontSize:12 }}
+                          onClick={e => e.stopPropagation()}>
+                          📄 全文を参照する
+                        </button>
+                        <button className="btn-outline" style={{ padding:'9px 18px', fontSize:12 }}
+                          onClick={e => e.stopPropagation()}>
+                          🔖 保存する
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   画面1: ホーム
+══════════════════════════════════════════ */
+function HomeScreen({ setTab }) {
+  const todos = [
+    { icon:'📋', text:'研究計画書の最終確認・承認', deadline:'2026/02/28', pri:'high' },
+    { icon:'📤', text:'大合同委員会への申請書類提出', deadline:'2026/03/15', pri:'mid' },
+    { icon:'✍️', text:'データ利用契約書の電子署名',  deadline:'2026/03/20', pri:'low' },
+  ];
+  const priS = {
+    high: { bg:'rgba(220,38,38,0.08)',  text:'#B91C1C', border:'rgba(220,38,38,0.18)',  label:'要対応' },
+    mid:  { bg:'rgba(249,115,22,0.08)', text:'#C2570D', border:'rgba(249,115,22,0.20)', label:'今週中' },
+    low:  { bg:'rgba(5,150,105,0.08)',  text:'#065F46', border:'rgba(5,150,105,0.18)',  label:'今月中' },
+  };
+  const steps = [
+    { label:'研究登録',   done:true },
+    { label:'事前調査',   done:true },
+    { label:'申請書作成', done:false, current:true },
+    { label:'倫理審査',   done:false },
+    { label:'大合同委',   done:false },
+    { label:'データ提供', done:false },
+  ];
+  const doneIdx = steps.findIndex(s => s.current);
+  const actions = [
+    { icon:'🔍', title:'類似研究を探す', desc:'キュレーション済み2,847件の先行研究から\n類似条件の研究を自動推薦', tab:'search', hot:false },
+    { icon:'📊', title:'コホート条件を設定する', desc:'ICD-10・医薬品名で対象集団をリアルタイム可視化\n研究フィージビリティを即座に確認', tab:'cohort', hot:true },
+    { icon:'🤖', title:'AIアシストで分析する', desc:'日本語で質問するだけ。SQL不要の直感的分析\n自動グラフ生成・ダッシュボード連携', tab:'ai', hot:false },
+  ];
+  return (
+    <div className="slide-up">
+      {/* ウェルカムバナー */}
+      <div className="glass-banner" style={{ padding:'28px 32px', marginBottom:22, color:'white' }}>
+        <div style={{ position:'absolute', right:0, top:0, bottom:0, width:300, background:'radial-gradient(ellipse at 60% 50%, rgba(249,115,22,0.22) 0%, transparent 72%)', pointerEvents:'none' }}/>
+        <div style={{ position:'relative' }}>
+          <div style={{ fontSize:11, color:'rgba(147,197,253,0.85)', marginBottom:5, letterSpacing:'0.06em', textTransform:'uppercase' }}>2026年2月25日（水）</div>
+          <h1 style={{ fontSize:22, fontWeight:700, marginBottom:7, letterSpacing:'-0.02em' }}>太郎 さん、おはようございます 👋</h1>
+          <p style={{ fontSize:13, color:'rgba(191,219,254,0.85)', marginBottom:20, lineHeight:1.6 }}>分析チーム ／ 研究プロジェクト「高齢者糖尿病コホート研究2024」</p>
+          <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+            {[
+              ['📋 未完了タスク','3件',null],
+              ['⚡ 申請期限まで','18日','rgba(249,115,22,0.30)'],
+              ['🗄️ 利用可能データ','NDB・DPC・レセプト',null],
+            ].map(([l,v,bg]) => (
+              <div key={l} style={{ background:bg||'rgba(255,255,255,0.10)', border:bg?'1px solid rgba(249,115,22,0.40)':'1px solid rgba(255,255,255,0.12)', borderRadius:10, padding:'7px 14px', fontSize:12, backdropFilter:'blur(8px)' }}>
+                {l}: <strong style={{ color:bg?'#FED7AA':'rgba(255,255,255,0.95)' }}>{v}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>
+        <Card>
+          <SectionTitle>クイックアクセス</SectionTitle>
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {actions.map((a,i) => (
+              <button key={i} onClick={() => setTab(a.tab)}
+                className={a.hot ? 'action-card-hot' : 'action-card'}
+                style={{ padding:'14px 18px', display:'flex', alignItems:'center', gap:14, width:'100%', border:'none' }}>
+                <div style={{ width:44, height:44, borderRadius:11, background:a.hot?'rgba(255,255,255,0.14)':'linear-gradient(135deg,rgba(26,54,93,0.88),rgba(40,68,116,0.80))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0, boxShadow:a.hot?'none':'0 2px 8px rgba(26,54,93,0.18)' }}>{a.icon}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:14, fontWeight:700, color:a.hot?'rgba(255,255,255,0.96)':C.text, marginBottom:2, letterSpacing:'-0.01em' }}>{a.title}</div>
+                  <div style={{ fontSize:11, color:a.hot?'rgba(191,219,254,0.80)':C.textLight, whiteSpace:'pre-line', lineHeight:1.55 }}>{a.desc}</div>
+                </div>
+                <span style={{ color:a.hot?'rgba(147,197,253,0.70)':C.textLight, fontSize:18, flexShrink:0 }}>›</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <SectionTitle>次のアクション（TODO）</SectionTitle>
+          <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+            {todos.map((t,i) => {
+              const s = priS[t.pri];
+              return (
+                <div key={i} style={{ background:'rgba(255,255,255,0.50)', border:`1px solid ${s.border}`, borderRadius:11, padding:'11px 15px', display:'flex', alignItems:'center', gap:12, backdropFilter:'blur(8px)' }}>
+                  <span style={{ fontSize:18 }}>{t.icon}</span>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:500, color:C.text, marginBottom:2 }}>{t.text}</div>
+                    <div style={{ fontSize:11, color:C.textLight }}>期限: {t.deadline}</div>
+                  </div>
+                  <span style={{ padding:'3px 10px', borderRadius:999, fontSize:10, fontWeight:700, background:s.bg, color:s.text, border:`1px solid ${s.border}`, flexShrink:0, whiteSpace:'nowrap' }}>{s.label}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ marginTop:14, padding:'10px 14px', background:'rgba(251,191,36,0.08)', border:'1px solid rgba(251,191,36,0.28)', borderRadius:10, display:'flex', gap:8, fontSize:12, color:'#92400E' }}>
+            <span>💡</span><span>「高齢者糖尿病」の類似研究が2件新たに公開されました。</span>
+          </div>
+        </Card>
+      </div>
+
+      <Card>
+        <SectionTitle>申請・審査ステータス</SectionTitle>
+        <div style={{ display:'flex', alignItems:'center', padding:'10px 0 4px' }}>
+          {steps.map((s,i) => (
+            <React.Fragment key={s.label}>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1, minWidth:0 }}>
+                <div style={{ width:38, height:38, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700, background:s.done?'linear-gradient(135deg,#1A365D,#3769AF)':s.current?'linear-gradient(135deg,#F97316,#FBBF24)':'rgba(26,54,93,0.10)', color:(s.done||s.current)?'white':C.textLight, boxShadow:s.done?'0 2px 10px rgba(26,54,93,0.30)':s.current?'0 2px 14px rgba(249,115,22,0.45), 0 0 0 4px rgba(249,115,22,0.15)':'none', position:'relative', zIndex:1 }}>
+                  {s.done?'✓':i+1}
+                </div>
+                <div style={{ fontSize:10, marginTop:7, fontWeight:s.current?700:400, color:s.done?C.primaryLight:s.current?C.accent:C.textLight, textAlign:'center', whiteSpace:'nowrap' }}>
+                  {s.label}{s.current&&<div style={{ fontSize:9, color:C.accent, marginTop:1 }}>◀ 現在地</div>}
+                </div>
+              </div>
+              {i < steps.length-1 && <div style={{ height:2, flex:1, background:i<doneIdx?'linear-gradient(to right,#3769AF,#5B8DD9)':'rgba(26,54,93,0.12)', position:'relative', top:-16, margin:'0 -2px', borderRadius:1 }}/>}
+            </React.Fragment>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   画面2: コホート参照（完全リアクティブ版）
+══════════════════════════════════════════ */
+function CohortScreen() {
+  const [query, setQuery]     = useState('');
+  const [tags, setTags]       = useState([
+    { id:1, label:'E11 2型糖尿病',      type:'disease' },
+    { id:2, label:'I10 本態性高血圧症',  type:'disease' },
+    { id:3, label:'メトホルミン',         type:'drug'    },
+  ]);
+  const [ageMin, setAgeMin]     = useState(60);
+  const [ageMax, setAgeMax]     = useState(85);
+  const [gender, setGender]     = useState('all');
+  const [logic, setLogic]       = useState('AND');
+  const [obsStart, setObsStart] = useState('2021');
+  const [obsEnd, setObsEnd]     = useState('2023');
+  const [showSug, setShowSug]   = useState(false);
+  const [busy, setBusy]         = useState(false);
+  const [animKey, setAnimKey]   = useState(0);
+
+  useEffect(() => {
+    setBusy(true);
+    const t = setTimeout(() => { setBusy(false); setAnimKey(k => k+1); }, 380);
+    return () => clearTimeout(t);
+  }, [tags, logic, ageMin, ageMax, gender, obsStart, obsEnd]);
+
+  const n = useMemo(() => calcN(tags, logic, ageMin, ageMax, gender, obsStart, obsEnd),
+    [tags, logic, ageMin, ageMax, gender, obsStart, obsEnd]);
+
+  const COMORB_RATES = [
+    { l:'高血圧', r:0.61 }, { l:'脂質異常', r:0.50 },
+    { l:'CKD',   r:0.30 }, { l:'心不全',   r:0.17 }, { l:'脳卒中', r:0.15 },
+  ];
+  const comorbData = COMORB_RATES.map(d => ({ l:d.l, v:Math.round(d.r * n) }));
+
+  const TREND_SHAPE = { '2018':0.64,'2019':0.70,'2020':0.58,'2021':0.74,'2022':0.88,'2023':1.00 };
+  const trendData = Object.entries(TREND_SHAPE)
+    .filter(([y]) => parseInt(y) >= parseInt(obsStart) && parseInt(y) <= parseInt(obsEnd))
+    .map(([y,f]) => ({ l:`'${y.slice(2)}`, v:Math.max(10, Math.round(n * f / 100)) }));
+
+  const suggestions = [
+    { label:'E11 2型糖尿病',       type:'disease' },
+    { label:'E14 詳細不明の糖尿病',  type:'disease' },
+    { label:'N18 慢性腎臓病(CKD)',  type:'disease' },
+    { label:'I25 慢性虚血性心疾患', type:'disease' },
+    { label:'E78 脂質異常症',       type:'disease' },
+    { label:'F00 アルツハイマー病', type:'disease' },
+    { label:'インスリン製剤',       type:'drug' },
+    { label:'SGLT2阻害薬',         type:'drug' },
+    { label:'GLP-1受容体作動薬',   type:'drug' },
+    { label:'DPP-4阻害薬',         type:'drug' },
+  ];
+  const filtered = query.length > 0 ? suggestions.filter(s => s.label.includes(query)) : suggestions.slice(0,6);
+  const addTag = s => { if(tags.find(t=>t.label===s.label))return; setTags(p=>[...p,{id:Date.now(),...s}]); setQuery(''); setShowSug(false); };
+  const removeTag = id => setTags(p => p.filter(t => t.id !== id));
+  const lo = Math.min(ageMin, ageMax), hi = Math.max(ageMin, ageMax);
+  const privacyWarn = n < 100;
+
+  const inputStyle = { width:'100%', padding:'9px 13px', fontSize:13, color:C.text };
+  const selectStyle = { flex:1, padding:'8px 10px', fontSize:12, color:C.text };
+
+  return (
+    <div className="slide-up" style={{ display:'grid', gridTemplateColumns:'390px 1fr', gap:20, minHeight:660 }}>
+
+      {/* ─── 左ペイン ─── */}
+      <Card style={{ display:'flex', flexDirection:'column', gap:16, padding:22 }}>
+        <div>
+          <h2 style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:3, letterSpacing:'-0.02em' }}>🔍 研究対象条件の設定</h2>
+          <p style={{ fontSize:11, color:C.textLight, lineHeight:1.5 }}>条件を変えると右図がリアルタイムで更新されます</p>
+        </div>
+
+        {/* 傷病名・薬品検索 */}
+        <div>
+          <label style={{ fontSize:11, fontWeight:700, color:C.textMid, display:'block', marginBottom:6, letterSpacing:'0.04em', textTransform:'uppercase' }}>
+            傷病名・医薬品を追加
+          </label>
+          <div style={{ position:'relative' }}>
+            <input value={query}
+              onChange={e => { setQuery(e.target.value); setShowSug(true); }}
+              onFocus={() => setShowSug(true)}
+              onBlur={() => setTimeout(() => setShowSug(false), 150)}
+              placeholder="例：2型糖尿病、E11、メトホルミン…"
+              className="input-glass"
+              style={inputStyle}/>
+            {showSug && filtered.length > 0 && (
+              <div className="glass fade-in" style={{ position:'absolute', top:'calc(100% + 6px)', left:0, right:0, zIndex:200, overflow:'hidden', padding:4 }}>
+                {filtered.map((s,i) => (
+                  <div key={i} onMouseDown={() => addTag(s)}
+                    style={{ padding:'8px 12px', cursor:'pointer', display:'flex', alignItems:'center', gap:8, fontSize:12, borderRadius:10, transition:'background 0.12s', color:C.text }}
+                    onMouseEnter={e => e.currentTarget.style.background='rgba(26,54,93,0.06)'}
+                    onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                    <span style={{ padding:'2px 7px', borderRadius:5, fontSize:9.5, fontWeight:700, letterSpacing:'0.04em', background:s.type==='disease'?'rgba(55,105,175,0.12)':'rgba(249,115,22,0.10)', color:s.type==='disease'?C.primaryLight:'#C2570D', border:`1px solid ${s.type==='disease'?'rgba(55,105,175,0.22)':'rgba(249,115,22,0.22)'}` }}>
+                      {s.type==='disease'?'ICD':'薬品'}
+                    </span>
+                    {s.label}
+                    {tags.find(t=>t.label===s.label) && <span style={{ marginLeft:'auto', fontSize:10, color:C.textLight }}>✓ 追加済</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 選択中タグ */}
+        <div>
+          <label style={{ fontSize:11, fontWeight:700, color:C.textMid, display:'block', marginBottom:6, letterSpacing:'0.04em', textTransform:'uppercase' }}>
+            選択中の条件 <span style={{ fontWeight:400, fontSize:11, color:C.textLight, textTransform:'none', letterSpacing:0 }}>({tags.length}件)</span>
+          </label>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6, minHeight:46, padding:'8px 10px', background:'rgba(26,54,93,0.04)', borderRadius:10, border:`1px dashed rgba(26,54,93,0.18)` }}>
+            {tags.map(t => (
+              <span key={t.id} className={t.type==='disease'?'chip-disease':'chip-drug'}
+                style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:999, fontSize:12, fontWeight:600, backdropFilter:'blur(8px)' }}>
+                {t.label}
+                <button onClick={() => removeTag(t.id)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, lineHeight:1, opacity:0.50, color:'inherit', padding:0, marginLeft:1 }}>×</button>
+              </span>
+            ))}
+            {tags.length===0 && <span style={{ fontSize:12, color:C.textLight, alignSelf:'center' }}>条件を追加してください</span>}
+          </div>
+        </div>
+
+        {/* AND/OR */}
+        <div style={{ display:'flex', gap:8, alignItems:'center', background:'rgba(26,54,93,0.05)', borderRadius:9, padding:'8px 12px', border:`1px solid rgba(26,54,93,0.08)` }}>
+          <span style={{ fontSize:11, color:C.textMid, flexShrink:0, fontWeight:600 }}>絞り込み方法:</span>
+          {[['AND','AND（全て該当）'],['OR','OR（いずれか）']].map(([v,l]) => (
+            <label key={v} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, cursor:'pointer', color:logic===v?C.primary:C.textLight, fontWeight:logic===v?700:400, transition:'color 0.15s' }}>
+              <input type="radio" name="logic" checked={logic===v} onChange={() => setLogic(v)} style={{ accentColor:C.primary }}/>
+              {l}
+            </label>
+          ))}
+        </div>
+
+        {/* 年齢スライダー */}
+        <div>
+          <label style={{ fontSize:11, fontWeight:700, color:C.textMid, display:'block', marginBottom:8, letterSpacing:'0.04em', textTransform:'uppercase' }}>
+            年齢範囲
+            <span style={{ color:C.accent, fontWeight:700, marginLeft:8, textTransform:'none', letterSpacing:0, fontSize:13 }}>{lo}歳 〜 {hi}歳</span>
+            <span style={{ fontSize:10, color:C.textLight, fontWeight:400, marginLeft:6, textTransform:'none', letterSpacing:0 }}>(幅: {hi-lo}歳)</span>
+          </label>
+          <div style={{ position:'relative', height:5, background:'rgba(26,54,93,0.10)', borderRadius:3, margin:'10px 0 4px' }}>
+            <div style={{ position:'absolute', left:`${lo}%`, right:`${100-hi}%`, top:0, bottom:0, background:`linear-gradient(to right,${C.primary},${C.primaryLight})`, borderRadius:3 }}/>
+          </div>
+          <input type="range" min={0} max={100} value={ageMin} onChange={e => setAgeMin(+e.target.value)} style={{ width:'100%', accentColor:C.primary, cursor:'pointer', marginBottom:4 }}/>
+          <input type="range" min={0} max={100} value={ageMax} onChange={e => setAgeMax(+e.target.value)} style={{ width:'100%', accentColor:C.accent, cursor:'pointer' }}/>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:C.textLight, marginTop:3 }}>
+            <span>0歳</span><span>25歳</span><span>50歳</span><span>75歳</span><span>100歳</span>
+          </div>
+        </div>
+
+        {/* 性別 */}
+        <div>
+          <label style={{ fontSize:11, fontWeight:700, color:C.textMid, display:'block', marginBottom:8, letterSpacing:'0.04em', textTransform:'uppercase' }}>性別</label>
+          <div style={{ display:'flex', gap:6 }}>
+            {[['all','全て'],['male','男性のみ'],['female','女性のみ']].map(([v,l]) => (
+              <button key={v} onClick={() => setGender(v)}
+                style={{ flex:1, padding:'8px 0', borderRadius:9, fontSize:12, fontWeight:gender===v?700:400, cursor:'pointer', transition:'all 0.16s', border:`1.5px solid ${gender===v?C.primary:'rgba(26,54,93,0.15)'}`, background:gender===v?C.primary:'rgba(255,255,255,0.55)', color:gender===v?'white':C.textMid, backdropFilter:'blur(8px)', boxShadow:gender===v?'0 2px 10px rgba(26,54,93,0.25)':'none' }}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 観察期間 */}
+        <div>
+          <label style={{ fontSize:11, fontWeight:700, color:C.textMid, display:'block', marginBottom:8, letterSpacing:'0.04em', textTransform:'uppercase' }}>
+            観察期間 <span style={{ fontSize:10, color:C.textLight, fontWeight:400, textTransform:'none', letterSpacing:0 }}>（広げると対象者増）</span>
+          </label>
+          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+            <select value={obsStart} onChange={e => setObsStart(e.target.value)} className="input-glass" style={selectStyle}>
+              {['2018','2019','2020','2021'].map(y => <option key={y} value={y}>{y}年</option>)}
+            </select>
+            <span style={{ fontSize:12, color:C.textLight, flexShrink:0 }}>〜</span>
+            <select value={obsEnd} onChange={e => setObsEnd(e.target.value)} className="input-glass" style={selectStyle}>
+              {['2019','2020','2021','2022','2023'].map(y => <option key={y} value={y}>{y}年</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* データソース */}
+        <div>
+          <label style={{ fontSize:11, fontWeight:700, color:C.textMid, display:'block', marginBottom:8, letterSpacing:'0.04em', textTransform:'uppercase' }}>データソース</label>
+          {[['NDB（レセプト）',true],['DPCデータ',true],['電子カルテ（試験的）',false]].map(([name,chk]) => (
+            <label key={name} style={{ display:'flex', alignItems:'center', gap:9, fontSize:12, color:C.textMid, cursor:'pointer', marginBottom:7 }}>
+              <input type="checkbox" defaultChecked={chk} style={{ accentColor:C.primary, width:14, height:14 }}/>
+              {name}
+              {name.includes('試験') && <span style={{ fontSize:9.5, background:'rgba(249,115,22,0.10)', color:'#C2570D', padding:'2px 6px', borderRadius:5, fontWeight:700, border:'1px solid rgba(249,115,22,0.22)' }}>Beta</span>}
+            </label>
+          ))}
+        </div>
+
+        <button className="btn-primary" style={{ marginTop:'auto', padding:'13px', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8, letterSpacing:'-0.01em' }}>
+          {busy ? <span className="spin" style={{ display:'inline-block', fontSize:16 }}>⟳</span> : '🔄'} 対象集団を確定して申請へ進む
+        </button>
+      </Card>
+
+      {/* ─── 右ペイン ─── */}
+      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+        {/* プライバシーアラート */}
+        {privacyWarn && (
+          <div className="fade-in" style={{ background:'rgba(220,38,38,0.08)', border:'1px solid rgba(220,38,38,0.22)', borderRadius:11, padding:'11px 16px', display:'flex', alignItems:'center', gap:10, fontSize:13, color:'#991B1B', backdropFilter:'blur(12px)' }}>
+            <span style={{ fontSize:18 }}>⚠️</span>
+            <strong>プライバシー保護アラート：</strong> n &lt; 10 のため個人特定リスクあり。数値は非表示です。条件を緩和してください。
+          </div>
+        )}
+
+        {/* n数バナー */}
+        <div className="glass-banner" style={{ padding:'24px 28px', display:'flex', alignItems:'center', justifyContent:'space-between', color:'white' }}>
+          <div style={{ position:'relative' }}>
+            <div style={{ fontSize:11, color:'rgba(147,197,253,0.80)', marginBottom:5, letterSpacing:'0.05em', textTransform:'uppercase' }}>
+              条件に合致する推定対象者数（NDB {obsStart}–{obsEnd}年）
+            </div>
+            <div key={animKey} className="count-anim" style={{ display:'flex', alignItems:'baseline', gap:8 }}>
+              {busy ? (
+                <div style={{ fontSize:44, fontWeight:700, opacity:0.45, letterSpacing:'-0.03em' }}>計算中…</div>
+              ) : privacyWarn ? (
+                <div style={{ fontSize:44, fontWeight:700, color:'rgba(252,165,165,0.90)' }}>＊＊＊</div>
+              ) : (
+                <div style={{ fontSize:44, fontWeight:700, letterSpacing:'-0.04em' }}>
+                  約 <span style={{ color:'#FB923C', textShadow:'0 2px 16px rgba(249,115,22,0.50)' }}>{n.toLocaleString()}</span>
+                </div>
+              )}
+              {!busy && !privacyWarn && <div style={{ fontSize:20, opacity:0.70 }}>名</div>}
+            </div>
+            <div style={{ fontSize:11, color:'rgba(147,197,253,0.72)', marginTop:5, display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
+              <span>※ n &lt; 10 の場合は「＊」非表示（個人特定防止）</span>
+              {gender!=='all' && <span style={{ background:'rgba(249,115,22,0.25)', border:'1px solid rgba(249,115,22,0.30)', padding:'1px 8px', borderRadius:5, fontSize:10 }}>{gender==='male'?'♂ 男性のみ':'♀ 女性のみ'}</span>}
+              {logic==='OR' && <span style={{ background:'rgba(16,185,129,0.22)', border:'1px solid rgba(16,185,129,0.30)', padding:'1px 8px', borderRadius:5, fontSize:10 }}>OR拡大モード</span>}
+            </div>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8, flexShrink:0 }}>
+            <div style={{ background:'rgba(255,255,255,0.09)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:10, padding:'9px 16px', textAlign:'right', backdropFilter:'blur(8px)' }}>
+              <div style={{ fontSize:9.5, color:'rgba(147,197,253,0.70)', textTransform:'uppercase', letterSpacing:'0.06em' }}>データ更新日</div>
+              <div style={{ fontSize:13, fontWeight:600, marginTop:2 }}>2026年1月31日</div>
+            </div>
+            <div style={{ background:'rgba(16,185,129,0.15)', border:'1px solid rgba(16,185,129,0.28)', borderRadius:10, padding:'9px 16px', textAlign:'right', backdropFilter:'blur(8px)' }}>
+              <div style={{ fontSize:9.5, color:'rgba(110,231,183,0.80)', textTransform:'uppercase', letterSpacing:'0.06em' }}>推定信頼度</div>
+              <div style={{ fontSize:14, fontWeight:700, color:'#6EE7B7', marginTop:2 }}>±5%（95%CI）</div>
+            </div>
+          </div>
+        </div>
+
+        {/* チャートグリッド */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+          <Card style={{ padding:18 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+              <h3 style={{ fontSize:12, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>年齢・性別分布</h3>
+              <span style={{ fontSize:9.5, color:C.accent, fontWeight:600 }}>▲ スライダー・性別と連動</span>
+            </div>
+            {privacyWarn
+              ? <div style={{ textAlign:'center', padding:'20px 0', color:C.textLight, fontSize:12 }}>n が少なすぎるため非表示</div>
+              : <PyramidChart key={animKey} ageMin={ageMin} ageMax={ageMax} gender={gender}/>
+            }
+          </Card>
+          <Card style={{ padding:18 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+              <h3 style={{ fontSize:12, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>主要合併症の分布</h3>
+              <span style={{ fontSize:9.5, color:C.accent, fontWeight:600 }}>▲ n数と連動</span>
+            </div>
+            {privacyWarn
+              ? <div style={{ textAlign:'center', padding:'20px 0', color:C.textLight, fontSize:12 }}>n が少なすぎるため非表示</div>
+              : <BarChart key={animKey} data={comorbData} colorA="#2D4A7A" colorB="#5B8DD9"/>
+            }
+          </Card>
+        </div>
+
+        <Card style={{ padding:18 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+            <h3 style={{ fontSize:12, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>経年トレンド（診断件数 / 100名）</h3>
+            <span style={{ fontSize:9.5, color:C.accent, fontWeight:600 }}>▲ 観察期間・n数と連動</span>
+          </div>
+          {privacyWarn
+            ? <div style={{ textAlign:'center', padding:'20px 0', color:C.textLight, fontSize:12 }}>n が少なすぎるため非表示</div>
+            : <LineChart key={animKey} data={trendData}/>
+          }
+        </Card>
+
+        {/* プライバシーノーティス */}
+        <div style={{ background:'rgba(251,191,36,0.07)', border:'1px solid rgba(251,191,36,0.26)', borderRadius:11, padding:'12px 16px', display:'flex', gap:10, fontSize:11.5, color:'#78350F', backdropFilter:'blur(12px)' }}>
+          <span style={{ fontSize:15, flexShrink:0 }}>🔒</span>
+          <div>
+            <strong style={{ fontSize:12 }}>個人情報保護措置（個人情報の保護に関する法律に基づく）</strong>
+            <ul style={{ margin:'5px 0 0 16px', lineHeight:2.0 }}>
+              <li>表示数値は <strong>n ≥ 10</strong> の場合のみ開示（n &lt; 10 は「＊」表示）</li>
+              <li>年齢・性別・地域の組み合わせで個人特定リスクがある集計は自動抑制</li>
+              <li>本画面の統計は <strong>探索目的（フィージビリティ確認）</strong> に限定。実データ提供は別途申請が必要</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   画面3: AI分析アシスト
+══════════════════════════════════════════ */
+function AIScreen() {
+  const [msgs, setMsgs] = useState([
+    { role:'system', text:'医療データ分析AIアシスタント「Genie」へようこそ。\nNDB・DPCデータについて日本語でご質問ください。SQLの知識は不要です。' }
+  ]);
+  const [input, setInput]       = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [showSQL, setShowSQL]   = useState(false);
+  const [hasResult, setHasResult] = useState(false);
+  const chatRef = useRef(null);
+
+  const exSql = `-- AI自動生成クエリ（編集可能）
+SELECT
+    age_group,
+    COUNT(*) AS patient_count,
+    ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 1) AS percentage
+FROM ndb.claims_data
+WHERE
+    diagnosis_code LIKE 'E11%'   -- 2型糖尿病
+    AND claim_year = 2022
+GROUP BY age_group
+ORDER BY age_group`;
+
+  const chartData = [
+    { l:'20代', v:234 }, { l:'30代', v:612 }, { l:'40代', v:1843 },
+    { l:'50代', v:3291 }, { l:'60代', v:5124 }, { l:'70代', v:6892 }, { l:'80歳+', v:4234 },
+  ];
+  const sumStats = [['総患者数','22,230名'],['中央値年齢','68歳'],['60歳以上割合','73.2%'],['前年比','+4.8%']];
+  const examples = ['2022年の糖尿病患者の年齢別分布を教えて','高血圧と糖尿病の合併率の推移は？','都道府県別メタボ有病率を比較して','60歳以上の腎臓病患者の投薬傾向は？'];
+
+  const send = () => {
+    if (!input.trim() || loading) return;
+    const q = input; setInput('');
+    setMsgs(p => [...p, { role:'user', text:q }]);
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false); setHasResult(true);
+      setMsgs(p => [...p, { role:'ai', text:'2022年の2型糖尿病（ICD-10: E11）患者の年齢別分布を分析しました。\n\n**主な知見：**\n• 総患者数：**22,230名**\n• 最多年齢層：70代（全体の31%）\n• 60歳以上が全体の **73%** を占めています\n• 若年層（20〜40代）も増加傾向にあります\n\nグラフと詳細統計を右ペインに表示しています。', hasSQL:true }]);
+    }, 1800);
+  };
+
+  useEffect(() => { if(chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [msgs, loading]);
+
+  const renderText = t => t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  return (
+    <div className="slide-up" style={{ display:'grid', gridTemplateColumns:'1fr 440px', gap:20, minHeight:660 }}>
+      <Card style={{ display:'flex', flexDirection:'column', padding:0, overflow:'hidden' }}>
+        <div style={{ background:'linear-gradient(135deg,rgba(22,46,90,0.92),rgba(40,68,116,0.86))', padding:'14px 20px', color:'white', display:'flex', alignItems:'center', gap:12, borderBottom:'1px solid rgba(255,255,255,0.10)' }}>
+          <div style={{ width:38, height:38, borderRadius:'50%', background:'linear-gradient(135deg,rgba(249,115,22,0.90),rgba(234,108,16,0.80))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0, boxShadow:'0 2px 10px rgba(249,115,22,0.40)' }}>🤖</div>
+          <div>
+            <div style={{ fontWeight:700, fontSize:15, letterSpacing:'-0.01em' }}>Genie — AIデータ分析アシスタント</div>
+            <div style={{ fontSize:11, color:'rgba(147,197,253,0.80)', display:'flex', alignItems:'center', gap:6, marginTop:2 }}>
+              <span className="pulse" style={{ width:6, height:6, background:'#4ADE80', borderRadius:'50%', display:'inline-block', boxShadow:'0 0 6px rgba(74,222,128,0.60)' }}/>
+              Databricks Genie × Claude 3.5 搭載 · NDB接続中
+            </div>
+          </div>
+        </div>
+        <div ref={chatRef} style={{ flex:1, overflowY:'auto', padding:'20px', display:'flex', flexDirection:'column', gap:16 }}>
+          {msgs.map((m,i) => (
+            <div key={i}>
+              {m.role==='system' && (
+                <div style={{ background:'rgba(26,54,93,0.05)', borderRadius:12, padding:'13px 16px', fontSize:13, color:C.textMid, borderLeft:`3px solid rgba(55,105,175,0.50)`, lineHeight:1.75, whiteSpace:'pre-line' }}>
+                  {m.text}
+                  <div style={{ marginTop:12, display:'flex', flexWrap:'wrap', gap:6 }}>
+                    {examples.map((ex,ei) => (
+                      <button key={ei} onClick={() => setInput(ex)}
+                        style={{ padding:'5px 11px', background:'rgba(255,255,255,0.72)', border:`1px solid rgba(26,54,93,0.16)`, borderRadius:999, fontSize:11, color:C.primaryLight, cursor:'pointer', backdropFilter:'blur(8px)', fontWeight:500, transition:'all 0.15s', fontFamily:'inherit' }}
+                        onMouseEnter={e => { e.currentTarget.style.background='rgba(26,54,93,0.08)'; e.currentTarget.style.borderColor='rgba(26,54,93,0.30)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.72)'; e.currentTarget.style.borderColor='rgba(26,54,93,0.16)'; }}>
+                        💡 {ex}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {m.role==='user' && (
+                <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                  <div style={{ background:'linear-gradient(135deg,#1A365D,#2D4A7A)', color:'rgba(255,255,255,0.96)', borderRadius:'18px 18px 5px 18px', padding:'10px 16px', maxWidth:'72%', fontSize:13, lineHeight:1.6, boxShadow:'0 2px 12px rgba(26,54,93,0.25)' }}>{m.text}</div>
+                </div>
+              )}
+              {m.role==='ai' && (
+                <div className="slide-up" style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+                  <div style={{ width:32, height:32, borderRadius:'50%', background:'rgba(55,105,175,0.12)', border:`1px solid rgba(55,105,175,0.20)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>🤖</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ background:'rgba(255,255,255,0.78)', border:`1px solid rgba(255,255,255,0.90)`, borderRadius:'18px 18px 18px 5px', padding:'11px 16px', fontSize:13, lineHeight:1.75, boxShadow:'0 2px 12px rgba(26,54,93,0.07)', backdropFilter:'blur(12px)', color:C.text }}
+                      dangerouslySetInnerHTML={{ __html:renderText(m.text) }}/>
+                    {m.hasSQL && (
+                      <div style={{ marginTop:8 }}>
+                        <button onClick={() => setShowSQL(s=>!s)}
+                          style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', background:'rgba(15,23,42,0.88)', color:'rgba(148,163,184,0.90)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:7, fontSize:11, cursor:'pointer', fontFamily:'monospace', backdropFilter:'blur(8px)', letterSpacing:'0.02em' }}>
+                          <span>{showSQL?'▼':'▶'}</span> 自動生成SQL
+                          <span style={{ marginLeft:6, background:'rgba(255,255,255,0.08)', padding:'1px 6px', borderRadius:4, fontSize:10 }}>クリックで{showSQL?'折りたたむ':'展開'}</span>
+                        </button>
+                        {showSQL && (
+                          <div className="slide-up" style={{ background:'rgba(15,23,42,0.94)', color:'rgba(226,232,240,0.92)', borderRadius:10, padding:'13px 16px', fontFamily:'monospace', fontSize:11, lineHeight:1.75, marginTop:5, overflowX:'auto', border:'1px solid rgba(255,255,255,0.07)', backdropFilter:'blur(16px)' }}>
+                            <pre style={{ margin:0 }}>{exSql}</pre>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+          {loading && (
+            <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+              <div style={{ width:32, height:32, borderRadius:'50%', background:'rgba(55,105,175,0.12)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>🤖</div>
+              <div style={{ background:'rgba(255,255,255,0.78)', border:`1px solid rgba(255,255,255,0.90)`, borderRadius:'18px 18px 18px 5px', padding:'14px 18px', display:'flex', gap:6, backdropFilter:'blur(12px)' }}>
+                {[0.0,0.25,0.5].map((d,i) => <div key={i} className="pulse" style={{ width:8, height:8, borderRadius:'50%', background:'rgba(55,105,175,0.45)', animationDelay:`${d}s` }}/>)}
+              </div>
+            </div>
+          )}
+        </div>
+        <div style={{ padding:14, borderTop:`1px solid rgba(26,54,93,0.10)`, background:'rgba(248,250,252,0.60)', backdropFilter:'blur(12px)' }}>
+          <div style={{ display:'flex', gap:10, alignItems:'flex-end' }}>
+            <textarea value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }}
+              placeholder="例：2022年の糖尿病患者の年齢別分布を教えて（Shift+Enterで改行）"
+              rows={2}
+              className="input-glass"
+              style={{ flex:1, padding:'9px 13px', fontSize:13, resize:'none', lineHeight:1.55 }}/>
+            <button onClick={send} disabled={loading||!input.trim()} className="btn-primary"
+              style={{ padding:'11px 18px', fontSize:13, opacity:input.trim()?1:0.45, cursor:input.trim()?'pointer':'default', whiteSpace:'nowrap', borderRadius:11 }}>
+              送信 →
+            </button>
+          </div>
+        </div>
+      </Card>
+
+      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+        {hasResult ? (
+          <>
+            <Card style={{ padding:18 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
+                <div>
+                  <h3 style={{ fontSize:13, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>2022年 2型糖尿病 年齢別患者数</h3>
+                  <p style={{ fontSize:10.5, color:C.textLight, marginTop:2 }}>データ: NDB（レセプト）| 対象: 全国</p>
+                </div>
+                <div style={{ display:'flex', gap:6 }}>
+                  {['📥 CSV','🖼️ PNG'].map(l => (
+                    <button key={l} className="btn-outline" style={{ padding:'4px 10px', fontSize:11 }}>{l}</button>
+                  ))}
+                </div>
+              </div>
+              <BarChart data={chartData} colorA="#F97316" colorB="#FBBF24" height={110}/>
+            </Card>
+            <Card style={{ padding:18 }}>
+              <h3 style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:12, letterSpacing:'-0.01em' }}>📊 統計サマリー</h3>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                {sumStats.map(([label,val]) => (
+                  <div key={label} style={{ background:'rgba(26,54,93,0.04)', borderRadius:9, padding:'10px 13px', border:`1px solid rgba(26,54,93,0.08)` }}>
+                    <div style={{ fontSize:10, color:C.textLight, marginBottom:3, letterSpacing:'0.03em' }}>{label}</div>
+                    <div style={{ fontSize:18, fontWeight:700, color:C.text, letterSpacing:'-0.02em' }}>{val}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              <button style={{ padding:'12px 16px', background:'linear-gradient(135deg,#1A365D,#2D4A7A)', color:'white', border:'none', borderRadius:11, fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontFamily:'inherit', boxShadow:'0 3px 14px rgba(26,54,93,0.28), inset 0 1px 0 rgba(255,255,255,0.08)' }}>📌 ダッシュボードに追加</button>
+              <button className="btn-outline" style={{ padding:'12px 16px', fontSize:13, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>📤 持出申請（データエクスポート）</button>
+              <button style={{ padding:'12px 16px', background:'rgba(249,115,22,0.07)', color:'#9A3412', border:'1px solid rgba(249,115,22,0.22)', borderRadius:11, fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontFamily:'inherit', backdropFilter:'blur(8px)' }}>🔗 コホート参照画面で詳細確認</button>
+            </div>
+          </>
+        ) : (
+          <div className="glass" style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:14, flex:1, padding:40, border:`1px dashed rgba(26,54,93,0.18)` }}>
+            <div style={{ fontSize:52, opacity:0.18 }}>📊</div>
+            <div style={{ fontSize:13, color:C.textLight, textAlign:'center', lineHeight:1.85 }}>左のチャットで質問すると<br/>グラフや統計情報がここに表示されます</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:7, width:'100%', maxWidth:240 }}>
+              {['SQL自動生成（折りたたみ表示）','グラフ自動描画','ダッシュボード連携','持出申請ワンクリック'].map(f => (
+                <div key={f} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:C.textMid }}>
+                  <span style={{ color:C.accent, fontWeight:700, fontSize:13 }}>✓</span> {f}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   ヘッダー
+══════════════════════════════════════════ */
+function Header() {
+  return (
+    <header className="glass-dark" style={{ padding:'0 24px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:18 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:11 }}>
+          <div style={{ width:32, height:32, background:'linear-gradient(135deg,#F97316,#FBBF24)', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, boxShadow:'0 2px 10px rgba(249,115,22,0.45)' }}>⚕</div>
+          <div>
+            <div style={{ color:'rgba(255,255,255,0.96)', fontWeight:700, fontSize:14.5, lineHeight:1, letterSpacing:'-0.02em' }}>医療等情報活用基盤ポータル</div>
+          </div>
+        </div>
+        <div style={{ height:26, width:1, background:'rgba(255,255,255,0.08)' }}/>
+        <div style={{ display:'flex', gap:5 }}>
+          {['NDB','DPC','レセプト','電子カルテ(試)'].map(db => (
+            <span key={db} style={{ padding:'2px 8px', background:'rgba(55,105,175,0.20)', border:'1px solid rgba(55,105,175,0.30)', borderRadius:5, fontSize:9.5, color:'rgba(147,197,253,0.90)', fontWeight:600, letterSpacing:'0.04em' }}>{db}</span>
+          ))}
+        </div>
+      </div>
+      <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:11.5, color:'rgba(100,116,139,0.80)' }}>
+          <span className="pulse" style={{ width:6, height:6, background:'#4ADE80', borderRadius:'50%', display:'inline-block', boxShadow:'0 0 6px rgba(74,222,128,0.55)' }}/>
+          システム正常稼働中
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:8, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.10)', borderRadius:999, padding:'4px 14px 4px 4px', cursor:'pointer', backdropFilter:'blur(12px)' }}>
+          <div style={{ width:28, height:28, borderRadius:'50%', background:'linear-gradient(135deg,#F97316,#FBBF24)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, boxShadow:'0 2px 8px rgba(249,115,22,0.35)' }}>👤</div>
+          <div>
+            <div style={{ color:'rgba(255,255,255,0.92)', fontSize:12, fontWeight:600, letterSpacing:'-0.01em' }}>太郎</div>
+            <div style={{ color:'rgba(148,163,184,0.65)', fontSize:9.5 }}>分析担当</div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/* ══════════════════════════════════════════
+   タブナビゲーション
+══════════════════════════════════════════ */
+function TabNav({ active, setActive }) {
+  const tabs = [
+    { id:'home',   label:'プロジェクトホーム',            icon:'🏠' },
+    { id:'search', label:'類似研究検索',                  icon:'📚', badge:'NEW' },
+    { id:'cohort', label:'コホート参照（フィージビリティ調査）', icon:'🔍', badge:'MAIN' },
+    { id:'ai',     label:'AI分析アシスト（Genie）',       icon:'🤖' },
+  ];
+  return (
+    <div className="glass-blue" style={{ padding:'0 24px', display:'flex' }}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => setActive(t.id)}
+          style={{ padding:'13px 20px', background:'transparent', border:'none', borderBottom:active===t.id?`2.5px solid #F97316`:'2.5px solid transparent', color:active===t.id?'rgba(255,255,255,0.96)':'rgba(148,163,184,0.65)', cursor:'pointer', fontSize:13, fontWeight:active===t.id?700:400, display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap', transition:'all 0.16s', letterSpacing:active===t.id?'-0.01em':'0', fontFamily:'inherit' }}>
+          {t.icon} {t.label}
+          {t.badge && <span style={{ background:'linear-gradient(135deg,#F97316,#FBBF24)', color:'white', fontSize:9, padding:'1px 6px', borderRadius:999, fontWeight:700, letterSpacing:'0.04em', boxShadow:'0 1px 6px rgba(249,115,22,0.40)' }}>{t.badge}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   App ルート
+══════════════════════════════════════════ */
+function App() {
+  const [tab, setTab] = useState('home');
+  return (
+    <div style={{ minHeight:'100vh' }}>
+      <Header/>
+      <TabNav active={tab} setActive={setTab}/>
+      <main style={{ padding:'22px 24px', maxWidth:1440, margin:'0 auto' }}>
+        {tab==='home'   && <HomeScreen setTab={setTab}/>}
+        {tab==='search' && <ResearchSearchScreen setTab={setTab}/>}
+        {tab==='cohort' && <CohortScreen/>}
+        {tab==='ai'     && <AIScreen/>}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

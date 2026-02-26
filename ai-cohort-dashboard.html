@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>医療等情報活用基盤 — AI分析アシスト &amp; コホート参照</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', system-ui, sans-serif; background: #F1F5F9; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    @keyframes slideUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes countIn { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+    @keyframes bounce { 0%,80%,100%{transform:scale(0.7);opacity:0.4;} 40%{transform:scale(1.1);opacity:1;} }
+    @keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+    .slide-up { animation: slideUp 0.25s cubic-bezier(0.22,1,0.36,1); }
+    .count-in { animation: countIn 0.45s cubic-bezier(0.22,1,0.36,1); }
+    .typing-dot { width:7px;height:7px;border-radius:50%;background:#93C5FD;animation:bounce 1.2s infinite; }
+    .typing-dot:nth-child(2){animation-delay:0.18s;}
+    .typing-dot:nth-child(3){animation-delay:0.36s;}
+    .card { background:white; border:1px solid #E2E8F0; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05),0 1px 2px rgba(0,0,0,0.03); }
+    .btn-run { background:linear-gradient(135deg,#1D4ED8,#2563EB); color:white; border:none; border-radius:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:all 0.18s; box-shadow:0 3px 12px rgba(29,78,216,0.35),inset 0 1px 0 rgba(255,255,255,0.12); }
+    .btn-run:hover { background:linear-gradient(135deg,#1E40AF,#1D4ED8); transform:translateY(-1px); box-shadow:0 6px 20px rgba(29,78,216,0.45); }
+    .btn-run:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+    .btn-ghost { background:white; border:1px solid #E2E8F0; border-radius:9px; color:#475569; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+    .btn-ghost:hover { background:#F8FAFC; border-color:#CBD5E1; }
+    input:focus, textarea:focus, select:focus { outline:none; border-color:#3B82F6 !important; box-shadow:0 0 0 3px rgba(59,130,246,0.12); }
+    .tag { display:inline-flex;align-items:center;gap:4px;padding:4px 10px 4px 12px;border-radius:999px;font-size:12px;font-weight:600; }
+    .tag-disease { background:rgba(29,78,216,0.08);color:#1E3A8A;border:1px solid rgba(29,78,216,0.18); }
+    .tag-drug { background:rgba(234,88,12,0.08);color:#7C2D12;border:1px solid rgba(234,88,12,0.18); }
+    .sug-item:hover { background:#EFF6FF; }
+    pre { font-family:'Consolas','Courier New',monospace; font-size:10.5px; line-height:1.72; }
+    .funnel-bar { transition:width 0.7s cubic-bezier(0.22,1,0.36,1); }
+    input[type=range] { accent-color:#1D4ED8; height:4px; cursor:pointer; }
+    input[type=checkbox] { accent-color:#1D4ED8; cursor:pointer; }
+    .label-sm { font-size:10.5px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.06em; }
+    .chat-bubble-user { background:linear-gradient(135deg,#1D4ED8,#2563EB);color:white;border-radius:18px 18px 4px 18px;box-shadow:0 2px 10px rgba(29,78,216,0.28); }
+    .chat-bubble-ai { background:white;border:1px solid #E2E8F0;border-radius:18px 18px 18px 4px;box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+    .stat-box { border-radius:12px;padding:14px 16px; }
+  </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header style="background:rgba(15,23,42,0.97);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;z-index:50;">
+  <div style="max-width:1700px;margin:0 auto;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#1D4ED8,#3B82F6);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(29,78,216,0.45);">
+          <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7v-2h4V7h2v4h4v2h-4v4h-2z"/></svg>
+        </div>
+        <div>
+          <div style="color:rgba(255,255,255,0.95);font-weight:700;font-size:13.5px;line-height:1.2;letter-spacing:-0.01em;">医療等情報活用基盤ポータル</div>
+          <div style="color:rgba(148,163,184,0.65);font-size:9.5px;line-height:1.2;">厚生労働省 医療等情報の二次利用</div>
+        </div>
+      </div>
+      <div style="width:1px;height:24px;background:rgba(255,255,255,0.08);"></div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span style="font-size:10px;color:rgba(148,163,184,0.60);">接続中:</span>
+        <span style="padding:2px 8px;background:rgba(29,78,216,0.20);border:1px solid rgba(29,78,216,0.35);border-radius:5px;font-size:9.5px;color:#93C5FD;font-weight:600;">NDB</span>
+        <span style="padding:2px 8px;background:rgba(5,150,105,0.18);border:1px solid rgba(5,150,105,0.30);border-radius:5px;font-size:9.5px;color:#6EE7B7;font-weight:600;">介護DB</span>
+        <span style="padding:2px 8px;background:rgba(124,58,237,0.18);border:1px solid rgba(124,58,237,0.30);border-radius:5px;font-size:9.5px;color:#C4B5FD;font-weight:600;">DPC</span>
+        <span style="padding:2px 8px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.28);border-radius:5px;font-size:9.5px;color:#FCD34D;font-weight:600;">電子カルテ(試)</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(100,116,139,0.75);">
+        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ADE80;box-shadow:0 0 6px rgba(74,222,128,0.6);"></span>
+        システム正常稼働中
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:4px 14px 4px 5px;cursor:pointer;">
+        <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#F97316,#FBBF24);display:flex;align-items:center;justify-content:center;font-size:13px;">👤</div>
+        <div>
+          <div style="color:rgba(255,255,255,0.90);font-size:12px;font-weight:600;">田中 保健師</div>
+          <div style="color:rgba(148,163,184,0.55);font-size:9.5px;">保健事業担当</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== SUB NAV ===== -->
+<div style="background:rgba(22,31,48,0.96);border-bottom:1px solid rgba(255,255,255,0.06);padding:0 20px;">
+  <div style="max-width:1700px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:38px;">
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;">
+      <span style="color:rgba(148,163,184,0.55);">プロジェクト:</span>
+      <span style="color:#93C5FD;font-weight:700;background:rgba(29,78,216,0.18);border:1px solid rgba(29,78,216,0.28);padding:1px 10px;border-radius:999px;">高齢者糖尿病コホート研究 2025</span>
+      <span style="color:rgba(255,255,255,0.15);">›</span>
+      <span style="color:rgba(255,255,255,0.75);font-weight:700;">AI分析アシスト ＆ コホート参照ダッシュボード</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;font-size:10.5px;color:rgba(148,163,184,0.55);">
+      <span>申請ステータス: <strong style="color:#FCD34D;">倫理審査中</strong></span>
+      <span style="color:rgba(255,255,255,0.10);">|</span>
+      <span>データ最終更新: 2026年1月31日</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN 3-PANE GRID ===== -->
+<div style="max-width:1700px;margin:0 auto;padding:14px 16px;display:grid;grid-template-columns:288px 1fr 360px;gap:14px;min-height:calc(100vh - 90px);">
+
+  <!-- ============================================================
+       LEFT PANE: CONDITION SPEC
+       ============================================================ -->
+  <aside style="display:flex;flex-direction:column;gap:12px;">
+
+    <!-- Pane header -->
+    <div class="card" style="padding:14px 16px;">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:2px;">
+        <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1D4ED8,#3B82F6);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="14" height="14" fill="white" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#0F172A;">条件設定（フィージビリティ調査）</div>
+          <div style="font-size:10.5px;color:#94A3B8;">医療コード不要・日本語で検索できます</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disease/Drug search -->
+    <div class="card" style="padding:16px;">
+      <div class="label-sm" style="margin-bottom:10px;">疾患・薬剤を追加</div>
+      <div style="position:relative;margin-bottom:10px;">
+        <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94A3B8;" width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input id="condInput" type="text" placeholder="例: 糖尿病、高血圧、メトホルミン…"
+          style="width:100%;padding:8px 10px 8px 30px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:9px;background:#F8FAFC;color:#0F172A;font-family:inherit;"
+          oninput="handleInput(this.value)" onfocus="showSug()" onblur="setTimeout(hideSug,160)">
+        <div id="sugBox" style="display:none;position:absolute;top:calc(100%+6px);left:0;right:0;background:white;border:1px solid #E2E8F0;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.10);z-index:100;overflow:hidden;"></div>
+      </div>
+
+      <!-- Selected tags -->
+      <div id="tagsBox" style="min-height:42px;padding:8px;background:#F8FAFC;border-radius:9px;border:1.5px dashed #CBD5E1;display:flex;flex-wrap:wrap;gap:5px;"></div>
+
+      <!-- AND/OR -->
+      <div style="display:flex;align-items:center;gap:7px;margin-top:10px;font-size:11px;">
+        <span style="color:#64748B;font-weight:600;">絞り込み方法:</span>
+        <button id="btnAnd" onclick="setLogic('AND')" style="padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;background:#1D4ED8;color:white;border:1.5px solid #1D4ED8;cursor:pointer;font-family:inherit;transition:all 0.15s;">AND</button>
+        <button id="btnOr"  onclick="setLogic('OR')"  style="padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;background:white;color:#64748B;border:1.5px solid #E2E8F0;cursor:pointer;font-family:inherit;transition:all 0.15s;">OR</button>
+      </div>
+    </div>
+
+    <!-- Age & Gender -->
+    <div class="card" style="padding:16px;">
+      <div class="label-sm" style="margin-bottom:10px;">年齢・性別</div>
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;">
+          <span style="color:#64748B;">年齢範囲</span>
+          <span id="ageLabel" style="font-weight:700;color:#1D4ED8;">60歳 〜 85歳</span>
+        </div>
+        <div style="position:relative;height:5px;background:#E2E8F0;border-radius:3px;margin-bottom:7px;">
+          <div id="ageTrack" style="position:absolute;top:0;height:100%;border-radius:3px;background:linear-gradient(to right,#1D4ED8,#60A5FA);left:60%;right:15%;"></div>
+        </div>
+        <input type="range" id="ageMin" min="0" max="100" value="60" oninput="updateAge()" style="width:100%;margin-bottom:4px;">
+        <input type="range" id="ageMax" min="0" max="100" value="85" oninput="updateAge()" style="width:100%;">
+        <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#94A3B8;margin-top:3px;">
+          <span>0歳</span><span>25</span><span>50</span><span>75</span><span>100歳</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+        <button id="gAll"    onclick="setGender('all')"    style="padding:7px 0;font-size:11px;font-weight:700;border-radius:8px;background:#1D4ED8;color:white;border:1.5px solid #1D4ED8;cursor:pointer;font-family:inherit;transition:all 0.15s;">全体</button>
+        <button id="gMale"   onclick="setGender('male')"   style="padding:7px 0;font-size:11px;font-weight:700;border-radius:8px;background:white;color:#64748B;border:1.5px solid #E2E8F0;cursor:pointer;font-family:inherit;transition:all 0.15s;">♂ 男性</button>
+        <button id="gFemale" onclick="setGender('female')" style="padding:7px 0;font-size:11px;font-weight:700;border-radius:8px;background:white;color:#64748B;border:1.5px solid #E2E8F0;cursor:pointer;font-family:inherit;transition:all 0.15s;">♀ 女性</button>
+      </div>
+    </div>
+
+    <!-- Observation period -->
+    <div class="card" style="padding:16px;">
+      <div class="label-sm" style="margin-bottom:10px;">観察期間</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="obsStart" onchange="updateN()" style="flex:1;padding:7px 10px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:8px;background:white;color:#0F172A;cursor:pointer;font-family:inherit;">
+          <option value="2020">2020年</option><option value="2021">2021年</option><option value="2022" selected>2022年</option>
+        </select>
+        <span style="font-size:12px;color:#94A3B8;">〜</span>
+        <select id="obsEnd" onchange="updateN()" style="flex:1;padding:7px 10px;font-size:12px;border:1.5px solid #E2E8F0;border-radius:8px;background:white;color:#0F172A;cursor:pointer;font-family:inherit;">
+          <option value="2022">2022年</option><option value="2023">2023年</option><option value="2024" selected>2024年</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Database -->
+    <div class="card" style="padding:16px;">
+      <div class="label-sm" style="margin-bottom:10px;">データソース選択</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;">
+          <input type="checkbox" checked onchange="updateN()" style="margin-top:2px;width:14px;height:14px;flex-shrink:0;">
+          <div>
+            <div style="font-size:12.5px;font-weight:600;color:#0F172A;">NDB（医療レセプト・特定健診）</div>
+            <div style="font-size:10.5px;color:#94A3B8;">全国医科・調剤レセプト</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;">
+          <input type="checkbox" checked onchange="updateN()" style="margin-top:2px;width:14px;height:14px;flex-shrink:0;">
+          <div>
+            <div style="font-size:12.5px;font-weight:600;color:#0F172A;">介護データベース</div>
+            <div style="font-size:10.5px;color:#94A3B8;">介護レセプト・認定情報</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;">
+          <input type="checkbox" onchange="updateN()" style="margin-top:2px;width:14px;height:14px;flex-shrink:0;">
+          <div>
+            <div style="font-size:12.5px;font-weight:600;color:#0F172A;">DPCデータ</div>
+            <div style="font-size:10.5px;color:#94A3B8;">急性期病院（入院）データ</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;">
+          <input type="checkbox" onchange="updateN()" style="margin-top:2px;width:14px;height:14px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <div style="font-size:12.5px;font-weight:600;color:#0F172A;">電子カルテ</div>
+            <span style="font-size:9px;background:rgba(245,158,11,0.12);color:#B45309;padding:1px 6px;border-radius:4px;font-weight:700;border:1px solid rgba(245,158,11,0.22);">Beta</span>
+            <div style="font-size:10.5px;color:#94A3B8;width:100%;">実証事業参加医療機関のみ</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Run button -->
+    <button class="btn-run" onclick="runFeasibility(this)" style="padding:13px;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      フィージビリティ調査を実行
+    </button>
+
+    <!-- Privacy notice -->
+    <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.22);border-radius:10px;padding:10px 13px;font-size:10.5px;color:#78350F;">
+      🔒 <strong>個人情報保護措置：</strong> n &lt; 10 は「＊」非表示。年齢・性別・地域の組合せによる個人特定リスク集計は自動抑制。
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       CENTER PANE: DASHBOARD
+       ============================================================ -->
+  <main style="display:flex;flex-direction:column;gap:14px;min-width:0;">
+
+    <!-- N-count banner -->
+    <div style="border-radius:16px;overflow:hidden;position:relative;background:linear-gradient(135deg,#0F2044 0%,#1D4ED8 60%,#2563EB 100%);padding:22px 26px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 24px rgba(29,78,216,0.30);">
+      <div style="position:absolute;right:0;top:0;bottom:0;width:240px;background:radial-gradient(ellipse at 60% 50%,rgba(96,165,250,0.18) 0%,transparent 70%);pointer-events:none;"></div>
+      <div style="position:relative;">
+        <div style="font-size:10px;color:rgba(147,197,253,0.80);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;">推定対象患者数（NDB 2022–2024年）</div>
+        <div id="nDisplay" style="display:flex;align-items:baseline;gap:8px;" class="count-in">
+          <span style="font-size:24px;font-weight:700;color:rgba(148,163,184,0.85);">約</span>
+          <span id="nVal" style="font-size:52px;font-weight:900;color:white;letter-spacing:-0.04em;text-shadow:0 2px 24px rgba(255,255,255,0.25);">12,450</span>
+          <span style="font-size:22px;font-weight:700;color:rgba(147,197,253,0.85);">人</span>
+        </div>
+        <div style="font-size:10px;color:rgba(147,197,253,0.65);margin-top:4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <span>※ n &lt; 10 の場合は「＊」で非表示（個人特定防止）</span>
+          <span style="background:rgba(29,78,216,0.40);border:1px solid rgba(147,197,253,0.25);padding:1px 9px;border-radius:5px;color:rgba(191,219,254,0.90);">推定精度 ±5%（95%CI）</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px;align-items:flex-end;position:relative;flex-shrink:0;">
+        <div style="background:rgba(255,255,255,0.09);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 16px;text-align:right;backdrop-filter:blur(8px);">
+          <div style="font-size:9.5px;color:rgba(147,197,253,0.70);text-transform:uppercase;letter-spacing:0.06em;">データ更新日</div>
+          <div style="font-size:13px;font-weight:600;color:white;margin-top:2px;">2026年1月31日</div>
+        </div>
+        <div style="background:rgba(5,150,105,0.18);border:1px solid rgba(16,185,129,0.30);border-radius:10px;padding:9px 16px;text-align:right;">
+          <div style="font-size:9.5px;color:rgba(110,231,183,0.75);text-transform:uppercase;letter-spacing:0.06em;">プライバシー保護</div>
+          <div style="font-size:12px;font-weight:700;color:#6EE7B7;margin-top:2px;">✓ 正常稼働</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Funnel chart -->
+    <div class="card" style="padding:18px 22px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#0F172A;">絞り込みフロー（データ件数の減衰）</div>
+          <div style="font-size:10.5px;color:#94A3B8;margin-top:2px;">各ステップで適用した条件と残存件数</div>
+        </div>
+        <span style="font-size:10px;color:#2563EB;background:#EFF6FF;border:1px solid #DBEAFE;padding:3px 9px;border-radius:6px;font-weight:600;">▲ 条件変更で自動更新</span>
+      </div>
+      <div id="funnelWrap" style="display:flex;flex-direction:column;gap:7px;"></div>
+    </div>
+
+    <!-- Chart area -->
+    <div class="card" style="padding:18px 22px;flex:1;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div>
+          <div id="chartTitle" style="font-size:13px;font-weight:700;color:#0F172A;">分析結果グラフ</div>
+          <div id="chartSub" style="font-size:10.5px;color:#94A3B8;margin-top:2px;">AIに質問すると、ここにグラフが描画されます</div>
+        </div>
+        <div id="chartBtns" style="display:none;gap:7px;">
+          <button class="btn-ghost" style="font-size:11px;padding:5px 12px;display:flex;align-items:center;gap:5px;">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>CSV
+          </button>
+          <button class="btn-ghost" style="font-size:11px;padding:5px 12px;display:flex;align-items:center;gap:5px;">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>PNG
+          </button>
+        </div>
+      </div>
+
+      <!-- Placeholder -->
+      <div id="chartPlaceholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;color:#94A3B8;">
+        <svg width="52" height="52" fill="currentColor" viewBox="0 0 24 24" style="opacity:0.20;margin-bottom:12px;"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 5.4H19V19h-2.8v-8.6z"/></svg>
+        <div style="font-size:13.5px;font-weight:500;">AIに分析を依頼してください</div>
+        <div style="font-size:11px;margin-top:6px;text-align:center;line-height:1.7;">右のチャット欄から「腹囲基準超え割合を年代別に」などと入力すると<br>グラフが自動生成されます</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:16px;width:100%;max-width:280px;">
+          <div style="font-size:11px;color:#60A5FA;text-align:center;font-weight:600;margin-bottom:2px;">✨ 利用できる機能</div>
+          <div style="font-size:11px;color:#475569;display:flex;align-items:center;gap:7px;"><span style="color:#059669;font-weight:700;">✓</span>SQL自動生成（コード表示あり）</div>
+          <div style="font-size:11px;color:#475569;display:flex;align-items:center;gap:7px;"><span style="color:#059669;font-weight:700;">✓</span>棒グラフ・折れ線グラフ自動描画</div>
+          <div style="font-size:11px;color:#475569;display:flex;align-items:center;gap:7px;"><span style="color:#059669;font-weight:700;">✓</span>ダッシュボード保存・持出申請</div>
+        </div>
+      </div>
+
+      <canvas id="mainChart" style="display:none;max-height:300px;"></canvas>
+      <div id="chartLegend" style="display:none;margin-top:10px;display:none;align-items:center;gap:16px;font-size:11px;color:#475569;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#1D4ED8;"></span>男性</div>
+        <div style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#EC4899;"></span>女性</div>
+        <div style="margin-left:auto;font-size:10.5px;color:#94A3B8;">特定健診データ（腹囲基準: 男性≥85cm / 女性≥90cm）</div>
+      </div>
+    </div>
+
+    <!-- Stats panel (hidden initially) -->
+    <div id="statsPanel" style="display:none;">
+      <div class="card" style="padding:18px 22px;">
+        <div style="font-size:13px;font-weight:700;color:#0F172A;margin-bottom:12px;">📊 統計サマリー</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+          <div class="stat-box" style="background:#EFF6FF;border:1px solid #BFDBFE;">
+            <div style="font-size:10.5px;color:#1D4ED8;margin-bottom:4px;">総対象者数</div>
+            <div style="font-size:22px;font-weight:900;color:#1E3A8A;letter-spacing:-0.02em;">12,450<span style="font-size:12px;font-weight:600;margin-left:2px;">名</span></div>
+          </div>
+          <div class="stat-box" style="background:#ECFDF5;border:1px solid #A7F3D0;">
+            <div style="font-size:10.5px;color:#059669;margin-bottom:4px;">腹囲基準超え</div>
+            <div style="font-size:22px;font-weight:900;color:#065F46;letter-spacing:-0.02em;">67.3<span style="font-size:12px;font-weight:600;margin-left:2px;">%</span></div>
+          </div>
+          <div class="stat-box" style="background:#FFFBEB;border:1px solid #FDE68A;">
+            <div style="font-size:10.5px;color:#D97706;margin-bottom:4px;">中央値年齢</div>
+            <div style="font-size:22px;font-weight:900;color:#78350F;letter-spacing:-0.02em;">72<span style="font-size:12px;font-weight:600;margin-left:2px;">歳</span></div>
+          </div>
+          <div class="stat-box" style="background:#F5F3FF;border:1px solid #DDD6FE;">
+            <div style="font-size:10.5px;color:#7C3AED;margin-bottom:4px;">男性割合</div>
+            <div style="font-size:22px;font-weight:900;color:#4C1D95;letter-spacing:-0.02em;">54.2<span style="font-size:12px;font-weight:600;margin-left:2px;">%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons (hidden initially) -->
+    <div id="actionBtns" style="display:none;gap:10px;">
+      <button class="btn-ghost" style="flex:1;padding:11px;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:11px;">📌 ダッシュボードに保存</button>
+      <button class="btn-ghost" style="flex:1;padding:11px;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:11px;">📤 持出申請（エクスポート）</button>
+      <button style="flex:1;padding:11px;font-size:12.5px;font-weight:700;color:white;border:none;border-radius:11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,#059669,#10B981);box-shadow:0 3px 12px rgba(5,150,105,0.30);">📄 申請書に反映する</button>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       RIGHT PANE: AI CHAT
+       ============================================================ -->
+  <aside class="card" style="display:flex;flex-direction:column;overflow:hidden;position:sticky;top:68px;height:calc(100vh - 82px);">
+
+    <!-- Chat header -->
+    <div style="padding:12px 16px;background:linear-gradient(135deg,#0F2044,#1D4ED8);display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;">
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#F59E0B,#F97316);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;box-shadow:0 2px 8px rgba(249,115,22,0.40);">🤖</div>
+      <div style="flex:1;min-width:0;">
+        <div style="color:rgba(255,255,255,0.95);font-size:13.5px;font-weight:700;line-height:1.2;">Genie — AI分析アシスタント</div>
+        <div style="color:rgba(147,197,253,0.75);font-size:10px;display:flex;align-items:center;gap:5px;margin-top:2px;">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ADE80;box-shadow:0 0 5px rgba(74,222,128,0.60);animation:pulse 2s infinite;"></span>
+          Databricks Genie × Claude搭載 · NDB接続中
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="chatMsgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;background:#F8FAFC;">
+
+      <!-- Welcome -->
+      <div style="background:white;border:1px solid #DBEAFE;border-radius:12px;padding:13px;font-size:11.5px;color:#334155;line-height:1.75;">
+        <div style="font-weight:700;color:#1D4ED8;margin-bottom:7px;display:flex;align-items:center;gap:5px;">
+          <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+          Genieへようこそ
+        </div>
+        <p>左ペインで設定した条件について、日本語で自由に質問・分析依頼ができます。<br>SQLの知識は不要です。</p>
+        <div style="margin-top:10px;">
+          <div style="font-size:10px;color:#94A3B8;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px;">💡 質問例（クリックで入力）</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <button onclick="useEx(0)" style="text-align:left;padding:7px 10px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;font-size:11px;color:#1D4ED8;cursor:pointer;font-family:inherit;transition:background 0.15s;line-height:1.5;" onmouseover="this.style.background='#DBEAFE'" onmouseout="this.style.background='#EFF6FF'">選択した患者の腹囲基準超え割合を年代別にグラフ化して</button>
+            <button onclick="useEx(1)" style="text-align:left;padding:7px 10px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;font-size:11px;color:#1D4ED8;cursor:pointer;font-family:inherit;transition:background 0.15s;line-height:1.5;" onmouseover="this.style.background='#DBEAFE'" onmouseout="this.style.background='#EFF6FF'">高血圧の合併率の年次推移を教えて</button>
+            <button onclick="useEx(2)" style="text-align:left;padding:7px 10px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;font-size:11px;color:#1D4ED8;cursor:pointer;font-family:inherit;transition:background 0.15s;line-height:1.5;" onmouseover="this.style.background='#DBEAFE'" onmouseout="this.style.background='#EFF6FF'">投薬パターンで最も多い組み合わせTop5は？</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Input area -->
+    <div style="padding:10px 12px;background:white;border-top:1px solid #F1F5F9;flex-shrink:0;">
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <textarea id="chatIn" rows="2" placeholder="例: 糖尿病患者の腹囲基準超え割合を年代別にグラフ化して（Shift+Enterで改行）"
+          style="flex:1;padding:9px 12px;font-size:11.5px;border:1.5px solid #E2E8F0;border-radius:10px;background:#F8FAFC;resize:none;color:#0F172A;line-height:1.55;font-family:inherit;"
+          onkeydown="chatKey(event)"></textarea>
+        <button onclick="sendMsg()" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#1D4ED8,#2563EB);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(29,78,216,0.35);transition:all 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:7px;font-size:10.5px;">
+        <button onclick="clearChat()" style="color:#94A3B8;background:none;border:none;cursor:pointer;font-family:inherit;transition:color 0.15s;" onmouseover="this.style.color='#64748B'" onmouseout="this.style.color='#94A3B8'">🗑 履歴をクリア</button>
+        <span style="color:#E2E8F0;">|</span>
+        <button style="color:#94A3B8;background:none;border:none;cursor:pointer;font-family:inherit;transition:color 0.15s;" onmouseover="this.style.color='#64748B'" onmouseout="this.style.color='#94A3B8'">📌 この会話を保存</button>
+      </div>
+    </div>
+  </aside>
+
+</div><!-- end grid -->
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+// ────────────────────────────────────────
+// DATA
+// ────────────────────────────────────────
+const SUGS = [
+  {label:'2型糖尿病',code:'E11',type:'disease'},{label:'1型糖尿病',code:'E10',type:'disease'},
+  {label:'高血圧症',code:'I10',type:'disease'},{label:'慢性腎臓病(CKD)',code:'N18',type:'disease'},
+  {label:'脂質異常症',code:'E78',type:'disease'},{label:'心不全',code:'I50',type:'disease'},
+  {label:'心房細動',code:'I48',type:'disease'},{label:'アルツハイマー型認知症',code:'G30',type:'disease'},
+  {label:'脳梗塞',code:'I63',type:'disease'},{label:'骨粗鬆症',code:'M81',type:'disease'},
+  {label:'メトホルミン',code:'D01',type:'drug'},{label:'SGLT2阻害薬',code:'D02',type:'drug'},
+  {label:'GLP-1受容体作動薬',code:'D03',type:'drug'},{label:'DPP-4阻害薬',code:'D04',type:'drug'},
+  {label:'インスリン製剤',code:'D05',type:'drug'},{label:'ARB',code:'D06',type:'drug'},
+  {label:'スタチン',code:'D07',type:'drug'},
+];
+
+let selTags = [
+  {label:'2型糖尿病',code:'E11',type:'disease'},
+  {label:'高血圧症',code:'I10',type:'disease'},
+  {label:'メトホルミン',code:'D01',type:'drug'},
+];
+let logic = 'AND';
+let gender = 'all';
+let chartInst = null;
+let sqlN = 0;
+
+const EXAMPLES = [
+  '選択した患者の腹囲基準超え割合を年代別にグラフ化して',
+  '高血圧の合併率の年次推移を教えて',
+  '投薬パターンで最も多い組み合わせTop5は？',
+];
+
+const SQL_CODE = `-- AI自動生成クエリ（Databricks SQL / 編集可能）
+SELECT
+    age_group,
+    gender,
+    COUNT(*) AS patient_count,
+    SUM(CASE WHEN waist_over = 1 THEN 1 ELSE 0 END) AS waist_over_count,
+    ROUND(
+        SUM(CASE WHEN waist_over = 1 THEN 1 ELSE 0 END)
+        * 100.0 / COUNT(*), 1
+    ) AS waist_over_pct
+FROM (
+    SELECT
+        r.patient_id,
+        CASE
+            WHEN FLOOR(DATEDIFF(r.claim_date, p.birth_date)/365.25) < 40 THEN '30代'
+            WHEN FLOOR(DATEDIFF(r.claim_date, p.birth_date)/365.25) < 50 THEN '40代'
+            WHEN FLOOR(DATEDIFF(r.claim_date, p.birth_date)/365.25) < 60 THEN '50代'
+            WHEN FLOOR(DATEDIFF(r.claim_date, p.birth_date)/365.25) < 70 THEN '60代'
+            WHEN FLOOR(DATEDIFF(r.claim_date, p.birth_date)/365.25) < 80 THEN '70代'
+            WHEN FLOOR(DATEDIFF(r.claim_date, p.birth_date)/365.25) < 90 THEN '80代'
+            ELSE '90代+'
+        END AS age_group,
+        p.gender,
+        CASE
+            WHEN p.gender = 'M' AND h.waist_cm >= 85 THEN 1
+            WHEN p.gender = 'F' AND h.waist_cm >= 90 THEN 1
+            ELSE 0
+        END AS waist_over
+    FROM ndb.claims_medical r
+    INNER JOIN ndb.patient_master p USING (patient_id)
+    INNER JOIN ndb.specific_health_checkup h
+        ON r.patient_id = h.patient_id
+        AND YEAR(r.claim_date) = h.checkup_year
+    WHERE
+        r.diagnosis_code LIKE 'E11%'  -- 2型糖尿病
+        AND YEAR(r.claim_date) BETWEEN 2022 AND 2024
+        AND r.claim_type = 'medical'
+) t
+GROUP BY age_group, gender
+ORDER BY age_group, gender;`;
+
+const AI_RESPS = {
+  0: {
+    text: '承知いたしました。NDBの医科レセプトおよび特定健診データから**SQLを自動生成**し、データを抽出・集計しました。\n\n**📊 分析結果のポイント:**\n• 対象患者 **12,450名** の腹囲基準超え割合は全体 **67.3%**\n• 70代男性で最大 **72%** ——年代が上がるほど増加傾向\n• 女性は男性より低いが、70代以降は **60%** を超えています\n• 30代男性でも **28%** が基準超えであり、若年層への早期介入が重要\n\n中央ダッシュボードに年代別グラフを描画しました。',
+    doChart: true,
+  },
+  1: {
+    text: '高血圧合併率の年次推移を分析しました。\n\n**📈 分析結果:**\n• 2022年: **58.4%** → 2023年: **61.2%** → 2024年: **63.7%**\n• 年間約 **+2.5ポイント** の上昇傾向が続いています\n• 特に **70代以上** での合併率増加が顕著です\n• 腎機能低下を伴う症例が増加しており、治療強化が課題です',
+    doChart: false,
+  },
+  2: {
+    text: '投薬パターンを分析しました（IPW法で交絡調整済み）。\n\n**💊 上位5パターン:**\n1. **メトホルミン単剤**: 34.2%\n2. **メトホルミン + DPP-4阻害薬**: 28.7%\n3. **メトホルミン + SGLT2阻害薬**: 18.3%\n4. **インスリン + メトホルミン**: 10.1%\n5. **GLP-1 + SGLT2阻害薬**: 8.7%\n\nSGLT2阻害薬の使用率が2021年比で **+12.4ポイント** 増加しています。',
+    doChart: false,
+  },
+};
+
+// ────────────────────────────────────────
+// INIT
+// ────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderTags();
+  renderFunnel();
+  updateN();
+});
+
+// ────────────────────────────────────────
+// TAGS
+// ────────────────────────────────────────
+function handleInput(v) {
+  const box = document.getElementById('sugBox');
+  const filtered = v.length > 0
+    ? SUGS.filter(s => s.label.includes(v) && !selTags.find(t => t.code === s.code))
+    : SUGS.filter(s => !selTags.find(t => t.code === s.code)).slice(0, 8);
+  if (!filtered.length) { box.style.display = 'none'; return; }
+  box.innerHTML = filtered.map(s => `
+    <div class="sug-item" style="padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:9px;font-size:12px;transition:background 0.12s;" onmousedown="addTag('${s.code}')">
+      <span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0;${s.type==='disease'?'background:rgba(29,78,216,0.10);color:#1E3A8A;border:1px solid rgba(29,78,216,0.20);':'background:rgba(234,88,12,0.10);color:#7C2D12;border:1px solid rgba(234,88,12,0.20);'}">
+        ${s.type==='disease'?'ICD':'薬品'}
+      </span>
+      <span style="color:#0F172A;font-weight:500;">${s.label}</span>
+      <span style="font-size:10px;color:#94A3B8;margin-left:auto;">${s.code}</span>
+    </div>
+  `).join('');
+  box.style.display = 'block';
+}
+function showSug() { handleInput(document.getElementById('condInput').value); }
+function hideSug() { document.getElementById('sugBox').style.display = 'none'; }
+
+function addTag(code) {
+  const s = SUGS.find(x => x.code === code);
+  if (!s || selTags.find(t => t.code === code)) return;
+  selTags.push(s);
+  document.getElementById('condInput').value = '';
+  renderTags(); updateN();
+}
+function removeTag(code) {
+  selTags = selTags.filter(t => t.code !== code);
+  renderTags(); updateN();
+}
+function renderTags() {
+  const box = document.getElementById('tagsBox');
+  if (!selTags.length) {
+    box.innerHTML = '<span style="font-size:11.5px;color:#94A3B8;align-self:center;padding:4px 2px;">条件を追加してください</span>';
+    return;
+  }
+  box.innerHTML = selTags.map(t => `
+    <span class="tag ${t.type==='disease'?'tag-disease':'tag-drug'}">
+      ${t.label}
+      <button onclick="removeTag('${t.code}')" style="background:none;border:none;cursor:pointer;font-size:15px;line-height:1;opacity:0.50;color:inherit;padding:0;margin-left:1px;font-family:inherit;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">×</button>
+    </span>
+  `).join('');
+}
+function setLogic(l) {
+  logic = l;
+  const a = document.getElementById('btnAnd'), b = document.getElementById('btnOr');
+  if (l === 'AND') {
+    a.style.cssText = 'padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;background:#1D4ED8;color:white;border:1.5px solid #1D4ED8;cursor:pointer;font-family:inherit;';
+    b.style.cssText = 'padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;background:white;color:#64748B;border:1.5px solid #E2E8F0;cursor:pointer;font-family:inherit;';
+  } else {
+    b.style.cssText = 'padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;background:#1D4ED8;color:white;border:1.5px solid #1D4ED8;cursor:pointer;font-family:inherit;';
+    a.style.cssText = 'padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;background:white;color:#64748B;border:1.5px solid #E2E8F0;cursor:pointer;font-family:inherit;';
+  }
+  updateN();
+}
+function setGender(g) {
+  gender = g;
+  const styles = {
+    active: 'padding:7px 0;font-size:11px;font-weight:700;border-radius:8px;background:#1D4ED8;color:white;border:1.5px solid #1D4ED8;cursor:pointer;font-family:inherit;',
+    idle:   'padding:7px 0;font-size:11px;font-weight:700;border-radius:8px;background:white;color:#64748B;border:1.5px solid #E2E8F0;cursor:pointer;font-family:inherit;',
+  };
+  document.getElementById('gAll').style.cssText    = (g==='all'?styles.active:styles.idle);
+  document.getElementById('gMale').style.cssText   = (g==='male'?styles.active:styles.idle);
+  document.getElementById('gFemale').style.cssText = (g==='female'?styles.active:styles.idle);
+  updateN();
+}
+
+// ────────────────────────────────────────
+// AGE
+// ────────────────────────────────────────
+function updateAge() {
+  const lo = Math.min(+document.getElementById('ageMin').value, +document.getElementById('ageMax').value);
+  const hi = Math.max(+document.getElementById('ageMin').value, +document.getElementById('ageMax').value);
+  document.getElementById('ageLabel').textContent = `${lo}歳 〜 ${hi}歳`;
+  document.getElementById('ageTrack').style.left  = lo + '%';
+  document.getElementById('ageTrack').style.right = (100 - hi) + '%';
+  updateN();
+}
+
+// ────────────────────────────────────────
+// N-COUNT
+// ────────────────────────────────────────
+function calcN() {
+  const lo = Math.min(+document.getElementById('ageMin').value, +document.getElementById('ageMax').value);
+  const hi = Math.max(+document.getElementById('ageMin').value, +document.getElementById('ageMax').value);
+  const ageFactor = Math.max(0.01, (hi - lo) / 100);
+  const gFactor   = gender === 'all' ? 1.0 : 0.47;
+  const tc = selTags.length;
+  const cFactor = tc === 0 ? 0.80 : (logic === 'AND' ? Math.pow(0.55, tc) : Math.min(0.85, 0.26 * tc + 0.08));
+  const dbCount = document.querySelectorAll('input[type=checkbox]:checked').length;
+  const dbFactor = Math.max(0.10, dbCount * 0.38);
+  return Math.max(0, Math.round(800000 * ageFactor * gFactor * cFactor * dbFactor));
+}
+function updateN() {
+  const n = calcN();
+  const el = document.getElementById('nVal');
+  el.textContent = n.toLocaleString('ja-JP');
+  const d = document.getElementById('nDisplay');
+  d.classList.remove('count-in'); void d.offsetWidth; d.classList.add('count-in');
+  renderFunnel(n);
+}
+
+// ────────────────────────────────────────
+// FEASIBILITY RUN
+// ────────────────────────────────────────
+function runFeasibility(btn) {
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span style="display:inline-block;animation:spin 0.9s linear infinite;">⟳</span>&ensp;実行中…';
+  btn.disabled = true;
+  setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; updateN(); }, 1100);
+}
+
+// ────────────────────────────────────────
+// FUNNEL
+// ────────────────────────────────────────
+function renderFunnel(baseN) {
+  const n = baseN !== undefined ? baseN : calcN();
+  const lo = Math.min(+document.getElementById('ageMin').value, +document.getElementById('ageMax').value);
+  const hi = Math.max(+document.getElementById('ageMin').value, +document.getElementById('ageMax').value);
+  const tagLabel = selTags.length > 0 ? selTags.map(t => t.label).join('・') : '疾患・薬剤条件（未設定）';
+  const gLabel = gender === 'all' ? '性別（全体）' : gender === 'male' ? '性別（男性のみ）' : '性別（女性のみ）';
+
+  const TOTAL = 120000000;
+  const steps = [
+    { icon:'🗄️', label:'NDB全登録者（2022–2024）',         n: TOTAL,                 color:'#1D4ED8' },
+    { icon:'👥', label:`年齢フィルタ（${lo}〜${hi}歳）`,   n: Math.round(n * 7.8),   color:'#2563EB' },
+    { icon:'🔍', label:tagLabel,                           n: Math.round(n * 2.4),   color:'#3B82F6' },
+    { icon:'⚧',  label:gLabel,                             n: Math.round(n * 1.2),   color:'#60A5FA' },
+    { icon:'✅', label:'最終抽出対象者',                   n,                         color:'#059669' },
+  ];
+  const maxN = steps[0].n;
+  const wrap = document.getElementById('funnelWrap');
+  wrap.innerHTML = steps.map((s, i) => {
+    const pct = Math.max(1, Math.round((s.n / maxN) * 100));
+    const nStr = s.n >= 10000000 ? `${(s.n/10000000).toFixed(0)}千万` :
+                 s.n >= 10000   ? `${(s.n/10000).toFixed(1)}万`       : s.n.toLocaleString('ja-JP');
+    const isLast = i === steps.length - 1;
+    return `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:14px;width:20px;text-align:center;flex-shrink:0;">${s.icon}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:11px;color:${isLast?'#065F46':'#334155'};font-weight:${isLast?700:500};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 70px);">${s.label}</span>
+            <span style="font-size:11px;font-weight:700;color:${isLast?'#059669':'#0F172A'};flex-shrink:0;margin-left:6px;">${nStr}人</span>
+          </div>
+          <div style="height:8px;border-radius:4px;background:#F1F5F9;overflow:hidden;">
+            <div class="funnel-bar" style="height:100%;border-radius:4px;width:${pct}%;background:${s.color};"></div>
+          </div>
+        </div>
+        <span style="font-size:10px;color:#94A3B8;width:32px;text-align:right;flex-shrink:0;">${pct}%</span>
+      </div>
+      ${i < steps.length - 1 ? '<div style="margin-left:26px;color:#CBD5E1;font-size:11px;">↓</div>' : ''}
+    `;
+  }).join('');
+}
+
+// ────────────────────────────────────────
+// CHART
+// ────────────────────────────────────────
+function showChart() {
+  document.getElementById('chartPlaceholder').style.display = 'none';
+  document.getElementById('mainChart').style.display = 'block';
+  document.getElementById('chartLegend').style.display = 'flex';
+  document.getElementById('chartBtns').style.display = 'flex';
+  document.getElementById('statsPanel').style.display = 'block';
+  document.getElementById('actionBtns').style.display = 'flex';
+  document.getElementById('chartTitle').textContent = '年代別・男女別 腹囲基準超え割合';
+  document.getElementById('chartSub').textContent = 'データ: NDB（医科レセプト＋特定健診） 2022–2024年 | 対象: 糖尿病患者';
+
+  if (chartInst) chartInst.destroy();
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  chartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['30代', '40代', '50代', '60代', '70代', '80代', '90代+'],
+      datasets: [
+        {
+          label: '男性（腹囲基準超え %）',
+          data: [28, 42, 58, 70, 72, 68, 55],
+          backgroundColor: 'rgba(29,78,216,0.72)',
+          borderColor: 'rgba(29,78,216,1)',
+          borderWidth: 1.5, borderRadius: 5, borderSkipped: false,
+        },
+        {
+          label: '女性（腹囲基準超え %）',
+          data: [12, 22, 38, 52, 60, 58, 48],
+          backgroundColor: 'rgba(236,72,153,0.68)',
+          borderColor: 'rgba(236,72,153,1)',
+          borderWidth: 1.5, borderRadius: 5, borderSkipped: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      animation: { duration: 650, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15,23,42,0.92)',
+          titleFont: { family: 'inherit', size: 12, weight: 'bold' },
+          bodyFont:  { family: 'inherit', size: 11 },
+          padding: 10, cornerRadius: 8,
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%` },
+        },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'inherit', size: 11 }, color: '#64748B' } },
+        y: {
+          max: 100,
+          grid: { color: 'rgba(226,232,240,0.8)' },
+          ticks: { font: { family: 'inherit', size: 11 }, color: '#94A3B8', callback: v => v + '%' },
+        },
+      },
+    },
+  });
+}
+
+// ────────────────────────────────────────
+// CHAT
+// ────────────────────────────────────────
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(t) {
+  return t
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+function useEx(i) {
+  document.getElementById('chatIn').value = EXAMPLES[i];
+  document.getElementById('chatIn').focus();
+}
+function chatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+}
+
+function sendMsg() {
+  const inp = document.getElementById('chatIn');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+
+  addUserBubble(txt);
+  addTyping();
+
+  let key = 0;
+  if (txt.includes('高血圧') || txt.includes('推移') || txt.includes('年次')) key = 1;
+  else if (txt.includes('投薬') || txt.includes('Top') || txt.includes('組み合わせ')) key = 2;
+
+  setTimeout(() => {
+    removeTyping();
+    const r = AI_RESPS[key];
+    addAIBubble(r.text, true, r.doChart);
+    if (r.doChart) setTimeout(showChart, 350);
+  }, 1500 + Math.random() * 600);
+}
+
+function addUserBubble(txt) {
+  const wrap = document.getElementById('chatMsgs');
+  const d = document.createElement('div');
+  d.className = 'slide-up';
+  d.style.cssText = 'display:flex;justify-content:flex-end;';
+  d.innerHTML = `<div class="chat-bubble-user" style="max-width:86%;padding:9px 14px;font-size:12px;line-height:1.65;">${esc(txt)}</div>`;
+  wrap.appendChild(d);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function addTyping() {
+  const wrap = document.getElementById('chatMsgs');
+  const d = document.createElement('div');
+  d.id = 'typingInd';
+  d.className = 'slide-up';
+  d.style.cssText = 'display:flex;gap:9px;align-items:flex-start;';
+  d.innerHTML = `
+    <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#F59E0B,#F97316);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🤖</div>
+    <div class="chat-bubble-ai" style="padding:12px 14px;display:flex;gap:5px;align-items:center;">
+      <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+    </div>`;
+  wrap.appendChild(d);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+function removeTyping() { document.getElementById('typingInd')?.remove(); }
+
+function addAIBubble(text, hasSQL, hasChart) {
+  const wrap = document.getElementById('chatMsgs');
+  const d = document.createElement('div');
+  d.className = 'slide-up';
+  d.style.cssText = 'display:flex;gap:9px;align-items:flex-start;';
+  const sqlId = `sql${++sqlN}`;
+  d.innerHTML = `
+    <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#F59E0B,#F97316);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px;">🤖</div>
+    <div style="flex:1;min-width:0;">
+      <div class="chat-bubble-ai" style="padding:11px 14px;font-size:12px;color:#0F172A;line-height:1.78;">${fmt(text)}
+        ${hasChart ? '<div style="margin-top:8px;font-size:11px;color:#059669;font-weight:600;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 5.4H19V19h-2.8v-8.6z"/></svg>→ 中央ダッシュボードにグラフを描画しました</div>' : ''}
+      </div>
+      ${hasSQL ? buildSQLAccordion(sqlId) : ''}
+    </div>`;
+  wrap.appendChild(d);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function buildSQLAccordion(id) {
+  return `
+    <div style="margin-top:7px;">
+      <button onclick="toggleSQL('${id}')" style="display:flex;align-items:center;gap:6px;padding:5px 11px;background:#1E293B;border:1px solid rgba(255,255,255,0.08);border-radius:8px;font-size:11px;color:#94A3B8;cursor:pointer;font-family:monospace;letter-spacing:0.03em;transition:background 0.15s;" onmouseover="this.style.background='#263548'" onmouseout="this.style.background='#1E293B'">
+        <span id="${id}_ic">▶</span>
+        <span>SQLコードを表示</span>
+        <span style="margin-left:6px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);padding:1px 7px;border-radius:4px;font-size:9.5px;color:#6EE7B7;font-weight:600;">AI自動生成</span>
+      </button>
+      <div id="${id}" style="display:none;margin-top:5px;background:#0F172A;border:1px solid rgba(255,255,255,0.07);border-radius:11px;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:10.5px;color:#64748B;font-family:monospace;">query.sql — Databricks SQL</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:10px;color:#4ADE80;font-family:monospace;">● 実行可能</span>
+            <button onclick="copySQL(event)" style="font-size:10px;color:#64748B;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);border-radius:5px;padding:2px 8px;cursor:pointer;font-family:inherit;transition:all 0.15s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#64748B'">コピー</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;padding:12px 14px;max-height:260px;overflow-y:auto;">
+          <pre style="margin:0;color:rgba(226,232,240,0.88);">${esc(SQL_CODE)}</pre>
+        </div>
+      </div>
+    </div>`;
+}
+function toggleSQL(id) {
+  const el = document.getElementById(id);
+  const ic = document.getElementById(id + '_ic');
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? 'block' : 'none';
+  ic.textContent = hidden ? '▼' : '▶';
+}
+function copySQL(e) {
+  navigator.clipboard?.writeText(SQL_CODE).catch(() => {});
+  e.target.textContent = '✓ コピー済';
+  setTimeout(() => { e.target.textContent = 'コピー'; }, 2000);
+}
+function clearChat() {
+  const wrap = document.getElementById('chatMsgs');
+  const kids = Array.from(wrap.children);
+  kids.slice(1).forEach(k => k.remove());
+}
+
+// pulse animation for header dot
+const s = document.createElement('style');
+s.textContent = '@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}';
+document.head.appendChild(s);
+</script>
+</body>
+</html>
