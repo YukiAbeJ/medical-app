@@ -1,0 +1,26 @@
+# 証明書・秘密鍵（絶対にコミットしない）
+*.pem
+*.key
+
+# Cloudflareログ
+cloudflare_tunnel.log
+
+# ローカル用バッチ（任意）
+open_firewall_8080.bat
+start_share.bat
+start_share_dashboard.bat
+check_share_url.bat
+stop_share_dashboard.bat
+_netlify_deploy.bat
+
+# 患者データ・CSVファイル（GitHubに上げない）
+*.csv
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# OS
+.DS_Store
+Thumbs.db
