@@ -186,10 +186,13 @@ def load_merged(uploaded_bytes: Optional[bytes] = None) -> Tuple[pd.DataFrame, L
     for d in _SEARCH_DIRS:
         if not os.path.isdir(d):
             continue
-        for p in _glob.glob(os.path.join(d, '*.csv')):
-            fname = os.path.basename(p)
-            if fname not in path_map:
-                path_map[fname] = p
+        try:
+            entries = os.listdir(d)
+        except Exception:
+            continue
+        for fname in entries:
+            if fname.lower().endswith('.csv') and fname not in path_map:
+                path_map[fname] = os.path.join(d, fname)
 
     raw_dfs: Dict[str, pd.DataFrame] = {}
 
