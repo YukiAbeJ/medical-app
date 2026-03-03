@@ -14,8 +14,11 @@ def _ensure(*pkgs):
         try:
             importlib.import_module(mod)
         except ImportError:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', pkg, '-q'],
-                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            try:
+                subprocess.check_call([sys.executable, '-m', 'pip', 'install', pkg, '-q'],
+                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass  # requirements.txt で管理されている場合はスキップ
 
 _ensure('pandas', 'streamlit', 'plotly', 'numpy')
 
