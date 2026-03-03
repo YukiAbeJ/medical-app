@@ -563,14 +563,31 @@ st.markdown(f"""
 df_all, _files = load_merged()
 
 if df_all.empty:
-    st.error('⚠️ 対象CSVファイルが見つかりません。サイドバーからアップロードしてください。')
+    st.markdown(f"""
+<div style="max-width:560px;margin:60px auto 0;text-align:center;">
+  <div style="font-size:52px;margin-bottom:16px;">📂</div>
+  <div style="font-size:22px;font-weight:800;color:{P['navy']};margin-bottom:8px;">
+    CSVファイルをアップロードしてください
+  </div>
+  <div style="font-size:13px;color:{P['muted']};margin-bottom:32px;line-height:1.7;">
+    村上市フレイル検診データ（CSV形式）をアップロードすると<br>
+    分析ダッシュボードが表示されます。<br>
+    複数ファイルは自動でIDをキーに統合されます。
+  </div>
+</div>
+""", unsafe_allow_html=True)
+    up = st.file_uploader(
+        'CSVファイルをここにドラッグ＆ドロップ、またはクリックして選択',
+        type=['csv'],
+        label_visibility='visible',
+    )
     with st.sidebar:
-        up = st.file_uploader('CSVをアップロード', type=['csv'])
+        st.file_uploader('CSVをアップロード', type=['csv'], key='_side_up', label_visibility='collapsed')
     if up is None:
         st.stop()
     df_all, _files = load_merged(uploaded_bytes=up.read())
     if df_all.empty:
-        st.error('ファイルの読み込みに失敗しました。')
+        st.error('ファイルの読み込みに失敗しました。形式を確認してください。')
         st.stop()
 
 
