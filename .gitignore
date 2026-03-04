@@ -13,6 +13,9 @@ check_share_url.bat
 stop_share_dashboard.bat
 _netlify_deploy.bat
 
+# 患者データ・CSVファイル（GitHubに上げない）
+*.csv
+
 # Python
 __pycache__/
 *.pyc
