@@ -323,11 +323,14 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         if _alias in merged.columns and _canon not in merged.columns:
             merged = merged.rename(columns={_alias: _canon})
     # 性別列が存在しない場合、含む列を探してリネーム
-    if '性別' not in merged.columns:
-        _sex_cands = [c for c in merged.columns
-                      if '性別' in str(c) or (len(str(c)) <= 4 and '性' in str(c) and '別' in str(c))]
-        if _sex_cands:
-            merged = merged.rename(columns={_sex_cands[0]: '性別'})
+    # 性別列が複数ある場合（性別__f1 等）、有効な値を持つ列を '性別' として使う
+    _sex_cands = [c for c in merged.columns
+                  if '性別' in str(c) or (len(str(c)) <= 4 and '性' in str(c) and '別' in str(c))]
+    if _sex_cands:
+        # 最もNaNが少ない列を選ぶ
+        _best_sex = min(_sex_cands, key=lambda c: merged[c].isna().sum())
+        if _best_sex != '性別':
+            merged['性別'] = merged[_best_sex]
 
     # 性別はラベル生成のため数値変換前の原値を保存しておく
     _sex_orig = merged['性別'].copy() if '性別' in merged.columns else None
@@ -836,9 +839,18 @@ if df_all.empty and _STATS is None:
                 # 性別診断
                 if '性別_ラベル' in df_all.columns:
                     _sv = df_all['性別_ラベル'].value_counts()
-                    st.caption(f"✅ 性別認識: 男性 {_sv.get('男性',0)}名 ／ 女性 {_sv.get('女性',0)}名")
+                    _nm, _nf = _sv.get('男性', 0), _sv.get('女性', 0)
+                    if _nm == 0 and _nf == 0:
+                        # 値が認識されなかった → 実際の値を表示
+                        _raw = df_all['性別'].dropna().unique().tolist()[:8] if '性別' in df_all.columns else []
+                        st.caption(f"❌ 性別列の値が未対応: {_raw}")
+                        # 性別_ラベルを持つ関連列を全部探す
+                        _sex_cols = [c for c in df_all.columns if '性別' in str(c)]
+                        st.caption(f"　性別関連列: {_sex_cols[:10]}")
+                    else:
+                        st.caption(f"✅ 性別認識: 男性 {_nm}名 ／ 女性 {_nf}名")
                 elif '性別' in df_all.columns:
-                    _raw = df_all['性別'].dropna().unique().tolist()[:5]
+                    _raw = df_all['性別'].dropna().unique().tolist()[:8]
                     st.caption(f"❌ 性別未認識 — 性別列の値: {_raw}（1/2 または 男性/女性 が必要）")
                 else:
                     st.caption("❌ 性別列が見つかりません")
