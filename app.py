@@ -266,9 +266,14 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     # ── マスターファイル特定 ──
     def _score(fname: str, df: pd.DataFrame) -> int:
         cols = list(df.columns)
-        s = len(cols)
-        if any('性別' in c for c in cols): s += 50
-        if any('年齢' in c for c in cols): s += 50
+        # flag_ 列を多数持つファイルは処理済み出力ファイルなのでマスター候補から降格
+        flag_count = sum(1 for c in cols if str(c).startswith('flag_'))
+        if flag_count >= 3:
+            return -9999
+        s = len(df)          # 行数を優先（大きいファイルをマスターに）
+        s += len(cols) * 2
+        if any('性別' in c for c in cols): s += 200
+        if any('年齢' in c for c in cols): s += 200
         return s
 
     master_fname = max(raw_dfs, key=lambda f: _score(f, raw_dfs[f]))
