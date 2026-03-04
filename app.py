@@ -333,10 +333,10 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         _has_1 = any(abs(v - 1) < 0.01 for v in _uniq)    # 1 or 1.0 が存在
         if _has_1 and _has_2:                              # 1=男性, 2=女性 形式
             merged['性別_ラベル'] = np.where(
-                _sex == 2, '女性', np.where(_sex == 1, '男性', np.nan))
+                _sex == 2, '女性', np.where(_sex == 1, '男性', None))
         elif _has_1 and _has_0:                            # 1=男性, 0=女性 形式
             merged['性別_ラベル'] = np.where(
-                _sex == 0, '女性', np.where(_sex == 1, '男性', np.nan))
+                _sex == 0, '女性', np.where(_sex == 1, '男性', None))
         else:
             # 文字列形式（数値変換で全NaN → 原値の文字列でマッピング）
             _str_map = {'男性': '男性', '女性': '女性', '男': '男性', '女': '女性',
@@ -420,8 +420,8 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         _score   = _item_df.fillna(0).sum(axis=1)
         _score[~_has_any] = np.nan                        # 未回答者はNaN
         merged['簡易フレイルスコア'] = _score
-        merged['flag_フレイル判定']     = np.where(_has_any, _score >= 3,           np.nan)
-        merged['flag_プレフレイル判定'] = np.where(_has_any, (_score >= 1) & (_score < 3), np.nan)
+        merged['flag_フレイル判定']     = np.where(_has_any, _score >= 3,           None)
+        merged['flag_プレフレイル判定'] = np.where(_has_any, (_score >= 1) & (_score < 3), None)
 
     # 握力低下（参考指標として保持、AWGS2019には使用しない）
     _grip_col = next(
