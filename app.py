@@ -183,7 +183,7 @@ def _is_skip_file(df: Optional[pd.DataFrame]) -> bool:
 
 
 @st.cache_data(show_spinner='全CSVデータを統合中...')
-def load_merged(uploaded_bytes: Optional[bytes] = None) -> Tuple[pd.DataFrame, List[str]]:
+def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, List[str]]:
     # ── ファイル収集（重複除外）──
     path_map: Dict[str, str] = {}
     for d in _SEARCH_DIRS:
@@ -211,17 +211,17 @@ def load_merged(uploaded_bytes: Optional[bytes] = None) -> Tuple[pd.DataFrame, L
                 df[c] = pd.to_numeric(df[c], errors='coerce')
         raw_dfs[fname] = df
 
-    if uploaded_bytes:
-        enc = 'utf-8-sig' if uploaded_bytes.startswith(b'\xef\xbb\xbf') else 'cp932'
+    for _uidx, _ubytes in enumerate(uploaded_files or []):
+        enc = 'utf-8-sig' if _ubytes.startswith(b'\xef\xbb\xbf') else 'cp932'
         try:
-            df = pd.read_csv(io.BytesIO(uploaded_bytes), encoding=enc, low_memory=False)
+            df = pd.read_csv(io.BytesIO(_ubytes), encoding=enc, low_memory=False)
             if not _is_skip_file(df):
                 df = _normalize_id_col(df)
                 if df is not None:
                     for c in df.columns:
                         if c != 'ID':
                             df[c] = pd.to_numeric(df[c], errors='coerce')
-                    raw_dfs['__upload__'] = df
+                    raw_dfs[f'__upload_{_uidx}__'] = df
         except Exception:
             pass
 
@@ -700,16 +700,14 @@ if df_all.empty and _STATS is None:
   </div>
 </div>
 """, unsafe_allow_html=True)
-    up = st.file_uploader(
-        'CSVファイルをここにドラッグ＆ドロップ、またはクリックして選択',
+    ups = st.file_uploader(
+        'CSVファイルをここにドラッグ＆ドロップ（複数ファイル同時選択可）',
         type=['csv'],
-        label_visibility='visible',
+        accept_multiple_files=True,
     )
-    with st.sidebar:
-        st.file_uploader('CSVをアップロード', type=['csv'], key='_side_up', label_visibility='collapsed')
-    if up is None:
+    if not ups:
         st.stop()
-    df_all, _files = load_merged(uploaded_bytes=up.read())
+    df_all, _files = load_merged(uploaded_files=tuple(f.read() for f in ups))
     if df_all.empty:
         st.error('ファイルの読み込みに失敗しました。形式を確認してください。')
         st.stop()
