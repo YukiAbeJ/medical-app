@@ -900,9 +900,9 @@ if not df_all.empty:
                     _n = int(df_all[_found[0]].notna().sum())
                     st.caption(f"  ✅ {_fi_name}: `{_found[0]}` ({_n}名に値あり)")
                 else:
-                    # 類似列を探す
-                    _similar = [c for c in df_all.columns if any(k in str(c) for k in _fi_name)][:3]
-                    st.caption(f"  ❌ {_fi_name}: 列なし　類似: {_similar}")
+                    _kw = {'体重減少': ['体重'], '疲れ': ['疲れ','疲労'], '活動不足': ['運動','活動'], '歩行低下': ['歩行','4m']}
+                    _similar = [c for c in df_all.columns if any(k in str(c) for k in _kw.get(_fi_name, [_fi_name]))][:5]
+                    st.caption(f"  ❌ {_fi_name}: 列なし　実際の列名: {_similar}")
         else:
             st.caption("❌ フレイル判定列が計算されていません（項目列が見つからない）")
 
