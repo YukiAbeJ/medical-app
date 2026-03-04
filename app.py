@@ -301,6 +301,12 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         dup = {c: f'{c}__f{_idx}' for c in df.columns
                if c != 'ID' and c in merged.columns}
         df = df.rename(columns=dup)
+        # ID型を統一してからJOIN（int/float混在によるマッチ失敗を防ぐ）
+        try:
+            merged['ID'] = pd.to_numeric(merged['ID'], errors='coerce').astype('Int64')
+            df['ID']     = pd.to_numeric(df['ID'],     errors='coerce').astype('Int64')
+        except Exception:
+            pass
         _before_n = len(merged)
         merged = merged.merge(df, on='ID', how='left')
         # ID突合診断：ジョイン後に追加列がすべてNaNなら突合失敗
