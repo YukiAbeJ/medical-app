@@ -217,6 +217,18 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         enc = 'utf-8-sig' if _ubytes.startswith(b'\xef\xbb\xbf') else 'cp932'
         try:
             df = pd.read_csv(io.BytesIO(_ubytes), encoding=enc, low_memory=False)
+            # ── _read_csv_safe と同じ正規化をアップロードファイルにも適用 ──
+            _non_unnamed = [c for c in df.columns if not str(c).startswith('Unnamed:')]
+            _is_num_c = lambda c: bool(re.match(r'^[\d\s.]+$', str(c).strip()))
+            if (len(_non_unnamed) > 1 and
+                    sum(_is_num_c(c) for c in _non_unnamed) / len(_non_unnamed) > 0.85):
+                df = pd.read_csv(io.BytesIO(_ubytes), encoding=enc, header=1, low_memory=False)
+            def _cc(c: str) -> str:
+                parts = [p.strip() for p in str(c).split('\n') if p.strip()]
+                return '_'.join(parts[:2]) if len(parts) >= 2 else (parts[0] if parts else str(c))
+            df.columns = [_cc(c) for c in df.columns]
+            df = df.loc[:, ~df.columns.duplicated(keep='first')]
+            # ────────────────────────────────────────────────────────────────
             _orig_cols = list(df.columns)
             _orig_rows = len(df)
             if _is_skip_file(df):
@@ -269,7 +281,21 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         dup = {c: f'{c}__f{_idx}' for c in df.columns
                if c != 'ID' and c in merged.columns}
         df = df.rename(columns=dup)
+        _before_n = len(merged)
         merged = merged.merge(df, on='ID', how='left')
+        # ID突合診断：ジョイン後に追加列がすべてNaNなら突合失敗
+        _join_cols = [c for c in df.columns if c != 'ID']
+        _matched = 0
+        if _join_cols:
+            _matched = int(merged[_join_cols[0]].notna().sum())
+        # _warnにジョイン結果を追記（アップロードファイルのみ対象）
+        if fname.startswith('__upload_'):
+            _uidx_str = fname.replace('__upload_', '').replace('__', '')
+            for _wi, _w in enumerate(_warn):
+                if _w.get('status') == 'ok' and _w['file'] == f'ファイル #{int(_uidx_str)+1}':
+                    _warn[_wi]['join_matched'] = _matched
+                    _warn[_wi]['join_total'] = _before_n
+                    break
         used.append(fname)
 
     # 重複列を除去（マスターの列を優先して保持）
@@ -751,6 +777,12 @@ if df_all.empty and _STATS is None:
                     st.caption(f"　行数: {_w['rows']}行 ／ 列数: {len(_w['cols'])}列")
                 if _w.get('id_col'):
                     st.caption(f"　ID列として使用: `{_w['id_col']}`")
+                if 'join_matched' in _w:
+                    _jm, _jt = _w['join_matched'], _w['join_total']
+                    if _jm == 0:
+                        st.caption(f"　⚠️ ID突合: 0/{_jt}件マッチ → IDの形式が一致していません")
+                    else:
+                        st.caption(f"　🔗 ID突合: {_jm}/{_jt}件マッチ")
                 if _w['cols']:
                     st.caption(f"　検出列: {', '.join(_w['cols'][:30])}")
             if not df_all.empty:
