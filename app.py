@@ -302,6 +302,9 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     merged = merged.loc[:, ~merged.columns.duplicated(keep='first')]
 
     # ── 型・派生列 ──
+    # 性別はラベル生成のため数値変換前の原値を保存しておく
+    _sex_orig = merged['性別'].copy() if '性別' in merged.columns else None
+
     for c in ['性別', '年齢']:
         if c in merged.columns:
             s = merged[c]
@@ -318,18 +321,23 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         merged['年齢階級'] = pd.cut(
             _age, bins=AGE_BINS, labels=AGE_LABELS, right=True
         )
-    if '性別' in merged.columns:
-        _sex = merged['性別']
-        # 値形式を自動検出: 1/0, 1/2, 文字列('男性'/'女性'/'男'/'女') すべて対応
+    if '性別' in merged.columns and _sex_orig is not None:
+        _sex = merged['性別']  # pd.to_numeric 済み（文字列→NaN）
         _uniq = set(_sex.dropna().unique())
-        if _uniq <= {1, 2, 1.0, 2.0}:            # 1=男性, 2=女性 形式
+        # 値2があれば 1/2 形式、値0があれば 0/1 形式、それ以外は文字列形式
+        _has_2 = bool(_uniq & {2, 2.0})
+        _has_0 = bool(_uniq & {0, 0.0})
+        if _has_2:                                  # 1=男性, 2=女性 形式
             merged['性別_ラベル'] = _sex.map({1: '男性', 2: '女性', 1.0: '男性', 2.0: '女性'})
-        elif _uniq <= {0, 1, 0.0, 1.0}:           # 1=男性, 0=女性 形式
+        elif _has_0:                                # 1=男性, 0=女性 形式
             merged['性別_ラベル'] = _sex.map({1: '男性', 0: '女性', 1.0: '男性', 0.0: '女性'})
-        else:                                       # 文字列形式
+        else:
+            # 文字列形式（または数値変換で全NaN → 原値から再試行）
             _str_map = {'男性': '男性', '女性': '女性', '男': '男性', '女': '女性',
-                        'M': '男性', 'F': '女性', 'm': '男性', 'f': '女性'}
-            merged['性別_ラベル'] = _sex.astype(str).map(_str_map)
+                        'M': '男性', 'F': '女性', 'm': '男性', 'f': '女性',
+                        '1': '男性', '2': '女性', '0': '女性',
+                        '1.0': '男性', '2.0': '女性', '0.0': '女性'}
+            merged['性別_ラベル'] = _sex_orig.astype(str).map(_str_map)
 
     # ── リスクフラグ ──
     def _fl(col: str, op: str, val) -> 'pd.Series':
@@ -350,10 +358,10 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     merged['flag_MCI疑い']           = _fl('MoCA総得点', '<=', 25)
     merged['flag_嚥下機能低下リスク'] = _fl('EAT10総得点', '>=', 3)
 
-    if 'SMI' in merged.columns and '性別' in merged.columns:
+    if 'SMI' in merged.columns and '性別_ラベル' in merged.columns:
         merged['flag_サルコペニア疑い'] = (
-            ((merged['性別'] == 1) & (merged['SMI'] < 7.0)) |
-            ((merged['性別'] == 0) & (merged['SMI'] < 5.7))
+            ((merged['性別_ラベル'] == '男性') & (merged['SMI'] < 7.0)) |
+            ((merged['性別_ラベル'] == '女性') & (merged['SMI'] < 5.7))
         )
     else:
         merged['flag_サルコペニア疑い'] = False
@@ -421,11 +429,14 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
                 _grip_col = gc
                 break
     if _grip_col:
-        _sex = merged.get('性別', pd.Series(np.nan, index=merged.index))
-        merged['flag_握力低下'] = (
-            ((_sex == 1) & (pd.to_numeric(merged[_grip_col], errors='coerce') < 28)) |
-            ((_sex == 0) & (pd.to_numeric(merged[_grip_col], errors='coerce') < 18))
-        )
+        _grip = pd.to_numeric(merged[_grip_col], errors='coerce')
+        if '性別_ラベル' in merged.columns:
+            merged['flag_握力低下'] = (
+                ((merged['性別_ラベル'] == '男性') & (_grip < 28)) |
+                ((merged['性別_ラベル'] == '女性') & (_grip < 18))
+            )
+        else:
+            merged['flag_握力低下'] = _grip < 26  # 性別不明時は中間閾値
     # AWGS2019確定サルコペニア: 低SMI + (歩行速度低下 OR 椅子立ち上がり低下)
     # ※ 握力は参考情報として別途 flag_握力低下 を保持
     merged['flag_サルコペニア確定'] = merged['flag_AWGS2019サルコペニア'].copy()
@@ -564,8 +575,8 @@ def build_stats(df: pd.DataFrame) -> dict:
             'title': '村上市 総合フレイル分析ダッシュボード 2025',
             'generated_at': str(_date.today()),
             'N': N,
-            'n_m': int((df['性別'] == 1).sum()) if '性別' in df.columns else 0,
-            'n_f': int((df['性別'] == 0).sum()) if '性別' in df.columns else 0,
+            'n_m': int((df['性別_ラベル'] == '男性').sum()) if '性別_ラベル' in df.columns else 0,
+            'n_f': int((df['性別_ラベル'] == '女性').sum()) if '性別_ラベル' in df.columns else 0,
         },
         'kpi': kpi_out,
         'frail': {
@@ -1017,8 +1028,8 @@ if N == 0:
 
 
 # ─── 7. ヘッダーバナー ───────────────────────────────────────────────────────
-n_m = int((df_all['性別'] == 1).sum()) if '性別' in df_all.columns else 0
-n_f = int((df_all['性別'] == 0).sum()) if '性別' in df_all.columns else 0
+n_m = int((df_all['性別_ラベル'] == '男性').sum()) if '性別_ラベル' in df_all.columns else 0
+n_f = int((df_all['性別_ラベル'] == '女性').sum()) if '性別_ラベル' in df_all.columns else 0
 
 _logo_html = (
     f'<img src="data:image/png;base64,{_HAL_LOGO_B64}" '
@@ -1739,7 +1750,7 @@ with tab1:
 # TAB 2 ─ DETAILED ANALYSIS
 # ══════════════════════════════════════════════════════════════════════════════
 with tab2:
-    if not avail_names:
+    if not all_tab_names:
         st.info('分析可能な指標データがありません。')
     else:
         st.markdown('<div class="sec">📈 性別・年齢階級別 クロス集計分析</div>',
@@ -1792,8 +1803,11 @@ with tab2:
 
         if not _age_labels_shown:
             st.info('年齢階級データがありません。')
+        elif not any(p > 0 for p in _m_pcts + _f_pcts):
+            st.info('性別データが認識できません。CSVの「性別」列の値（1/2 または 男性/女性）を確認してください。')
         else:
-            _max_pct = max(max(_m_pcts + _f_pcts + [1]), 5)
+            _valid_pcts = [p for p in _m_pcts + _f_pcts if p > 0]
+            _max_pct = max(max(_valid_pcts + [1]), 5)
             _axis_max = min(100, _max_pct * 1.35 + 5)
 
             # 男女カラー定数（清潔感のあるスチールブルー × ダスティローズ）
@@ -1908,7 +1922,7 @@ with tab2:
                 )
 
         # 全指標 男女別比較
-        if '性別_ラベル' in df.columns:
+        if '性別_ラベル' in df.columns and df['性別_ラベル'].notna().any():
             st.markdown(
                 '<div class="sec" style="margin-top:24px;">📊 全指標 男女別リスク率比較</div>',
                 unsafe_allow_html=True
