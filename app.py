@@ -392,16 +392,21 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
 
     # ── リスクフラグ ──
     def _fl(col: str, op: str, val) -> 'pd.Series':
+        """base列がNaN/列なしの場合はフラグもNaN（測定なし）として返す。
+        NaN=未測定, True=リスクあり, False=リスクなし の3値で正確に区別。
+        """
+        _nan_s = pd.Series(np.nan, index=merged.index)
         if col not in merged.columns:
-            return pd.Series(False, index=merged.index)
-        s = merged[col]
+            return _nan_s  # 列なし → 全員NaN（測定なし）
+        s = pd.to_numeric(merged[col], errors='coerce')
         if isinstance(s, pd.DataFrame):   # 重複列が残った場合の保険
             s = s.iloc[:, 0]
-        if op == '<':  return s < val
-        if op == '<=': return s <= val
-        if op == '>=': return s >= val
-        if op == '>':  return s > val
-        return pd.Series(False, index=merged.index)
+        if op == '<':  r = s < val
+        elif op == '<=': r = s <= val
+        elif op == '>=': r = s >= val
+        elif op == '>':  r = s > val
+        else: return _nan_s
+        return r.where(s.notna())  # NaN where base is NaN → 測定なしと区別
 
     merged['flag_歩行速度低下']      = _fl('歩行速度_mps', '<', 1.0)
     merged['flag_下肢筋力低下']      = _fl('5回立ち上がり_秒', '>=', 12.0)
@@ -418,9 +423,10 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         merged['flag_サルコペニア疑い'] = False
 
     # 仮のAWGS2019（歩行速度 or 椅子立ち上がりのみ）→ 握力が揃ったら後で上書き
+    # fillna(False) でNaN（測定なし）を除外してboolean演算を安全化
     merged['flag_AWGS2019サルコペニア'] = (
-        merged['flag_サルコペニア疑い'] &
-        (merged['flag_歩行速度低下'] | merged['flag_下肢筋力低下'])
+        merged['flag_サルコペニア疑い'].fillna(False) &
+        (merged['flag_歩行速度低下'].fillna(False) | merged['flag_下肢筋力低下'].fillna(False))
     )
 
     if 'J_CHS' in merged.columns:
@@ -518,7 +524,8 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
 
     base_flags = [f'flag_{k}' for k in CUTOFFS if f'flag_{k}' in merged.columns]
     if base_flags:
-        merged['リスク重複数'] = merged[base_flags].astype(float).sum(axis=1)
+        # fillna(0) でNaN（測定なし）を除外し、実リスク該当数のみ集計
+        merged['リスク重複数'] = merged[base_flags].fillna(False).astype(float).sum(axis=1)
 
     return merged, used, _warn
 
@@ -1927,8 +1934,21 @@ with tab2:
 
         if not _age_labels_shown:
             st.info('年齢階級データがありません。')
-        elif not any(p > 0 for p in _m_pcts + _f_pcts):
-            st.info('性別データが認識できません。CSVの「性別」列の値（1/2 または 男性/女性）を確認してください。')
+        elif sum(_t_ns) == 0:
+            # 有効N=0 → 測定データ不足 or 性別データなし
+            _orig_col = _sel_cfg.get('col') or ''
+            if base_col and base_col in df.columns and df[base_col].notna().sum() == 0:
+                st.info(f'「{sel_flag}」の測定データ（{base_col}）が見つかりません。'
+                        '対応するCSVファイルが正しく読み込まれているか、診断パネルで確認してください。')
+            elif base_col and base_col not in df.columns:
+                st.info(f'「{sel_flag}」の測定列（{base_col}）がデータに存在しません。')
+            elif not base_col and flag_col in df.columns and df[flag_col].notna().sum() == 0:
+                # base_col=None = 列がdfにない → flag も全NaN
+                _disp_col = _orig_col if _orig_col else flag_col
+                st.info(f'「{sel_flag}」の測定データ（{_disp_col}）が見つかりません。'
+                        '対応するCSVファイルが正しく読み込まれているか、診断パネルで確認してください。')
+            else:
+                st.info('性別データが認識できません。CSVの「性別」列の値（1/2 または 男性/女性）を確認してください。')
         else:
             _valid_pcts = [p for p in _m_pcts + _f_pcts if p > 0]
             _max_pct = max(max(_valid_pcts + [1]), 5)
@@ -2036,18 +2056,23 @@ with tab2:
                         sub   = df[(df['性別_ラベル'] == sl) & (df['年齢階級'] == al)]
                         valid = sub[base_col].notna() if base_col else sub[flag_col].notna()
                         n_v   = int(valid.sum())
-                        n_r   = int(sub.loc[valid, flag_col].astype(bool).sum()) if n_v > 0 else 0
+                        if n_v == 0:
+                            continue  # 測定データなし → 行を省略
+                        n_r   = int(sub.loc[valid, flag_col].astype(bool).sum())
                         rows2.append({
                             '性別': sl, '年齢階級': al, 'N': n_v, 'リスク数': n_r,
-                            '割合(%)': round(n_r / n_v * 100, 1) if n_v > 0 else None,
+                            '割合(%)': round(n_r / n_v * 100, 1),
                         })
-                st.dataframe(
-                    pd.DataFrame(rows2), use_container_width=True, hide_index=True,
-                    column_config={
-                        '割合(%)': st.column_config.ProgressColumn(
-                            '割合(%)', min_value=0, max_value=100, format='%.1f%%'),
-                    },
-                )
+                if not rows2:
+                    st.info('有効な測定データがありません。')
+                else:
+                    st.dataframe(
+                        pd.DataFrame(rows2), use_container_width=True, hide_index=True,
+                        column_config={
+                            '割合(%)': st.column_config.ProgressColumn(
+                                '割合(%)', min_value=0, max_value=100, format='%.1f%%'),
+                        },
+                    )
 
         # 全指標 男女別比較
         if '性別_ラベル' in df.columns and df['性別_ラベル'].notna().any():
