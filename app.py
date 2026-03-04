@@ -302,6 +302,10 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
                 if _w.get('status') == 'ok' and _w['file'] == f'ファイル #{int(_uidx_str)+1}':
                     _warn[_wi]['join_matched'] = _matched
                     _warn[_wi]['join_total'] = _before_n
+                    # IDサンプルを記録（不一致デバッグ用）
+                    if _matched == 0:
+                        _warn[_wi]['master_ids'] = sorted(merged['ID'].dropna().astype(int).tolist())[:5]
+                        _warn[_wi]['file_ids']   = sorted(df['ID'].dropna().astype(int).tolist())[:5]
                     break
         used.append(fname)
 
@@ -816,6 +820,9 @@ if df_all.empty and _STATS is None:
                     _jm, _jt = _w['join_matched'], _w['join_total']
                     if _jm == 0:
                         st.caption(f"　⚠️ ID突合: 0/{_jt}件マッチ → IDの形式が一致していません")
+                        if 'master_ids' in _w:
+                            st.caption(f"　マスターID例: {_w['master_ids']}")
+                            st.caption(f"　このファイルID例: {_w['file_ids']}")
                     else:
                         st.caption(f"　🔗 ID突合: {_jm}/{_jt}件マッチ")
                 if _w['cols']:
