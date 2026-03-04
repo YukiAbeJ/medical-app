@@ -869,7 +869,7 @@ if df_all.empty and _STATS is None:
 
 # ── ローカル自動読み込み時の診断パネル（アップロード不要パス）──
 if not df_all.empty:
-    with st.expander('📋 データ読み込み診断', expanded=False):
+    with st.expander('📋 データ読み込み診断', expanded=True):
         st.caption(f"統合後: {len(df_all)}名 ／ {len(df_all.columns)}列")
         if '性別_ラベル' in df_all.columns:
             _sv2 = df_all['性別_ラベル'].value_counts()
