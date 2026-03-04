@@ -183,7 +183,7 @@ def _is_skip_file(df: Optional[pd.DataFrame]) -> bool:
 
 
 @st.cache_data(show_spinner='全CSVデータを統合中...')
-def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, List[str]]:
+def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, List[str], List[dict]]:
     # ── ファイル収集（重複除外）──
     path_map: Dict[str, str] = {}
     for d in _SEARCH_DIRS:
@@ -198,6 +198,7 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
                 path_map[fname] = os.path.join(d, fname)
 
     raw_dfs: Dict[str, pd.DataFrame] = {}
+    _warn: List[dict] = []
 
     for fname, path in path_map.items():
         df = _read_csv_safe(path)
@@ -212,21 +213,41 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         raw_dfs[fname] = df
 
     for _uidx, _ubytes in enumerate(uploaded_files or []):
+        _label = f'ファイル #{_uidx + 1}'
         enc = 'utf-8-sig' if _ubytes.startswith(b'\xef\xbb\xbf') else 'cp932'
         try:
             df = pd.read_csv(io.BytesIO(_ubytes), encoding=enc, low_memory=False)
-            if not _is_skip_file(df):
-                df = _normalize_id_col(df)
-                if df is not None:
-                    for c in df.columns:
+            _orig_cols = list(df.columns)
+            _orig_rows = len(df)
+            if _is_skip_file(df):
+                _warn.append({'file': _label, 'status': 'skip',
+                              'reason': 'スキップ（氏名・測定日列あり or 行数3未満）',
+                              'cols': _orig_cols, 'rows': _orig_rows, 'id_col': None})
+            else:
+                df2 = _normalize_id_col(df)
+                if df2 is None:
+                    _warn.append({'file': _label, 'status': 'no_id',
+                                  'reason': 'ID列が見つかりません。列名にID・id・ID_xxxが必要です。',
+                                  'cols': _orig_cols, 'rows': _orig_rows, 'id_col': None})
+                else:
+                    _id_col_orig = next((c for c in _orig_cols
+                                         if re.search(r'\bID\b|^ID_|_ID$', str(c), re.IGNORECASE)
+                                         or str(c).strip().lower() == 'id'), _orig_cols[0])
+                    for c in df2.columns:
                         if c != 'ID':
-                            df[c] = pd.to_numeric(df[c], errors='coerce')
-                    raw_dfs[f'__upload_{_uidx}__'] = df
-        except Exception:
-            pass
+                            df2[c] = pd.to_numeric(df2[c], errors='coerce')
+                    raw_dfs[f'__upload_{_uidx}__'] = df2
+                    _warn.append({'file': _label, 'status': 'ok',
+                                  'reason': 'OK',
+                                  'cols': list(df2.columns), 'rows': len(df2),
+                                  'id_col': _id_col_orig})
+        except Exception as _e:
+            _warn.append({'file': _label, 'status': 'error',
+                          'reason': f'読み込みエラー: {_e}',
+                          'cols': [], 'rows': 0, 'id_col': None})
 
     if not raw_dfs:
-        return pd.DataFrame(), []
+        return pd.DataFrame(), [], _warn
 
     # ── マスターファイル特定 ──
     def _score(fname: str, df: pd.DataFrame) -> int:
@@ -411,7 +432,7 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     if base_flags:
         merged['リスク重複数'] = merged[base_flags].astype(float).sum(axis=1)
 
-    return merged, used
+    return merged, used, _warn
 
 
 def safe_pct(n: int, d: int) -> float:
@@ -694,7 +715,7 @@ st.markdown(f"""
 
 # ─── 5. データ読み込み ────────────────────────────────────────────────────────
 _STATS = load_stats_json()          # 集計JSONが存在すれば統計モードで起動
-df_all, _files = load_merged()
+df_all, _files, _load_warn = load_merged()
 
 if df_all.empty and _STATS is None:
     st.markdown(f"""
@@ -717,9 +738,36 @@ if df_all.empty and _STATS is None:
     )
     if not ups:
         st.stop()
-    df_all, _files = load_merged(uploaded_files=tuple(f.read() for f in ups))
+    _ubytes_list = tuple(f.read() for f in ups)
+    df_all, _files, _load_warn = load_merged(uploaded_files=_ubytes_list)
+
+    # ── 診断パネル ──
+    if _load_warn:
+        with st.expander('📋 ファイル読み込み診断', expanded=(df_all.empty)):
+            for _w in _load_warn:
+                _icon = {'ok': '✅', 'skip': '⚠️', 'no_id': '❌', 'error': '❌'}.get(_w['status'], '❓')
+                st.markdown(f"**{_icon} {_w['file']}** — {_w['reason']}")
+                if _w['rows']:
+                    st.caption(f"　行数: {_w['rows']}行 ／ 列数: {len(_w['cols'])}列")
+                if _w.get('id_col'):
+                    st.caption(f"　ID列として使用: `{_w['id_col']}`")
+                if _w['cols']:
+                    st.caption(f"　検出列: {', '.join(_w['cols'][:30])}")
+            if not df_all.empty:
+                st.markdown('---')
+                st.caption(f"統合後: {len(df_all)}名 ／ {len(df_all.columns)}列")
+                _all_indicators = {**CUTOFFS, **FUTURE_INDICATORS}
+                _missing = [n for n, cfg in _all_indicators.items()
+                            if cfg.get('col') and cfg['col'] not in df_all.columns]
+                _present = [n for n, cfg in _all_indicators.items()
+                            if cfg.get('col') and cfg['col'] in df_all.columns]
+                if _present:
+                    st.caption(f"✅ 表示可能な指標: {', '.join(_present)}")
+                if _missing:
+                    st.caption(f"⚠️ データ不足の指標: {', '.join(_missing)}")
+
     if df_all.empty:
-        st.error('ファイルの読み込みに失敗しました。形式を確認してください。')
+        st.error('ファイルの読み込みに失敗しました。診断パネルを確認してください。')
         st.stop()
 
 # stats.json がある場合は CSV なしで統計モード起動
