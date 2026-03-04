@@ -206,13 +206,18 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         df = _read_csv_safe(path)
         if _is_skip_file(df):
             continue
-        df = _normalize_id_col(df)
-        if df is None:
+        df2 = _normalize_id_col(df)
+        if df2 is None:
+            _warn.append({'file': fname, 'status': 'no_id',
+                          'reason': 'ID列が見つかりません',
+                          'cols': list(df.columns)[:20] if df is not None else [], 'rows': len(df) if df is not None else 0, 'id_col': None})
             continue
-        for c in df.columns:
+        for c in df2.columns:
             if c != 'ID':
-                df[c] = pd.to_numeric(df[c], errors='coerce')
-        raw_dfs[fname] = df
+                df2[c] = pd.to_numeric(df2[c], errors='coerce')
+        raw_dfs[fname] = df2
+        _warn.append({'file': fname, 'status': 'ok', 'reason': 'OK',
+                      'cols': list(df2.columns)[:30], 'rows': len(df2), 'id_col': 'ID'})
 
     for _uidx, _ubytes in enumerate(uploaded_files or []):
         _label = f'ファイル #{_uidx + 1}'
@@ -295,21 +300,19 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         _matched = 0
         if _join_cols:
             _matched = int(merged[_join_cols[0]].notna().sum())
-        # _warnにジョイン結果を追記（アップロードファイルのみ対象）
-        if fname.startswith('__upload_'):
-            _uidx_str = fname.replace('__upload_', '').replace('__', '')
-            for _wi, _w in enumerate(_warn):
-                if _w.get('status') == 'ok' and _w['file'] == f'ファイル #{int(_uidx_str)+1}':
-                    _warn[_wi]['join_matched'] = _matched
-                    _warn[_wi]['join_total'] = _before_n
-                    # IDサンプルを記録（不一致デバッグ用）
-                    if _matched == 0:
-                        try:
-                            _warn[_wi]['master_ids'] = merged['ID'].dropna().head(5).tolist()
-                            _warn[_wi]['file_ids']   = df['ID'].dropna().head(5).tolist()
-                        except Exception:
-                            pass
-                    break
+        # _warnにジョイン結果を追記（全ファイル対象）
+        for _wi, _w in enumerate(_warn):
+            _match_key = f'ファイル #{int(fname.replace("__upload_","").replace("__",""))+1}' if fname.startswith('__upload_') else fname
+            if _w.get('status') == 'ok' and _w['file'] == _match_key:
+                _warn[_wi]['join_matched'] = _matched
+                _warn[_wi]['join_total'] = _before_n
+                if _matched == 0 or _matched < _before_n * 0.8:
+                    try:
+                        _warn[_wi]['master_ids'] = merged['ID'].dropna().head(5).tolist()
+                        _warn[_wi]['file_ids']   = df['ID'].dropna().head(5).tolist()
+                    except Exception:
+                        pass
+                break
         used.append(fname)
 
     # 重複列を除去（マスターの列を優先して保持）
