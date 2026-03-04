@@ -867,6 +867,23 @@ if df_all.empty and _STATS is None:
         st.error('ファイルの読み込みに失敗しました。診断パネルを確認してください。')
         st.stop()
 
+# ── ローカル自動読み込み時の診断パネル（アップロード不要パス）──
+if not df_all.empty:
+    with st.expander('📋 データ読み込み診断', expanded=False):
+        st.caption(f"統合後: {len(df_all)}名 ／ {len(df_all.columns)}列")
+        if '性別_ラベル' in df_all.columns:
+            _sv2 = df_all['性別_ラベル'].value_counts()
+            _nm2, _nf2 = _sv2.get('男性', 0), _sv2.get('女性', 0)
+            if _nm2 == 0 and _nf2 == 0:
+                _raw2 = df_all['性別'].dropna().unique().tolist()[:8] if '性別' in df_all.columns else []
+                st.caption(f"❌ 性別列の値が未対応: {_raw2}")
+                _sc2 = [c for c in df_all.columns if '性別' in str(c)]
+                st.caption(f"　性別関連列: {_sc2[:10]}")
+            else:
+                st.caption(f"✅ 性別認識: 男性 {_nm2}名 ／ 女性 {_nf2}名")
+        else:
+            st.caption("❌ 性別列が見つかりません")
+
 # stats.json がある場合は CSV なしで統計モード起動
 if df_all.empty and _STATS is not None:
     import json as _json
