@@ -874,6 +874,18 @@ if df_all.empty and _STATS is None:
 if not df_all.empty:
     with st.expander('📋 データ読み込み診断', expanded=True):
         st.caption(f"統合後: {len(df_all)}名 ／ {len(df_all.columns)}列")
+        # ファイル別ID突合結果
+        for _w in _load_warn:
+            if 'join_matched' in _w:
+                _jm, _jt = _w['join_matched'], _w['join_total']
+                _pct = f"{_jm}/{_jt}"
+                if _jm < _jt * 0.9:
+                    st.caption(f"⚠️ {_w['file']}: {_pct}件マッチ")
+                    if 'master_ids' in _w:
+                        st.caption(f"　マスターID例: {_w['master_ids']}")
+                        st.caption(f"　このファイルID例: {_w['file_ids']}")
+                else:
+                    st.caption(f"✅ {_w['file']}: {_pct}件マッチ")
         if '性別_ラベル' in df_all.columns:
             _sv2 = df_all['性別_ラベル'].value_counts()
             _nm2, _nf2 = _sv2.get('男性', 0), _sv2.get('女性', 0)
