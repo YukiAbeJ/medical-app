@@ -304,6 +304,19 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     merged = merged.loc[:, ~merged.columns.duplicated(keep='first')]
 
     # ── 型・派生列 ──
+    # 列名の揺れ吸収（正規化で性_別・性 別 などになる場合に対応）
+    for _alias, _canon in [('性_別', '性別'), ('性 別', '性別'),
+                            ('年_齢', '年齢'), ('年 齢', '年齢'),
+                            ('ＳＭＩ', 'SMI'), ('ｓｍｉ', 'SMI')]:
+        if _alias in merged.columns and _canon not in merged.columns:
+            merged = merged.rename(columns={_alias: _canon})
+    # 性別列が存在しない場合、含む列を探してリネーム
+    if '性別' not in merged.columns:
+        _sex_cands = [c for c in merged.columns
+                      if '性別' in str(c) or (len(str(c)) <= 4 and '性' in str(c) and '別' in str(c))]
+        if _sex_cands:
+            merged = merged.rename(columns={_sex_cands[0]: '性別'})
+
     # 性別はラベル生成のため数値変換前の原値を保存しておく
     _sex_orig = merged['性別'].copy() if '性別' in merged.columns else None
 
@@ -805,6 +818,15 @@ if df_all.empty and _STATS is None:
             if not df_all.empty:
                 st.markdown('---')
                 st.caption(f"統合後: {len(df_all)}名 ／ {len(df_all.columns)}列")
+                # 性別診断
+                if '性別_ラベル' in df_all.columns:
+                    _sv = df_all['性別_ラベル'].value_counts()
+                    st.caption(f"✅ 性別認識: 男性 {_sv.get('男性',0)}名 ／ 女性 {_sv.get('女性',0)}名")
+                elif '性別' in df_all.columns:
+                    _raw = df_all['性別'].dropna().unique().tolist()[:5]
+                    st.caption(f"❌ 性別未認識 — 性別列の値: {_raw}（1/2 または 男性/女性 が必要）")
+                else:
+                    st.caption("❌ 性別列が見つかりません")
                 _all_indicators = {**CUTOFFS, **FUTURE_INDICATORS}
                 _missing = [n for n, cfg in _all_indicators.items()
                             if cfg.get('col') and cfg['col'] not in df_all.columns]
