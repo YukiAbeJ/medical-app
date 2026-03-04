@@ -418,6 +418,123 @@ def risk_stats(df: pd.DataFrame, flag_col: str, base_col: str) -> dict:
             'pct': safe_pct(n_r, n_v)}
 
 
+# ─── 3b. 統計エクスポート / ロード ──────────────────────────────────────────
+def build_stats(df: pd.DataFrame) -> dict:
+    """個人データを含まない集計統計を生成する（公開共有用）。"""
+    import json as _json
+    from datetime import date as _date
+    N = len(df)
+
+    def _flag_sum(col):
+        if col not in df.columns:
+            return 0
+        return int(df[col].fillna(False).astype(bool).sum())
+
+    # ── KPI 統計 ──
+    kpi_out = {}
+    for name, cfg in {**CUTOFFS, **FUTURE_INDICATORS}.items():
+        fc = f'flag_{name}'
+        if fc not in df.columns:
+            continue
+        bc = cfg.get('col')
+        if bc and bc in df.columns:
+            rs = risk_stats(df, fc, bc)
+        else:
+            n_v = int(df[fc].notna().sum())
+            n_r = _flag_sum(fc)
+            rs = {'n_valid': n_v, 'n_risk': n_r, 'n_safe': n_v - n_r,
+                  'pct': safe_pct(n_r, n_v)}
+        kpi_out[name] = {'n_valid': rs['n_valid'], 'n_risk': rs['n_risk'],
+                         'pct': rs['pct'],
+                         'icon': cfg['icon'], 'color': cfg['color']}
+
+    # ── フレイル判定ヒーロー ──
+    hero_valid = int(df['簡易フレイルスコア'].notna().sum()) if '簡易フレイルスコア' in df.columns else N
+    hero_frail = _flag_sum('flag_フレイル判定')
+    hero_pre   = _flag_sum('flag_プレフレイル判定')
+    hero_normal = max(hero_valid - hero_frail - hero_pre, 0)
+
+    # ── リスク重複数 ──
+    risk_ov = {}
+    if 'リスク重複数' in df.columns:
+        for k, v in df['リスク重複数'].value_counts().sort_index().items():
+            risk_ov[str(int(k))] = int(v)
+
+    # ── バタフライ（年代×性別×指標） ──
+    butterfly = {}
+    if '年齢階級' in df.columns and '性別_ラベル' in df.columns:
+        for name in {**CUTOFFS, **FUTURE_INDICATORS}:
+            fc = f'flag_{name}'
+            if fc not in df.columns:
+                continue
+            ages, m_p, f_p, t_p, m_n, f_n = [], [], [], [], [], []
+            for ag in AGE_LABELS:
+                if ag not in df['年齢階級'].values:
+                    continue
+                ms = df[(df['年齢階級'] == ag) & (df['性別_ラベル'] == '男性')]
+                fs = df[(df['年齢階級'] == ag) & (df['性別_ラベル'] == '女性')]
+                ts = df[df['年齢階級'] == ag]
+                mr = int(ms[fc].fillna(False).astype(bool).sum())
+                fr = int(fs[fc].fillna(False).astype(bool).sum())
+                tr = int(ts[fc].fillna(False).astype(bool).sum())
+                ages.append(ag)
+                m_p.append(safe_pct(mr, len(ms))); m_n.append(len(ms))
+                f_p.append(safe_pct(fr, len(fs))); f_n.append(len(fs))
+                t_p.append(safe_pct(tr, len(ts)))
+            if ages:
+                butterfly[name] = {'age_labels': ages,
+                                   'm_pcts': m_p, 'f_pcts': f_p, 't_pcts': t_p,
+                                   'm_ns': m_n, 'f_ns': f_n}
+
+    # ── 性別比較 ──
+    sex_cmp = {'labels': [], 'icons': [], 'm_vals': [], 'f_vals': []}
+    if '性別_ラベル' in df.columns:
+        m_df = df[df['性別_ラベル'] == '男性']
+        f_df = df[df['性別_ラベル'] == '女性']
+        for name, cfg in {**CUTOFFS, **FUTURE_INDICATORS}.items():
+            fc = f'flag_{name}'
+            if fc not in df.columns:
+                continue
+            mr = int(m_df[fc].fillna(False).astype(bool).sum())
+            fr = int(f_df[fc].fillna(False).astype(bool).sum())
+            sex_cmp['labels'].append(f'{cfg["icon"]} {name}')
+            sex_cmp['icons'].append(cfg['icon'])
+            sex_cmp['m_vals'].append(safe_pct(mr, len(m_df)))
+            sex_cmp['f_vals'].append(safe_pct(fr, len(f_df)))
+
+    return {
+        'meta': {
+            'title': '村上市 総合フレイル分析ダッシュボード 2025',
+            'generated_at': str(_date.today()),
+            'N': N,
+            'n_m': int((df['性別'] == 1).sum()) if '性別' in df.columns else 0,
+            'n_f': int((df['性別'] == 0).sum()) if '性別' in df.columns else 0,
+        },
+        'kpi': kpi_out,
+        'frail': {
+            'hero_valid': hero_valid, 'hero_frail': hero_frail,
+            'hero_pre': hero_pre, 'hero_normal': hero_normal,
+            'pct_frail': safe_pct(hero_frail, hero_valid),
+            'pct_pre':   safe_pct(hero_pre,   hero_valid),
+            'pct_normal': safe_pct(hero_normal, hero_valid),
+        },
+        'risk_overlap': risk_ov,
+        'butterfly': butterfly,
+        'sex_compare': sex_cmp,
+    }
+
+
+def load_stats_json() -> Optional[dict]:
+    """stats.json から集計統計を読み込む。"""
+    import json as _json
+    _sp = os.path.join(_HERE, 'stats.json')
+    try:
+        with open(_sp, 'r', encoding='utf-8') as _sf:
+            return _json.load(_sf)
+    except Exception:
+        return None
+
+
 # ─── 4. ページ設定 & CSS ─────────────────────────────────────────────────────
 st.set_page_config(
     page_title='村上市 総合フレイル分析ダッシュボード 2025',
@@ -566,9 +683,10 @@ st.markdown(f"""
 
 
 # ─── 5. データ読み込み ────────────────────────────────────────────────────────
+_STATS = load_stats_json()          # 集計JSONが存在すれば統計モードで起動
 df_all, _files = load_merged()
 
-if df_all.empty:
+if df_all.empty and _STATS is None:
     st.markdown(f"""
 <div style="max-width:560px;margin:60px auto 0;text-align:center;">
   <div style="font-size:52px;margin-bottom:16px;">📂</div>
@@ -596,6 +714,165 @@ if df_all.empty:
         st.error('ファイルの読み込みに失敗しました。形式を確認してください。')
         st.stop()
 
+# stats.json がある場合は CSV なしで統計モード起動
+if df_all.empty and _STATS is not None:
+    import json as _json
+    _sm = _STATS['meta']
+    _sk = _STATS['kpi']
+    _sf = _STATS['frail']
+    _sb = _STATS.get('butterfly', {})
+    _sc = _STATS.get('sex_compare', {})
+    _so = _STATS.get('risk_overlap', {})
+    _sN = _sm['N']
+
+    st.markdown(f"""
+<div style="background:rgba(255,255,255,0.7);border-radius:12px;padding:10px 18px;
+            margin-bottom:18px;border:1px solid rgba(180,200,220,.4);
+            font-size:12px;color:{P['muted']};display:flex;gap:10px;align-items:center;">
+  <span style="font-size:18px;">📊</span>
+  <span>集計統計モード ─ 生成日: <b>{_sm.get('generated_at','')}</b>
+  ／ 対象 <b>{_sN:,}名</b>（個人データは含まれません）</span>
+</div>""", unsafe_allow_html=True)
+
+    # ── Tab表示 ──
+    _tab1s, _tab2s, _tab3s = st.tabs(['📋 サマリー', '🔬 詳細分析', '🚨 フォローアップ'])
+
+    with _tab1s:
+        # フレイルヒーロー
+        _shf = _sf['hero_frail']; _shv = _sf['hero_valid']
+        _shp = _sf['pct_pre'];    _shn = _sf['hero_normal']
+        st.markdown(f"""
+<div style="background:linear-gradient(135deg,#4A1428 0%,#7A2340 55%,#9B3054 100%);
+            border-radius:14px;padding:16px 20px;color:#fff;margin-bottom:18px;
+            display:flex;align-items:center;gap:16px;">
+  <div style="flex:1;border-right:1px solid rgba(255,255,255,.2);padding-right:16px;">
+    <div style="font-size:9px;font-weight:700;opacity:.75;letter-spacing:.08em;">フレイル該当率</div>
+    <div style="font-size:40px;font-weight:800;line-height:1.1;">{_sf['pct_frail']:.1f}<span style="font-size:18px;">%</span></div>
+    <div style="font-size:11px;opacity:.8;">{_shf:,}名 / {_shv:,}名</div>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:10px 14px;text-align:center;">
+      <div style="font-size:8px;opacity:.75;">プレフレイル</div>
+      <div style="font-size:20px;font-weight:800;color:#FFD8E4;">{_shp:.1f}%</div>
+      <div style="font-size:9px;opacity:.7;">{_sf['hero_pre']:,}名</div>
+    </div>
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:10px 14px;text-align:center;">
+      <div style="font-size:8px;opacity:.75;">健常</div>
+      <div style="font-size:20px;font-weight:800;color:#C8F5E0;">{_sf['pct_normal']:.1f}%</div>
+      <div style="font-size:9px;opacity:.7;">{_shn:,}名</div>
+    </div>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+        # KPIカード
+        _scols = st.columns(min(5, len(_sk)))
+        for _si, (_sname, _skv) in enumerate(_sk.items()):
+            with _scols[_si % len(_scols)]:
+                st.markdown(f"""
+<div class="kpi" style="--c:{_skv['color']}">
+  <div class="kpi-icon">{_skv['icon']}</div>
+  <div class="kpi-name">{_sname}</div>
+  <div class="kpi-pct">{_skv['pct']:.1f}<span class="kpi-unit">%</span></div>
+  <div class="kpi-det">{_skv['n_risk']:,} / {_skv['n_valid']:,}名</div>
+</div>""", unsafe_allow_html=True)
+
+        st.markdown('<br>', unsafe_allow_html=True)
+
+        # レーダーチャート
+        if _sk:
+            _sr_names = [f'{v["icon"]} {k}' for k, v in _sk.items()]
+            _sr_vals  = [v['pct'] for v in _sk.values()]
+            _sr_clr   = list(_sk.values())[0]['color'] if _sk else '#9B3054'
+            _sfig_r = go.Figure(go.Scatterpolar(
+                r=_sr_vals + [_sr_vals[0]], theta=_sr_names + [_sr_names[0]],
+                fill='toself',
+                fillcolor=f'rgba(155,48,84,.10)',
+                line=dict(color='#9B3054', width=2.5),
+                mode='lines+markers+text',
+                text=[f'{v:.0f}%' for v in _sr_vals] + [''],
+                textposition='top center',
+                textfont=dict(size=11, color=P['text']),
+            ))
+            _sfig_r.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, max(_sr_vals or [100]) * 1.25],
+                                           tickfont=dict(size=11), gridcolor='rgba(180,200,220,.5)'),
+                           angularaxis=dict(tickfont=dict(size=13, color=P['navy']))),
+                showlegend=False, height=500,
+                margin=dict(t=60, b=60, l=100, r=100),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            )
+            st.plotly_chart(_sfig_r, use_container_width=True, config={'displayModeBar': False})
+
+        # リスク重複バー
+        if _so:
+            _so_keys = [str(k) for k in sorted(int(k) for k in _so)]
+            _so_vals = [_so[k] for k in _so_keys]
+            _RISK_CLR = {0: '#52B788', 1: '#E9C46A', 2: '#E89060', 3: '#CF6080'}
+            _so_clrs  = [_RISK_CLR.get(min(int(k), 3), '#CF6080') for k in _so_keys]
+            _sfig_o = go.Figure(go.Bar(x=_so_keys, y=_so_vals, marker_color=_so_clrs,
+                                       text=_so_vals, textposition='outside'))
+            _sfig_o.update_layout(
+                xaxis_title='リスク重複数（項目）', yaxis_title='人数',
+                height=280, margin=dict(t=20, b=40, l=20, r=20),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            )
+            st.markdown('<div class="sec">📊 リスク重複項目数の分布</div>', unsafe_allow_html=True)
+            st.plotly_chart(_sfig_o, use_container_width=True, config={'displayModeBar': False})
+
+    with _tab2s:
+        if _sb:
+            _sel = st.selectbox('指標を選択', list(_sb.keys()))
+            _sbd = _sb[_sel]
+            _scfg_sel = {**CUTOFFS, **FUTURE_INDICATORS}.get(_sel, {})
+            _M_CLR = '#5B95C8'; _F_CLR = '#C97B9D'
+            _sfig2 = go.Figure()
+            _sfig2.add_trace(go.Bar(
+                name='男性', y=_sbd['age_labels'], x=[-p for p in _sbd['m_pcts']],
+                orientation='h', marker_color=_M_CLR,
+                text=[f"{p:.1f}%" for p in _sbd['m_pcts']], textposition='inside',
+                insidetextanchor='middle', textfont=dict(color='#fff', size=11),
+            ))
+            _sfig2.add_trace(go.Bar(
+                name='女性', y=_sbd['age_labels'], x=_sbd['f_pcts'],
+                orientation='h', marker_color=_F_CLR,
+                text=[f"{p:.1f}%" for p in _sbd['f_pcts']], textposition='inside',
+                insidetextanchor='middle', textfont=dict(color='#fff', size=11),
+            ))
+            _sfig2.update_layout(
+                barmode='overlay',
+                xaxis=dict(tickformat='.0f', ticksuffix='%',
+                           tickvals=[-60,-40,-20,0,20,40,60],
+                           ticktext=['60%','40%','20%','0%','20%','40%','60%']),
+                height=max(320, len(_sbd['age_labels']) * 68 + 90),
+                legend=dict(orientation='h', y=1.05, x=0.5, xanchor='center'),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                margin=dict(t=60, b=20, l=10, r=20),
+                title=dict(text=f'{_scfg_sel.get("icon","📊")} {_sel} ─ 性別×年齢階級別',
+                           font=dict(size=14, color=P['navy'])),
+            )
+            st.plotly_chart(_sfig2, use_container_width=True, config={'displayModeBar': False})
+
+        if _sc.get('labels'):
+            _sfig_c = go.Figure()
+            _sfig_c.add_trace(go.Bar(name='男性', x=_sc['labels'], y=_sc['m_vals'],
+                                     marker_color='#5B95C8', text=[f'{v:.1f}%' for v in _sc['m_vals']],
+                                     textposition='outside'))
+            _sfig_c.add_trace(go.Bar(name='女性', x=_sc['labels'], y=_sc['f_vals'],
+                                     marker_color='#C97B9D', text=[f'{v:.1f}%' for v in _sc['f_vals']],
+                                     textposition='outside'))
+            _sfig_c.update_layout(
+                barmode='group', yaxis=dict(range=[0, 130], ticksuffix='%'),
+                height=340, margin=dict(t=30, b=20, l=0, r=0),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            )
+            st.markdown('<div class="sec">📊 全指標 男女別リスク率比較</div>', unsafe_allow_html=True)
+            st.plotly_chart(_sfig_c, use_container_width=True, config={'displayModeBar': False})
+
+    with _tab3s:
+        st.info('🔒 フォローアップ対象者リストは個別データのため、この共有ビューでは非公開です。')
+
+    st.stop()  # 統計モードのみで終了（CSV読み込み処理に進まない）
+
 
 # ─── 6. サイドバー ────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -620,6 +897,22 @@ with st.sidebar:
         st.caption(f'  • {f}')
     st.divider()
     st.caption('※ フィルターは全タブに即時反映')
+    st.divider()
+    st.markdown(f'<div style="font-size:11px;font-weight:800;color:{P["navy"]};margin-bottom:6px;">📤 外部共有用エクスポート</div>',
+                unsafe_allow_html=True)
+    st.caption('個人データを含まない集計統計を出力します。')
+    if st.button('統計データを出力（stats.json）', use_container_width=True):
+        import json as _ejson
+        _estats = build_stats(df)
+        _ejson_str = _ejson.dumps(_estats, ensure_ascii=False, indent=2)
+        st.download_button(
+            label='⬇️ stats.json をダウンロード',
+            data=_ejson_str.encode('utf-8'),
+            file_name='stats.json',
+            mime='application/json',
+            use_container_width=True,
+        )
+        st.success('ダウンロード後、stats.json をプロジェクトフォルダに置いてGitにプッシュしてください。')
 
 
 # ── フィルター適用 ──
