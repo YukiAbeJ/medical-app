@@ -271,6 +271,14 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     # ── マスターファイル特定 ──
     def _score(fname: str, df: pd.DataFrame) -> int:
         cols = list(df.columns)
+        # 「マスター」「master」「01_」などの明示的マスターファイルは最優先
+        _is_named_master = any(k in fname for k in ['マスター', 'master', 'Master', 'MASTER'])
+        if _is_named_master:
+            s = 100000
+            if any('性別' in c for c in cols): s += 200
+            if any('年齢' in c for c in cols): s += 200
+            s += len(df)
+            return s
         # flag_ 列を多数持つファイルは処理済み出力ファイルなのでマスター候補から降格
         flag_count = sum(1 for c in cols if str(c).startswith('flag_'))
         if flag_count >= 3:
@@ -874,6 +882,8 @@ if df_all.empty and _STATS is None:
 if not df_all.empty:
     with st.expander('📋 データ読み込み診断', expanded=True):
         st.caption(f"統合後: {len(df_all)}名 ／ {len(df_all.columns)}列")
+        if _files:
+            st.caption(f"📌 マスターファイル: {_files[0]}")
         # ファイル別ID突合結果
         for _w in _load_warn:
             if 'join_matched' in _w:
