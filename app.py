@@ -272,7 +272,17 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
             _age, bins=AGE_BINS, labels=AGE_LABELS, right=True
         )
     if '性別' in merged.columns:
-        merged['性別_ラベル'] = merged['性別'].map({1: '男性', 0: '女性'})
+        _sex = merged['性別']
+        # 値形式を自動検出: 1/0, 1/2, 文字列('男性'/'女性'/'男'/'女') すべて対応
+        _uniq = set(_sex.dropna().unique())
+        if _uniq <= {1, 2, 1.0, 2.0}:            # 1=男性, 2=女性 形式
+            merged['性別_ラベル'] = _sex.map({1: '男性', 2: '女性', 1.0: '男性', 2.0: '女性'})
+        elif _uniq <= {0, 1, 0.0, 1.0}:           # 1=男性, 0=女性 形式
+            merged['性別_ラベル'] = _sex.map({1: '男性', 0: '女性', 1.0: '男性', 0.0: '女性'})
+        else:                                       # 文字列形式
+            _str_map = {'男性': '男性', '女性': '女性', '男': '男性', '女': '女性',
+                        'M': '男性', 'F': '女性', 'm': '男性', 'f': '女性'}
+            merged['性別_ラベル'] = _sex.astype(str).map(_str_map)
 
     # ── リスクフラグ ──
     def _fl(col: str, op: str, val) -> 'pd.Series':
@@ -1685,8 +1695,13 @@ with tab2:
             if '年齢階級' not in df.columns or _ag not in df['年齢階級'].values:
                 continue
             _age_labels_shown.append(_ag)
-            _m_sub = df[(df['年齢階級'] == _ag) & (df.get('性別_ラベル', pd.Series()) == '男性')]
-            _f_sub = df[(df['年齢階級'] == _ag) & (df.get('性別_ラベル', pd.Series()) == '女性')]
+            _age_mask = df['年齢階級'] == _ag
+            if '性別_ラベル' in df.columns:
+                _m_sub = df[_age_mask & (df['性別_ラベル'] == '男性')]
+                _f_sub = df[_age_mask & (df['性別_ラベル'] == '女性')]
+            else:
+                _m_sub = df[_age_mask].iloc[0:0]  # 空DataFrame（性別なし）
+                _f_sub = df[_age_mask].iloc[0:0]
             _t_sub = df[df['年齢階級'] == _ag]
             _mn, _mr = _count_risk(_m_sub, flag_col, base_col)
             _fn, _fr = _count_risk(_f_sub, flag_col, base_col)
