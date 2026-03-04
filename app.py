@@ -883,6 +883,28 @@ if not df_all.empty:
                 st.caption(f"✅ 性別認識: 男性 {_nm2}名 ／ 女性 {_nf2}名")
         else:
             st.caption("❌ 性別列が見つかりません")
+        # フレイル判定の有効人数診断
+        if '簡易フレイルスコア' in df_all.columns:
+            _frail_n = int(df_all['簡易フレイルスコア'].notna().sum())
+            st.caption(f"フレイル判定有効: {_frail_n}名 ／ {len(df_all)}名")
+            # どのフレイル項目列が存在するか
+            _fi_check = {
+                '体重減少': ['6ヵ月体重減少_0_1','6ヶ月体重減少_0_1','6ヶ月の体重減少_0_1','体重低下_0_1'],
+                '疲れ':     ['訳もなく疲れたように感じる_0_1','疲れ_0_1_値','疲れ_0_1'],
+                '活動不足': ['軽い運動plus定期的運動_0_1','規則的な運動_0_1'],
+                '歩行低下': ['4m歩行_1_0_値'],
+            }
+            for _fi_name, _fi_cols in _fi_check.items():
+                _found = [c for c in _fi_cols if c in df_all.columns]
+                if _found:
+                    _n = int(df_all[_found[0]].notna().sum())
+                    st.caption(f"  ✅ {_fi_name}: `{_found[0]}` ({_n}名に値あり)")
+                else:
+                    # 類似列を探す
+                    _similar = [c for c in df_all.columns if any(k in str(c) for k in _fi_name)][:3]
+                    st.caption(f"  ❌ {_fi_name}: 列なし　類似: {_similar}")
+        else:
+            st.caption("❌ フレイル判定列が計算されていません（項目列が見つからない）")
 
 # stats.json がある場合は CSV なしで統計モード起動
 if df_all.empty and _STATS is not None:
