@@ -304,8 +304,11 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
                     _warn[_wi]['join_total'] = _before_n
                     # IDサンプルを記録（不一致デバッグ用）
                     if _matched == 0:
-                        _warn[_wi]['master_ids'] = sorted(merged['ID'].dropna().astype(int).tolist())[:5]
-                        _warn[_wi]['file_ids']   = sorted(df['ID'].dropna().astype(int).tolist())[:5]
+                        try:
+                            _warn[_wi]['master_ids'] = merged['ID'].dropna().head(5).tolist()
+                            _warn[_wi]['file_ids']   = df['ID'].dropna().head(5).tolist()
+                        except Exception:
+                            pass
                     break
         used.append(fname)
 
