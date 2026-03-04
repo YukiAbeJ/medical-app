@@ -39,6 +39,8 @@ _SEARCH_DIRS = [
     os.path.join(os.path.expanduser('~'), 'Desktop'),
 ]
 
+_BUILD_VER = 'v2026-03-04.1'   # デプロイ確認用ビルドID
+
 AGE_BINS   = [0, 64, 69, 74, 79, 200]
 AGE_LABELS = ['65歳未満', '65-69歳', '70-74歳', '75-79歳', '80歳以上']
 
@@ -1082,7 +1084,7 @@ st.markdown(f"""
     </div>
     <div style="font-size:11px;color:rgba(255,255,255,.78);margin-top:6px;
                 font-weight:500;letter-spacing:.03em;">
-      AWGS2019・WHO基準準拠 ／ 高齢者支援課・保健師・行政幹部向け
+      AWGS2019・WHO基準準拠 ／ 高齢者支援課・保健師・行政幹部向け ／ {_BUILD_VER}
     </div>
   </div>
   <!-- 統計バッジ -->
