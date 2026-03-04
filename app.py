@@ -323,16 +323,20 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         )
     if '性別' in merged.columns and _sex_orig is not None:
         _sex = merged['性別']  # pd.to_numeric 済み（文字列→NaN）
-        _uniq = set(_sex.dropna().unique())
-        # 値2があれば 1/2 形式、値0があれば 0/1 形式、それ以外は文字列形式
-        _has_2 = bool(_uniq & {2, 2.0})
-        _has_0 = bool(_uniq & {0, 0.0})
-        if _has_2:                                  # 1=男性, 2=女性 形式
-            merged['性別_ラベル'] = _sex.map({1: '男性', 2: '女性', 1.0: '男性', 2.0: '女性'})
-        elif _has_0:                                # 1=男性, 0=女性 形式
-            merged['性別_ラベル'] = _sex.map({1: '男性', 0: '女性', 1.0: '男性', 0.0: '女性'})
+        _uniq = set(_sex.dropna().astype(float).unique())
+        # pandas 2.x では float64 Series に int キー dict で map() すると全NaN になるため
+        # np.where で型安全に比較する
+        _has_2 = any(abs(v - 2) < 0.01 for v in _uniq)   # 2 or 2.0 が存在
+        _has_0 = any(abs(v) < 0.01 for v in _uniq)        # 0 or 0.0 が存在
+        _has_1 = any(abs(v - 1) < 0.01 for v in _uniq)    # 1 or 1.0 が存在
+        if _has_1 and _has_2:                              # 1=男性, 2=女性 形式
+            merged['性別_ラベル'] = np.where(
+                _sex == 2, '女性', np.where(_sex == 1, '男性', np.nan))
+        elif _has_1 and _has_0:                            # 1=男性, 0=女性 形式
+            merged['性別_ラベル'] = np.where(
+                _sex == 0, '女性', np.where(_sex == 1, '男性', np.nan))
         else:
-            # 文字列形式（または数値変換で全NaN → 原値から再試行）
+            # 文字列形式（数値変換で全NaN → 原値の文字列でマッピング）
             _str_map = {'男性': '男性', '女性': '女性', '男': '男性', '女': '女性',
                         'M': '男性', 'F': '女性', 'm': '男性', 'f': '女性',
                         '1': '男性', '2': '女性', '0': '女性',
@@ -1898,21 +1902,25 @@ with tab2:
             st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
 
         # ダブルクロス集計表
+        _has_sex_data = ('性別_ラベル' in df.columns and
+                         df['性別_ラベル'].notna().any())
         with st.expander('🔍 性別 × 年齢階級 ダブルクロス集計表', expanded=False):
-            rows2: List[dict] = []
-            for sl in ['男性', '女性']:
-                for al in AGE_LABELS:
-                    if '性別_ラベル' not in df.columns or '年齢階級' not in df.columns:
-                        continue
-                    sub   = df[(df['性別_ラベル'] == sl) & (df['年齢階級'] == al)]
-                    valid = sub[base_col].notna() if base_col else sub[flag_col].notna()
-                    n_v   = int(valid.sum())
-                    n_r   = int(sub.loc[valid, flag_col].astype(bool).sum()) if n_v > 0 else 0
-                    rows2.append({
-                        '性別': sl, '年齢階級': al, 'N': n_v, 'リスク数': n_r,
-                        '割合(%)': round(n_r / n_v * 100, 1) if n_v > 0 else None,
-                    })
-            if rows2:
+            if not _has_sex_data:
+                st.info('性別データが認識されていないため集計できません。')
+            elif '年齢階級' not in df.columns:
+                st.info('年齢データがありません。')
+            else:
+                rows2: List[dict] = []
+                for sl in ['男性', '女性']:
+                    for al in AGE_LABELS:
+                        sub   = df[(df['性別_ラベル'] == sl) & (df['年齢階級'] == al)]
+                        valid = sub[base_col].notna() if base_col else sub[flag_col].notna()
+                        n_v   = int(valid.sum())
+                        n_r   = int(sub.loc[valid, flag_col].astype(bool).sum()) if n_v > 0 else 0
+                        rows2.append({
+                            '性別': sl, '年齢階級': al, 'N': n_v, 'リスク数': n_r,
+                            '割合(%)': round(n_r / n_v * 100, 1) if n_v > 0 else None,
+                        })
                 st.dataframe(
                     pd.DataFrame(rows2), use_container_width=True, hide_index=True,
                     column_config={
