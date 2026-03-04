@@ -813,27 +813,26 @@ if df_all.empty and _STATS is None:
     df_all, _files, _load_warn = load_merged(uploaded_files=_ubytes_list)
 
     # ── 診断パネル ──
-    if _load_warn:
-        with st.expander('📋 ファイル読み込み診断', expanded=(df_all.empty)):
-            for _w in _load_warn:
-                _icon = {'ok': '✅', 'skip': '⚠️', 'no_id': '❌', 'error': '❌'}.get(_w['status'], '❓')
-                st.markdown(f"**{_icon} {_w['file']}** — {_w['reason']}")
-                if _w['rows']:
-                    st.caption(f"　行数: {_w['rows']}行 ／ 列数: {len(_w['cols'])}列")
-                if _w.get('id_col'):
-                    st.caption(f"　ID列として使用: `{_w['id_col']}`")
-                if 'join_matched' in _w:
-                    _jm, _jt = _w['join_matched'], _w['join_total']
-                    if _jm == 0:
-                        st.caption(f"　⚠️ ID突合: 0/{_jt}件マッチ → IDの形式が一致していません")
-                        if 'master_ids' in _w:
-                            st.caption(f"　マスターID例: {_w['master_ids']}")
-                            st.caption(f"　このファイルID例: {_w['file_ids']}")
-                    else:
-                        st.caption(f"　🔗 ID突合: {_jm}/{_jt}件マッチ")
-                if _w['cols']:
-                    st.caption(f"　検出列: {', '.join(_w['cols'][:30])}")
-            if not df_all.empty:
+    with st.expander('📋 ファイル読み込み診断', expanded=(df_all.empty)):
+        for _w in _load_warn:
+            _icon = {'ok': '✅', 'skip': '⚠️', 'no_id': '❌', 'error': '❌'}.get(_w['status'], '❓')
+            st.markdown(f"**{_icon} {_w['file']}** — {_w['reason']}")
+            if _w['rows']:
+                st.caption(f"　行数: {_w['rows']}行 ／ 列数: {len(_w['cols'])}列")
+            if _w.get('id_col'):
+                st.caption(f"　ID列として使用: `{_w['id_col']}`")
+            if 'join_matched' in _w:
+                _jm, _jt = _w['join_matched'], _w['join_total']
+                if _jm == 0:
+                    st.caption(f"　⚠️ ID突合: 0/{_jt}件マッチ → IDの形式が一致していません")
+                    if 'master_ids' in _w:
+                        st.caption(f"　マスターID例: {_w['master_ids']}")
+                        st.caption(f"　このファイルID例: {_w['file_ids']}")
+                else:
+                    st.caption(f"　🔗 ID突合: {_jm}/{_jt}件マッチ")
+            if _w['cols']:
+                st.caption(f"　検出列: {', '.join(_w['cols'][:30])}")
+        if not df_all.empty:
                 st.markdown('---')
                 st.caption(f"統合後: {len(df_all)}名 ／ {len(df_all.columns)}列")
                 # 性別診断
