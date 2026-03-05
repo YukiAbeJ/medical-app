@@ -414,8 +414,9 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     merged['flag_MCI疑い']           = _fl('MoCA総得点', '<=', 25)
     merged['flag_嚥下機能低下リスク'] = _fl('EAT10総得点', '>=', 3)
 
-    if 'SMI' in merged.columns and '性別_ラベル' in merged.columns:
-        _smi = pd.to_numeric(merged['SMI'], errors='coerce')
+    # SMI numeric変換を1回だけ行い、サルコペニア疑い・確定の両方で再利用
+    _smi = pd.to_numeric(merged['SMI'], errors='coerce') if 'SMI' in merged.columns else None
+    if _smi is not None and '性別_ラベル' in merged.columns:
         merged['flag_サルコペニア疑い'] = (
             ((merged['性別_ラベル'] == '男性') & (_smi < 7.0)) |
             ((merged['性別_ラベル'] == '女性') & (_smi < 5.7))
@@ -498,9 +499,9 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     # AWGS2019確定サルコペニア: 低SMI + (歩行速度低下 OR 椅子立ち上がり低下)
     # ※ 握力は参考情報として別途 flag_握力低下 を保持
     # SMI未測定者はNaN（測定なし）として区別し、KPI/バタフライの分母を正確に計算
-    if 'SMI' in merged.columns:
-        _smi_measured = pd.to_numeric(merged['SMI'], errors='coerce').notna()
-        merged['flag_サルコペニア確定'] = merged['flag_AWGS2019サルコペニア'].where(_smi_measured)
+    # _smi は上で1回だけ計算済み（None=SMI列なし）
+    if _smi is not None:
+        merged['flag_サルコペニア確定'] = merged['flag_AWGS2019サルコペニア'].where(_smi.notna())
     else:
         merged['flag_サルコペニア確定'] = pd.Series(np.nan, index=merged.index)
 
