@@ -415,12 +415,13 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     merged['flag_嚥下機能低下リスク'] = _fl('EAT10総得点', '>=', 3)
 
     if 'SMI' in merged.columns and '性別_ラベル' in merged.columns:
+        _smi = pd.to_numeric(merged['SMI'], errors='coerce')
         merged['flag_サルコペニア疑い'] = (
-            ((merged['性別_ラベル'] == '男性') & (merged['SMI'] < 7.0)) |
-            ((merged['性別_ラベル'] == '女性') & (merged['SMI'] < 5.7))
-        )
+            ((merged['性別_ラベル'] == '男性') & (_smi < 7.0)) |
+            ((merged['性別_ラベル'] == '女性') & (_smi < 5.7))
+        ).where(_smi.notna())  # SMI未測定はNaN（測定なし）として区別
     else:
-        merged['flag_サルコペニア疑い'] = False
+        merged['flag_サルコペニア疑い'] = pd.Series(np.nan, index=merged.index)
 
     # 仮のAWGS2019（歩行速度 or 椅子立ち上がりのみ）→ 握力が揃ったら後で上書き
     # fillna(False) でNaN（測定なし）を除外してboolean演算を安全化
@@ -496,7 +497,12 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
             merged['flag_握力低下'] = _grip < 26  # 性別不明時は中間閾値
     # AWGS2019確定サルコペニア: 低SMI + (歩行速度低下 OR 椅子立ち上がり低下)
     # ※ 握力は参考情報として別途 flag_握力低下 を保持
-    merged['flag_サルコペニア確定'] = merged['flag_AWGS2019サルコペニア'].copy()
+    # SMI未測定者はNaN（測定なし）として区別し、KPI/バタフライの分母を正確に計算
+    if 'SMI' in merged.columns:
+        _smi_measured = pd.to_numeric(merged['SMI'], errors='coerce').notna()
+        merged['flag_サルコペニア確定'] = merged['flag_AWGS2019サルコペニア'].where(_smi_measured)
+    else:
+        merged['flag_サルコペニア確定'] = pd.Series(np.nan, index=merged.index)
 
     # オーラルフレイル判定（列名を柔軟に検索：実ファイルは「オーラルフレイル_判定_」）
     oral_col = next(
