@@ -202,7 +202,14 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     raw_dfs: Dict[str, pd.DataFrame] = {}
     _warn: List[dict] = []
 
+    # フォローアップリスト・高リスク対象者リストは分析対象外として除外
+    _BLACKLIST_KW = ['フォローアップリスト', '高リスク対象者リスト', 'follow_up_list', '集計表']
     for fname, path in path_map.items():
+        if any(k in fname for k in _BLACKLIST_KW):
+            _warn.append({'file': fname, 'status': 'skip',
+                          'reason': 'スキップ（フォローアップ/高リスクリスト/集計表は分析対象外）',
+                          'cols': [], 'rows': 0, 'id_col': None})
+            continue
         df = _read_csv_safe(path)
         if _is_skip_file(df):
             continue
@@ -212,6 +219,8 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
                           'reason': 'ID列が見つかりません',
                           'cols': list(df.columns)[:20] if df is not None else [], 'rows': len(df) if df is not None else 0, 'id_col': None})
             continue
+        # ID重複を排除（同一IDの複数エントリは先頭を保持）→ LEFT JOIN行数の膨張を防ぐ
+        df2 = df2.drop_duplicates(subset=['ID'], keep='first')
         for c in df2.columns:
             if c != 'ID':
                 df2[c] = pd.to_numeric(df2[c], errors='coerce')
@@ -445,7 +454,7 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     # ※ 握力は #REF! のため除外。4項目合計、≥3 でフレイル。
     _frail_series: Dict[str, 'pd.Series'] = {}
     # 1. 体重減少（Likert → ≥1=リスク=1, 0=正常=0）
-    for _fc in ['6ヵ月体重減少_0_1', '6ヶ月体重減少_0_1', '6ヶ月の体重減少_0_1', '体重低下_0_1']:
+    for _fc in ['6ヵ月体重減少_0_1', '6ヶ月体重減少_0_1', '6ヶ月の体重減少_0_1', '6ヵ月の体重減少_0_1', '体重低下_0_1']:
         if _fc in merged.columns:
             _v = pd.to_numeric(merged[_fc], errors='coerce')
             _frail_series['体重減少'] = (_v >= 1).where(_v.notna()).astype(float)
@@ -516,18 +525,25 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         ov = pd.to_numeric(merged[oral_col], errors='coerce')
         merged['flag_オーラルフレイル'] = ov >= 1
 
-    # バランス能力低下（列名を柔軟に検索：_read_csv_safeで\n→_に正規化後「バランス_得点」）
+    # バランス能力低下（列名を柔軟に検索：SPPBファイルは「バランス_合計」「バランス_得点」等）
     bal_col = next(
         (c for c in merged.columns if 'バランス' in str(c) and '得点' in str(c)),
         None
     )
+    if bal_col is None:
+        # SPPB正規化後の「バランス_合計」も対応（\n区切り→_結合で'バランス_合計'になる）
+        bal_col = next(
+            (c for c in merged.columns if 'バランス' in str(c) and '合計' in str(c)),
+            None
+        )
     if bal_col is None:
         for _bc in ['バランス 得点', 'バランス得点', 'SPPB_バランス']:
             if _bc in merged.columns:
                 bal_col = _bc
                 break
     if bal_col:
-        merged['flag_バランス能力低下'] = pd.to_numeric(merged[bal_col], errors='coerce') < 4
+        _bv = pd.to_numeric(merged[bal_col], errors='coerce')
+        merged['flag_バランス能力低下'] = (_bv < 4).where(_bv.notna())
 
     base_flags = [f'flag_{k}' for k in CUTOFFS if f'flag_{k}' in merged.columns]
     if base_flags:
