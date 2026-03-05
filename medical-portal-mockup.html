@@ -7,6 +7,7 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -131,6 +132,36 @@
     button { font-family: inherit; }
     input, select, textarea { font-family: inherit; }
     pre { font-family: 'Consolas', 'Monaco', monospace; }
+
+    /* ── 認可コンテキスト・Airlock・ツールチップ・SQLハイライト ── */
+    .auth-tip-wrap { position:relative; display:inline-flex; align-items:center; }
+    .auth-tip-box { display:none; position:absolute; top:calc(100% + 10px); right:0; min-width:284px; background:rgba(10,18,40,0.97); border:1px solid rgba(255,255,255,0.14); border-radius:13px; padding:16px; z-index:9999; backdrop-filter:blur(24px); white-space:normal; box-shadow:0 8px 40px rgba(0,0,0,0.50); }
+    .auth-tip-box::before { content:''; position:absolute; top:-6px; right:20px; width:10px; height:10px; background:rgba(10,18,40,0.97); border-top:1px solid rgba(255,255,255,0.14); border-left:1px solid rgba(255,255,255,0.14); transform:rotate(45deg); }
+    .auth-tip-wrap:hover .auth-tip-box { display:block; animation:fadeIn 0.16s ease; }
+    .data-tip-wrap { position:relative; display:inline-flex; align-items:center; cursor:help; }
+    .data-tip-box { display:none; position:absolute; top:calc(100% + 8px); left:-8px; min-width:300px; max-width:320px; background:rgba(10,18,40,0.97); color:rgba(226,232,240,0.90); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:14px 16px; font-size:11px; line-height:1.75; z-index:500; backdrop-filter:blur(20px); white-space:normal; font-weight:400; box-shadow:0 8px 32px rgba(0,0,0,0.45); }
+    .data-tip-wrap:hover .data-tip-box { display:block; animation:fadeIn 0.16s ease; }
+    .airlock-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.62); backdrop-filter:blur(5px); z-index:2000; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.18s ease; }
+    .airlock-btn { flex-shrink:0; padding:5px 11px; font-size:10.5px; font-weight:700; border-radius:8px; border:1px solid rgba(249,115,22,0.38); background:rgba(249,115,22,0.09); color:#C2570D; cursor:pointer; display:flex; align-items:center; gap:4px; white-space:nowrap; font-family:inherit; transition:all 0.16s; }
+    .airlock-btn:hover { background:rgba(249,115,22,0.16); border-color:rgba(249,115,22,0.55); transform:translateY(-1px); }
+    .sql-kw  { color:#93C5FD; font-weight:700; }
+    .sql-fn  { color:#6EE7B7; }
+    .sql-str { color:#FCA5A5; }
+    .sql-cm  { color:#64748B; font-style:italic; }
+    .sql-tbl { color:#FCD34D; }
+    /* ── Databricks 専用 ── */
+    .db-flow-node { border-radius:13px; transition:all 0.20s; }
+    .db-flow-node:hover { transform:translateY(-2px); }
+    .db-tmpl-card { background:rgba(255,255,255,0.62); border:1.5px solid rgba(255,255,255,0.82); border-radius:13px; cursor:pointer; transition:all 0.20s; backdrop-filter:blur(12px); }
+    .db-tmpl-card:hover { background:rgba(255,255,255,0.88); transform:translateY(-2px); box-shadow:0 6px 28px rgba(26,54,93,0.13); }
+    .db-tmpl-card.selected { border-color:rgba(252,100,60,0.60); background:rgba(252,100,60,0.04); box-shadow:0 4px 20px rgba(252,100,60,0.14); }
+    .db-step-circle { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; transition:all 0.25s; }
+    .db-step-done   { background:linear-gradient(135deg,#1A365D,#3769AF); color:white; }
+    .db-step-active { background:linear-gradient(135deg,#ea580c,#f97316); color:white; box-shadow:0 0 0 5px rgba(249,115,22,0.18); }
+    .db-step-idle   { background:rgba(26,54,93,0.08); color:rgba(100,116,139,0.70); }
+    .db-job-bar     { height:9px; border-radius:5px; background:linear-gradient(to right,#ea580c,#f97316,#fb923c); transition:width 0.55s cubic-bezier(0.22,1,0.36,1); }
+    @keyframes dbPulse { 0%,100%{box-shadow:0 0 0 0 rgba(252,100,60,0.45)} 50%{box-shadow:0 0 0 8px rgba(252,100,60,0)} }
+    .db-pulse-ring { animation:dbPulse 2s infinite; }
   </style>
 </head>
 <body>
@@ -625,8 +656,9 @@ function HomeScreen({ setTab }) {
   const doneIdx = steps.findIndex(s => s.current);
   const actions = [
     { icon:'🔍', title:'類似研究を探す', desc:'キュレーション済み2,847件の先行研究から\n類似条件の研究を自動推薦', tab:'search', hot:false },
-    { icon:'📊', title:'コホート条件を設定する', desc:'ICD-10・医薬品名で対象集団をリアルタイム可視化\n研究フィージビリティを即座に確認', tab:'cohort', hot:true },
-    { icon:'🤖', title:'AIアシストで分析する', desc:'日本語で質問するだけ。SQL不要の直感的分析\n自動グラフ生成・ダッシュボード連携', tab:'ai', hot:false },
+    { icon:'📊', title:'コホート条件を設定する', desc:'ICD-10・医薬品名で対象集団をリアルタイム可視化\n研究フィージビリティを即座に確認', tab:'cohort', hot:false },
+    { icon:'🤖', title:'AIアシストで探索分析する', desc:'日本語で質問するだけ。SQL不要の直感的分析\n自動グラフ生成・ダッシュボード連携', tab:'ai', hot:false },
+    { icon:'⬡', title:'Databricks 解析環境へ進む', desc:'コホートデータをエクスポートし本格分析\n機械学習・生存時間分析・EDAを実行', tab:'databricks', hot:true },
   ];
   return (
     <div className="slide-up">
@@ -1194,6 +1226,1427 @@ ORDER BY age_group`;
 }
 
 /* ══════════════════════════════════════════
+   画面5: Databricks 解析環境
+══════════════════════════════════════════ */
+
+/* Chart: ベンチマーク比較棒グラフ */
+const BENCH_DATA = {
+  national:   { '全体':   { city:[47.2,48.1,51.3,53.7,55.4], comp:[44.8,45.9,47.2,49.1,50.3], cl:'全国平均' },
+                '男性':   { city:[52.1,53.4,56.8,59.2,61.3], comp:[49.6,50.8,52.4,54.6,56.1], cl:'全国平均（男性）' },
+                '女性':   { city:[42.8,43.2,46.1,48.5,50.0], comp:[40.3,41.2,42.4,43.9,44.8], cl:'全国平均（女性）' },
+                '年代別': { labels:['40-49歳','50-59歳','60-69歳','70-74歳'], city:[28.4,42.1,63.5,82.7], comp:[26.8,39.5,59.2,77.4], cl:'全国平均' },
+                '年代×性別': { labels:['40-49歳','50-59歳','60-69歳','70-74歳'], mCity:[31.2,48.5,71.8,89.4], fCity:[25.6,35.7,55.2,76.0], mComp:[29.8,45.2,66.4,83.1], fComp:[23.9,33.6,52.1,71.7], cl:'全国平均' } },
+  similar:    { '全体':   { city:[47.2,48.1,51.3,53.7,55.4], comp:[46.1,47.0,48.8,50.6,52.1], cl:'同規模自治体' },
+                '男性':   { city:[52.1,53.4,56.8,59.2,61.3], comp:[51.0,52.2,54.1,56.3,58.0], cl:'同規模（男性）' },
+                '女性':   { city:[42.8,43.2,46.1,48.5,50.0], comp:[41.5,42.1,43.8,45.2,46.5], cl:'同規模（女性）' },
+                '年代別': { labels:['40-49歳','50-59歳','60-69歳','70-74歳'], city:[28.4,42.1,63.5,82.7], comp:[27.5,40.8,61.4,80.2], cl:'同規模' },
+                '年代×性別': { labels:['40-49歳','50-59歳','60-69歳','70-74歳'], mCity:[31.2,48.5,71.8,89.4], fCity:[25.6,35.7,55.2,76.0], mComp:[30.5,46.8,68.3,86.2], fComp:[24.5,34.8,53.6,73.8], cl:'同規模' } },
+  prefecture: { '全体':   { city:[47.2,48.1,51.3,53.7,55.4], comp:[45.8,46.9,49.2,51.4,53.0], cl:'県平均' },
+                '男性':   { city:[52.1,53.4,56.8,59.2,61.3], comp:[50.8,52.0,54.5,56.9,58.6], cl:'県平均（男性）' },
+                '女性':   { city:[42.8,43.2,46.1,48.5,50.0], comp:[41.1,42.0,44.2,46.1,47.7], cl:'県平均（女性）' },
+                '年代別': { labels:['40-49歳','50-59歳','60-69歳','70-74歳'], city:[28.4,42.1,63.5,82.7], comp:[27.2,40.2,61.0,79.8], cl:'県平均' },
+                '年代×性別': { labels:['40-49歳','50-59歳','60-69歳','70-74歳'], mCity:[31.2,48.5,71.8,89.4], fCity:[25.6,35.7,55.2,76.0], mComp:[30.1,46.2,67.8,85.7], fComp:[24.2,34.2,53.1,73.2], cl:'県平均' } },
+  pref_city:  { '全体':   { city:[47.2,48.1,51.3,53.7,55.4], comp:[46.5,47.5,50.1,52.2,53.8], cl:'県内他自治体' },
+                '男性':   { city:[52.1,53.4,56.8,59.2,61.3], comp:[51.4,52.6,55.2,57.6,59.3], cl:'県内他自治体（男性）' },
+                '女性':   { city:[42.8,43.2,46.1,48.5,50.0], comp:[41.9,42.7,45.3,47.1,48.6], cl:'県内他自治体（女性）' },
+                '年代別': { labels:['40-49歳','50-59歳','60-69歳','70-74歳'], city:[28.4,42.1,63.5,82.7], comp:[27.8,41.3,62.1,81.0], cl:'県内他自治体' },
+                '年代×性別': { labels:['40-49歳','50-59歳','60-69歳','70-74歳'], mCity:[31.2,48.5,71.8,89.4], fCity:[25.6,35.7,55.2,76.0], mComp:[30.8,47.3,69.0,87.4], fComp:[24.8,35.1,54.2,74.5], cl:'県内他自治体' } },
+};
+function BenchmarkChart({ comparison, breakdown, appliedGender = '全体', appliedInsurer = '全体', appliedAge = '全年齢' }) {
+  const canvasRef = useRef(null);
+  const chartRef  = useRef(null);
+  useEffect(() => {
+    if (typeof Chart === 'undefined') return;
+    if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+    const ctx = canvasRef.current.getContext('2d');
+    const d = (BENCH_DATA[comparison] || BENCH_DATA.national)[breakdown] || BENCH_DATA.national['全体'];
+    // 性別・保険者・年齢フィルタによる倍率
+    const iKey = INSURER_KEY_MAP[appliedInsurer] || 'all';
+    const noGenderScale = breakdown === '男性' || breakdown === '女性' || breakdown === '年代×性別';
+    const noAgeScale    = breakdown === '年代別' || breakdown === '年代×性別';
+    const gMult = noGenderScale ? 1 : (GENDER_MULT[appliedGender] || 1);
+    const iMult = INS_MULT[iKey] || 1;
+    const aMult = noAgeScale ? 1 : (AGE_COST_MULT[appliedAge] || 1);
+    const sc = v => parseFloat((v * gMult * iMult * aMult).toFixed(1));
+    let datasets, xLabels, yTitle;
+    if (breakdown === '年代×性別') {
+      xLabels = d.labels;
+      yTitle  = '万円/人（2023年）';
+      datasets = [
+        { label: 'A市（男性）', data: d.mCity.map(v => sc(v)), backgroundColor: 'rgba(55,105,175,0.88)', borderRadius: 4 },
+        { label: 'A市（女性）', data: d.fCity.map(v => sc(v)), backgroundColor: 'rgba(219,39,119,0.78)', borderRadius: 4 },
+        { label: `${d.cl}（男性）`, data: d.mComp.map(v => sc(v)), backgroundColor: 'rgba(55,105,175,0.30)', borderRadius: 4, borderWidth: 1.5, borderColor: 'rgba(55,105,175,0.70)', borderSkipped: false },
+        { label: `${d.cl}（女性）`, data: d.fComp.map(v => sc(v)), backgroundColor: 'rgba(219,39,119,0.26)', borderRadius: 4, borderWidth: 1.5, borderColor: 'rgba(219,39,119,0.60)', borderSkipped: false },
+      ];
+    } else {
+      xLabels = breakdown === '年代別' ? d.labels : ['2019','2020','2021','2022','2023'];
+      yTitle  = breakdown === '年代別' ? '万円/人（2023年）' : '万円/人';
+      datasets = [
+        { label: `A市${breakdown !== '全体' ? `（${breakdown}）` : ''}`, data: d.city.map(v => sc(v)), backgroundColor: 'rgba(249,115,22,0.85)', borderRadius: 4 },
+        { label: d.cl, data: d.comp.map(v => sc(v)), backgroundColor: 'rgba(55,105,175,0.7)', borderRadius: 4 },
+      ];
+    }
+    chartRef.current = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: xLabels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { font: { size: breakdown === '年代×性別' ? 10 : 11 }, boxWidth: 11, padding: 8 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 10 } }, title: { display: true, text: yTitle, font: { size: 10 } } },
+        },
+      },
+    });
+    return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
+  }, [comparison, breakdown, appliedGender, appliedInsurer, appliedAge]);
+  return <canvas ref={canvasRef} style={{ width:'100%', height:'100%' }}/>;
+}
+
+/* Chart: KPI比較棒グラフ */
+function KpiChart() {
+  const canvasRef = useRef(null);
+  const chartRef  = useRef(null);
+  useEffect(() => {
+    if (typeof Chart === 'undefined') return;
+    if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['40-49歳', '50-59歳', '60-69歳', '70-74歳'],
+        datasets: [
+          { label: '特定保健指導 実施群', data: [38.2, 42.5, 48.7, 52.1], backgroundColor: 'rgba(249,115,22,0.85)', borderRadius: 4 },
+          { label: '未実施群',           data: [51.4, 58.9, 67.3, 74.2], backgroundColor: 'rgba(55,105,175,0.55)', borderRadius: 4 },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12, padding: 10 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 10 } }, title: { display: true, text: '万円/人', font: { size: 10 } } },
+        },
+      },
+    });
+    return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
+  }, []);
+  return <canvas ref={canvasRef} style={{ width:'100%', height:'100%' }}/>;
+}
+
+/* ── 保険者・性別・年代コスト倍率 ── */
+const INS_MULT   = { all:1, nh:1.10, kenpo:0.90, kyosai:0.88, kouki:1.25 };
+const INS_NAMES  = { all:'全体', nh:'国保', kenpo:'健保組合', kyosai:'共済', kouki:'後期高齢者' };
+const GENDER_MULT= { '全体':1, '男性':1.11, '女性':0.89, '年代別':1, '年代×性別':1 };
+const AGE_MULT   = [0.45, 0.68, 1.18, 1.38]; // 40-49, 50-59, 60-69, 70-74
+const AGE_COST_MULT = { '全年齢':1.0, '40-49歳':0.45, '50-59歳':0.68, '60-69歳':1.18, '70-74歳':1.38 };
+const COUNT_BASE = {
+  '2型糖尿病':    { '全年齢':12847, '40-49歳':2118, '50-59歳':3212, '60-69歳':4801, '70-74歳':2716 },
+  '本態性高血圧症':{ '全年齢':18432, '40-49歳':2890, '50-59歳':4728, '60-69歳':6852, '70-74歳':3962 },
+  '慢性腎臓病':   { '全年齢':5230,  '40-49歳':728,  '50-59歳':1124, '60-69歳':2048, '70-74歳':1330 },
+  '脂質異常症':   { '全年齢':14500, '40-49歳':2610, '50-59歳':4060, '60-69歳':5220, '70-74歳':2610 },
+};
+const INS_CNT = { all:1, nh:0.42, kenpo:0.31, kyosai:0.18, kouki:0.09 };
+
+/* ── 保険者比較チャート用データ（共済→健保→国保→後期の順） ── */
+const INS_COMP_DATA = {
+  kyosai: { name:'共済',     solidColor:'#059669', barColor:'rgba(5,150,105,0.85)',  bgColor:'rgba(5,150,105,0.10)', borderColor:'rgba(5,150,105,0.35)',  costs:[24.8,37.7,55.4,72.1],  malePct:55, cnt:2310  },
+  kenpo:  { name:'健保組合', solidColor:'#3769AF', barColor:'rgba(55,105,175,0.85)', bgColor:'rgba(55,105,175,0.10)', borderColor:'rgba(55,105,175,0.35)', costs:[25.6,38.9,57.2,74.4],  malePct:58, cnt:3982  },
+  nh:     { name:'国保',     solidColor:'#F97316', barColor:'rgba(249,115,22,0.85)', bgColor:'rgba(249,115,22,0.10)', borderColor:'rgba(249,115,22,0.35)', costs:[31.2,46.3,69.9,91.0],  malePct:49, cnt:5396  },
+  kouki:  { name:'後期高齢', solidColor:'#8B5CF6', barColor:'rgba(139,92,246,0.85)', bgColor:'rgba(139,92,246,0.10)',borderColor:'rgba(139,92,246,0.35)', costs:[92.4,105.8,121.3,138.7],malePct:44, cnt:1159  },
+};
+const INSURER_KEY_MAP = { '全体':'all', '共済':'kyosai', '健保組合':'kenpo', '国保':'nh', '後期高齢':'kouki' };
+const INSURER_OPTS = ['全体','共済','健保組合','国保','後期高齢'];
+
+function InsurerCompChart({ view, selected }) {
+  const canvasRef = useRef(null);
+  const chartRef  = useRef(null);
+  useEffect(() => {
+    if (typeof Chart === 'undefined') return;
+    if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+    const ctx = canvasRef.current.getContext('2d');
+    const keys = selected.length > 0 ? selected : Object.keys(INS_COMP_DATA);
+    if (view === 'cost') {
+      chartRef.current = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['40-49歳','50-59歳','60-69歳','70-74歳'],
+          datasets: keys.map(k => ({ label: INS_COMP_DATA[k].name, data: INS_COMP_DATA[k].costs, backgroundColor: INS_COMP_DATA[k].barColor, borderRadius: 4 })),
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 11, padding: 8 } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 10 } }, title: { display: true, text: '万円/人（2023年）', font: { size: 10 } } },
+          },
+        },
+      });
+    } else {
+      chartRef.current = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: keys.map(k => INS_COMP_DATA[k].name),
+          datasets: [
+            { label: '男性', data: keys.map(k => INS_COMP_DATA[k].malePct), backgroundColor: 'rgba(55,105,175,0.85)', borderRadius: 4, stack: 'g' },
+            { label: '女性', data: keys.map(k => 100 - INS_COMP_DATA[k].malePct), backgroundColor: 'rgba(219,39,119,0.75)', borderRadius: 4, stack: 'g' },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 11, padding: 8 } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: 'rgba(0,0,0,0.06)' }, stacked: true, ticks: { font: { size: 10 }, callback: v => `${v}%` }, title: { display: true, text: '性別構成比', font: { size: 10 } }, max: 100 },
+          },
+        },
+      });
+    }
+    return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
+  }, [view, selected.join(',')]);
+  return <canvas ref={canvasRef} style={{ width:'100%', height:'100%' }}/>;
+}
+
+function calcAppliedCount(age, disease, gender, insurer) {
+  const base   = (COUNT_BASE[disease]||COUNT_BASE['2型糖尿病'])[age] || 12847;
+  const iKey   = INSURER_KEY_MAP[insurer] || 'all';
+  const iRatio = INS_CNT[iKey] !== undefined ? INS_CNT[iKey] : 1;
+  const gMult  = gender === '男性' ? 0.51 : gender === '女性' ? 0.49 : 1;
+  return Math.round(base * iRatio * gMult).toLocaleString();
+}
+
+/* 自治体・保険者モード（3ペイン） */
+function MunicipalMode() {
+  const [age, setAge]               = useState('全年齢');
+  const [disease, setDisease]       = useState('2型糖尿病');
+  const [period, setPeriod]         = useState('2021-2023年');
+  const [comparison, setComparison]   = useState('national');
+  const [breakdown, setBreakdown]     = useState('全体');
+  const [journeyInsurer, setJourneyInsurer] = useState('all');
+  const [applied, setApplied]         = useState({ comparison:'national', breakdown:'全体', age:'全年齢', disease:'2型糖尿病', period:'2021-2023年', gender:'全体', insurer:'全体' });
+  const [activeChart, setActiveChart] = useState('benchmark');
+  const [gender, setGender]           = useState('全体');
+  const [insurer, setInsurer]         = useState('全体');
+  const [insCompView, setInsCompView] = useState('cost');
+  const [insSelected, setInsSelected] = useState(['kyosai','kenpo','nh','kouki']);
+  const [journeyDisease, setJourneyDisease] = useState('diabetes');
+  const [chatMessages, setChatMessages] = useState([
+    { role:'ai', text:'こんにちは。A市のデータヘルス分析をサポートします。気になる指標や傾向についてお気軽にご質問ください。' }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const chatBottomRef = useRef(null);
+  // クイック比較トグル（再集計なしで即時グラフ更新）
+  const [benchQuickAge,    setBenchQuickAge]    = useState('全年齢');
+  const [benchQuickGender, setBenchQuickGender] = useState('全体');
+  const [journeyQuickAge,    setJourneyQuickAge]    = useState('全年齢');
+  const [journeyQuickGender, setJourneyQuickGender] = useState('全体');
+  // Airlock持出申請モーダル
+  const [airlockOpen,   setAirlockOpen]   = useState(false);
+  const [airlockTarget, setAirlockTarget] = useState('');
+  const [airlockChk1,   setAirlockChk1]   = useState(false);
+  const [airlockChk2,   setAirlockChk2]   = useState(false);
+  // AI推論SQLアコーディオン
+  const [openSqlIdx, setOpenSqlIdx] = useState(null);
+  const closeAirlock = () => { setAirlockOpen(false); setAirlockChk1(false); setAirlockChk2(false); };
+  const openAirlock  = (target) => { setAirlockTarget(target); setAirlockChk1(false); setAirlockChk2(false); setAirlockOpen(true); };
+  // ジャーニー用スケール（クイックトグル込み）
+  const journeyScale = useMemo(() => {
+    const iKey   = INSURER_KEY_MAP[applied.insurer] || 'all';
+    const ageKey = applied.age    !== '全年齢' ? applied.age    : journeyQuickAge;
+    const gndKey = applied.gender !== '全体'   ? applied.gender : journeyQuickGender;
+    return (GENDER_MULT[gndKey] || 1) * (INS_MULT[iKey] || 1) * (AGE_COST_MULT[ageKey] || 1);
+  }, [applied.gender, applied.insurer, applied.age, journeyQuickAge, journeyQuickGender]);
+
+  const aiResponses = {
+    '糖尿病': 'A市の2型糖尿病患者の医療費は全国平均を約10%上回っています。特に60-69歳の入院費が高く、合併症（腎症・神経障害）による長期入院が主因と推定されます。特定保健指導の強化が効果的です。',
+    '高血圧': '本態性高血圧症患者の外来医療費は年々増加傾向にあります。降圧薬の処方単価は全国平均並みですが、受診頻度が高い点が特徴です。重症化予防プログラムの導入を検討する余地があります。',
+    '入院':   'A市の入院医療費は同規模自治体平均と比較して5.8%高い水準です。在院日数の短縮により改善の余地があります。退院後フォローアップの充実が在院日数削減に効果的です。',
+    '保健指導': '特定保健指導の実施率向上により、対象者一人あたりの翌年医療費が平均13.2万円抑制された実績があります。ICTを活用した遠隔保健指導の導入で実施率向上が期待できます。',
+  };
+
+  const sendChat = () => {
+    if (!chatInput.trim()) return;
+    const userMsg = chatInput.trim();
+    setChatMessages(prev => [...prev, { role:'user', text:userMsg }]);
+    setChatInput('');
+    setTimeout(() => {
+      const key = Object.keys(aiResponses).find(k => userMsg.includes(k));
+      const reply = key
+        ? aiResponses[key]
+        : `「${userMsg}」について分析中です。A市の${disease}データを参照すると、${period}における医療費は注目すべき傾向を示しています。詳細なレポートを生成しますか？`;
+      setChatMessages(prev => [...prev, { role:'ai', text:reply }]);
+    }, 900);
+  };
+
+  useEffect(() => {
+    if (chatBottomRef.current) chatBottomRef.current.scrollIntoView({ behavior:'smooth' });
+  }, [chatMessages]);
+
+  const panel = {
+    background: 'rgba(255,255,255,0.72)',
+    backdropFilter: 'blur(14px)',
+    borderRadius: 16,
+    border: '1px solid rgba(26,54,93,0.10)',
+    boxShadow: '0 4px 24px rgba(26,54,93,0.08)',
+  };
+
+  const chartTabs = [
+    { id:'benchmark', label:'ベンチマーク比較' },
+    { id:'journey',   label:'ペイシェントジャーニー' },
+    { id:'insurer',   label:'保険者比較' },
+    { id:'kpi',       label:'KPI比較' },
+  ];
+
+  const diseaseData = {
+    diabetes: {
+      label:'2型糖尿病', accentColor:'#F97316',
+      codes:['E11','E13'], codeNote:'HbA1c連動（特定健診データ併用）',
+      count:'12,847', note:'ICD-10 E11/E13 + 特定健診HbA1c≥6.5%',
+      stages:[
+        { label:'未受診',    icon:'🔍', pct:28, cost:'0',     badge:'要アプローチ', high:false },
+        { label:'一次予防',  icon:'💊', pct:32, cost:'8.2',   badge:'保健指導対象', high:false },
+        { label:'外来治療',  icon:'🏥', pct:25, cost:'32.4',  badge:'継続管理',     high:false },
+        { label:'入院・手術',icon:'🚑', pct:10, cost:'145.2', badge:'重症化',       high:true  },
+        { label:'後期ケア',  icon:'♻️', pct:5,  cost:'280.0', badge:'在宅移行',     high:true  },
+      ],
+      insight:'「外来治療」から「入院・手術」への移行を10%抑制した場合、年間<strong>約3.8億円</strong>の医療費削減が見込まれます。',
+    },
+    dialysis: {
+      label:'CKD→透析', accentColor:'#3769AF',
+      codes:['N18.3','N18.4','N18.5','J038'], codeNote:'透析導入前（Stage3-4）の介入効果が最大',
+      count:'2,134', note:'ICD-10 N18.3-N18.5 + 手術コードJ038（血液透析）',
+      stages:[
+        { label:'未受診',    icon:'🔍', pct:22, cost:'0',     badge:'要アプローチ', high:false },
+        { label:'CKD早期',   icon:'💊', pct:35, cost:'12.5',  badge:'保健指導対象', high:false },
+        { label:'外来管理',  icon:'🏥', pct:28, cost:'48.3',  badge:'腎臓内科管理', high:false },
+        { label:'透析導入',  icon:'🚑', pct:12, cost:'285.0', badge:'血液透析開始', high:true  },
+        { label:'維持透析',  icon:'♻️', pct:3,  cost:'620.0', badge:'週3回通院',    high:true  },
+      ],
+      insight:'透析導入は年間<strong>約620万円/人</strong>に達します。Stage3での早期介入により透析導入率を15%抑制した場合、年間<strong>約12.4億円</strong>の削減が見込まれます。',
+    },
+    stroke: {
+      label:'脳卒中', accentColor:'#DC2626',
+      codes:['I63','I64','I61'], codeNote:'再発レセプト（同一傷病2回目以降）を含む',
+      count:'3,891', note:'ICD-10 I61/I63/I64 + 再発コード（同一傷病2件目以降）',
+      stages:[
+        { label:'未受診',    icon:'🔍', pct:31, cost:'0',     badge:'リスク潜在',   high:false },
+        { label:'一次予防',  icon:'💊', pct:30, cost:'9.8',   badge:'高血圧管理',   high:false },
+        { label:'外来治療',  icon:'🏥', pct:22, cost:'28.7',  badge:'薬物療法',     high:false },
+        { label:'急性期入院',icon:'🚑', pct:12, cost:'312.0', badge:'急性期病棟',   high:true  },
+        { label:'回復期リハ',icon:'♻️', pct:5,  cost:'185.0', badge:'機能回復訓練', high:true  },
+      ],
+      insight:'脳卒中急性期入院費は平均<strong>312万円/人</strong>と非常に高額です。高血圧の適切な管理で発症リスクを20%低下させた場合、年間<strong>約6.2億円</strong>の医療費削減が見込まれます。',
+    },
+    heart: {
+      label:'虚血性心疾患', accentColor:'#9333EA',
+      codes:['I20','I21','I25','K021','K055'], codeNote:'PCI（K021）・CABG（K055）手術コード含む',
+      count:'4,218', note:'ICD-10 I20-I25 + 手術コードK021（PCI）/ K055（CABG）',
+      stages:[
+        { label:'未受診',    icon:'🔍', pct:29, cost:'0',     badge:'リスク潜在',   high:false },
+        { label:'一次予防',  icon:'💊', pct:33, cost:'8.5',   badge:'脂質異常管理', high:false },
+        { label:'外来治療',  icon:'🏥', pct:23, cost:'45.2',  badge:'薬物療法',     high:false },
+        { label:'手術・入院',icon:'🚑', pct:11, cost:'420.0', badge:'PCI/CABG',     high:true  },
+        { label:'心臓リハ',  icon:'♻️', pct:4,  cost:'156.0', badge:'心臓リハビリ', high:true  },
+      ],
+      insight:'PCI・CABG等の心臓手術は平均<strong>420万円/人</strong>と最高額です。LDL管理強化と禁煙指導で発症リスクを18%低下させた場合、年間<strong>約8.1億円</strong>の医療費削減が見込まれます。',
+    },
+    hypertension: {
+      label:'高血圧症', accentColor:'#0891B2',
+      codes:['I10'], codeNote:'降圧薬MEコード突合でコントロール状況も確認可',
+      count:'18,432', note:'ICD-10 I10（本態性高血圧症）+ 降圧薬処方MEコード突合（血圧コントロール状況の層別化も可能）',
+      stages:[
+        { label:'未受診',    icon:'🔍', pct:34, cost:'0',     badge:'リスク潜在',    high:false },
+        { label:'一次予防',  icon:'💊', pct:28, cost:'6.8',   badge:'生活習慣改善',  high:false },
+        { label:'外来治療',  icon:'🏥', pct:27, cost:'24.5',  badge:'降圧薬管理',    high:false },
+        { label:'入院・手術',icon:'🚑', pct:8,  cost:'98.3',  badge:'重症化・合併症', high:true  },
+        { label:'後期ケア',  icon:'♻️', pct:3,  cost:'165.0', badge:'慢性期管理',    high:true  },
+      ],
+      insight:'高血圧症は患者数が最多の疾患です。放置すると脳卒中・心疾患のリスクが急増します。降圧薬の継続服薬率向上と生活習慣改善で重症化移行を15%抑制した場合、年間<strong>約5.2億円</strong>の医療費削減が見込まれます。',
+    },
+  };
+  const jd = diseaseData[journeyDisease];
+
+  return (
+    <div style={{ display:'grid', gridTemplateColumns:'195px 1fr 288px', gap:16 }} className="slide-up">
+
+      {/* ── Airlockモーダル（position:fixed でグリッドレイアウトに影響なし）── */}
+      {airlockOpen && (
+        <div className="airlock-overlay" onClick={closeAirlock}>
+          <div className="glass slide-up" style={{ width:500, maxWidth:'90vw', padding:32, borderRadius:20, position:'relative' }} onClick={e => e.stopPropagation()}>
+            {/* ヘッダー */}
+            <div style={{ display:'flex', alignItems:'flex-start', gap:12, marginBottom:20 }}>
+              <div style={{ width:44, height:44, borderRadius:12, background:'linear-gradient(135deg,#1A365D,#3769AF)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, boxShadow:'0 2px 12px rgba(26,54,93,0.30)', flexShrink:0 }}>🔒</div>
+              <div style={{ flex:1 }}>
+                <h3 style={{ fontSize:16, fontWeight:700, color:C.text, letterSpacing:'-0.02em', marginBottom:3 }}>Airlock 生成物持出申請</h3>
+                <p style={{ fontSize:11, color:C.textLight, lineHeight:1.55 }}>「{airlockTarget}」のデータ・グラフを安全な手順で外部持出申請します</p>
+              </div>
+              <button onClick={closeAirlock} style={{ background:'rgba(26,54,93,0.08)', border:'none', borderRadius:999, width:28, height:28, fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:C.textMid, flexShrink:0, fontFamily:'inherit' }}>×</button>
+            </div>
+            {/* 申請対象 */}
+            <div style={{ background:'rgba(26,54,93,0.04)', border:'1px solid rgba(26,54,93,0.10)', borderRadius:11, padding:'11px 16px', marginBottom:18 }}>
+              <div style={{ fontSize:9.5, color:C.textLight, marginBottom:4, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase' }}>申請対象ファイル</div>
+              <div style={{ fontSize:13, color:C.text, fontWeight:600 }}>📊 {airlockTarget}グラフ（PNG / CSV）</div>
+              <div style={{ fontSize:11, color:C.textLight, marginTop:3 }}>解析条件: {applied.disease} · {applied.period} · {applied.age}</div>
+            </div>
+            {/* 確認チェックボックス */}
+            <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:22 }}>
+              {[
+                [airlockChk1, setAirlockChk1, '個人特定リスク（n数10未満のセル）がないことを確認した'],
+                [airlockChk2, setAirlockChk2, '目的外利用ではないことを確認した（申請済みの利用目的の範囲内）'],
+              ].map(([checked, setter, label], ci) => (
+                <label key={ci} onClick={() => setter(v => !v)}
+                  style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'11px 14px', background: checked ? 'rgba(5,150,105,0.08)' : 'rgba(255,255,255,0.62)', border:`1.5px solid ${checked ? 'rgba(5,150,105,0.38)' : 'rgba(26,54,93,0.14)'}`, borderRadius:10, cursor:'pointer', transition:'all 0.18s', backdropFilter:'blur(8px)' }}>
+                  <div style={{ width:18, height:18, borderRadius:5, border:`2px solid ${checked ? '#059669' : 'rgba(26,54,93,0.28)'}`, background: checked ? '#059669' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:1, transition:'all 0.15s' }}>
+                    {checked && <span style={{ color:'white', fontSize:12, fontWeight:700 }}>✓</span>}
+                  </div>
+                  <span style={{ fontSize:12, color: checked ? '#065F46' : C.text, fontWeight: checked ? 600 : 400, lineHeight:1.6, userSelect:'none' }}>{label}</span>
+                </label>
+              ))}
+            </div>
+            {/* アクションボタン */}
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={closeAirlock} className="btn-outline" style={{ flex:1, padding:'12px', fontSize:13 }}>キャンセル</button>
+              <button disabled={!airlockChk1 || !airlockChk2}
+                onClick={() => { closeAirlock(); alert('持出申請が提出されました。\n情報管理部門による審査（最大3営業日）後にダウンロードリンクが発行されます。'); }}
+                style={{ flex:2, padding:'12px', fontSize:13, fontWeight:700, borderRadius:11, border:'none', cursor: airlockChk1 && airlockChk2 ? 'pointer' : 'not-allowed', background: airlockChk1 && airlockChk2 ? 'linear-gradient(135deg,#1A365D,#3769AF)' : 'rgba(26,54,93,0.12)', color: airlockChk1 && airlockChk2 ? 'white' : C.textLight, transition:'all 0.28s', boxShadow: airlockChk1 && airlockChk2 ? '0 4px 20px rgba(26,54,93,0.35)' : 'none', fontFamily:'inherit' }}>
+                {airlockChk1 && airlockChk2 ? '🔒 申請する' : '上記の確認事項にチェックしてください'}
+              </button>
+            </div>
+            {/* 注記 */}
+            <div style={{ marginTop:14, padding:'8px 12px', background:'rgba(251,191,36,0.07)', border:'1px solid rgba(251,191,36,0.22)', borderRadius:8, fontSize:10, color:'#78350F', lineHeight:1.65 }}>
+              ⚠️ 申請後、情報管理部門による審査（最大3営業日）が行われます。審査通過後に安全なダウンロードリンクが発行されます（Airlock機能 — 厚労省調達仕様 3.(1)オ.2 準拠）
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── 左ペイン: 条件設定 ─── */}
+      <div style={{ ...panel, padding:'16px 14px', display:'flex', flexDirection:'column', gap:14 }}>
+        <div style={{ fontSize:12, fontWeight:700, color:C.text, borderBottom:'1px solid rgba(26,54,93,0.10)', paddingBottom:8 }}>
+          🔎 分析条件
+        </div>
+        {[
+          ['年齢層', age, setAge, ['全年齢','40-49歳','50-59歳','60-69歳','70-74歳']],
+          ['疾患',   disease, setDisease, ['2型糖尿病','本態性高血圧症','慢性腎臓病','脂質異常症']],
+          ['期間',   period,  setPeriod,  ['2021-2023年','2020-2022年','2019-2021年']],
+        ].map(([label, val, setter, opts]) => (
+          <div key={label}>
+            <label style={{ fontSize:10, fontWeight:700, color:C.textLight, letterSpacing:'0.04em', display:'block', marginBottom:4 }}>{label}</label>
+            <select value={val} onChange={e => setter(e.target.value)} className="input-glass" style={{ width:'100%', padding:'7px 10px', fontSize:11.5 }}>
+              {opts.map(o => <option key={o}>{o}</option>)}
+            </select>
+          </div>
+        ))}
+        <div>
+          <label style={{ fontSize:10, fontWeight:700, color:C.textLight, letterSpacing:'0.04em', display:'block', marginBottom:6 }}>比較対象</label>
+          {[['national','全国平均'],['similar','同規模自治体'],['prefecture','県平均'],['pref_city','県内他自治体']].map(([val, label]) => (
+            <label key={val} style={{ display:'flex', alignItems:'center', gap:7, fontSize:11.5, color:C.textMid, marginBottom:5, cursor:'pointer' }}>
+              <input type="radio" name="comparison" value={val} checked={comparison===val} onChange={() => setComparison(val)} style={{ accentColor:C.accent }}/>
+              {label}
+            </label>
+          ))}
+        </div>
+        <div>
+          <label style={{ fontSize:10, fontWeight:700, color:C.textLight, letterSpacing:'0.04em', display:'block', marginBottom:4 }}>集計軸</label>
+          <select value={breakdown} onChange={e => setBreakdown(e.target.value)} className="input-glass" style={{ width:'100%', padding:'7px 10px', fontSize:11.5 }}>
+            {['全体','男性','女性','年代別','年代×性別'].map(o => <option key={o}>{o}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize:10, fontWeight:700, color:C.textLight, letterSpacing:'0.04em', display:'block', marginBottom:4 }}>性別</label>
+          <select value={gender} onChange={e => setGender(e.target.value)} className="input-glass" style={{ width:'100%', padding:'7px 10px', fontSize:11.5 }}>
+            {['全体','男性','女性'].map(o => <option key={o}>{o}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize:10, fontWeight:700, color:C.textLight, letterSpacing:'0.04em', display:'block', marginBottom:4 }}>保険者</label>
+          <select value={insurer} onChange={e => setInsurer(e.target.value)} className="input-glass" style={{ width:'100%', padding:'7px 10px', fontSize:11.5 }}>
+            {INSURER_OPTS.map(o => <option key={o}>{o}</option>)}
+          </select>
+        </div>
+        <div style={{ background:'rgba(26,54,93,0.04)', borderRadius:10, padding:'10px 12px', border:'1px solid rgba(26,54,93,0.08)' }}>
+          <div style={{ fontSize:9, color:C.textLight, marginBottom:4 }}>対象者数</div>
+          <div style={{ fontSize:22, fontWeight:800, color:C.accent, letterSpacing:'-0.04em' }}>
+            {calcAppliedCount(age, disease, gender, insurer)}<span style={{ fontSize:10, fontWeight:400, marginLeft:2 }}>名</span>
+          </div>
+          <div style={{ fontSize:9, color:C.textLight, marginTop:2 }}>{disease} · {period}{gender !== '全体' ? ` · ${gender}` : ''}{insurer !== '全体' ? ` · ${insurer}` : ''}</div>
+        </div>
+        <button className="btn-primary" style={{ padding:'10px', fontSize:12, marginTop:'auto' }}
+          onClick={() => setApplied({ comparison, breakdown, age, disease, period, gender, insurer })}>
+          📊 再集計
+        </button>
+      </div>
+
+      {/* ─── 中央ペイン: チャート ─── */}
+      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+        <div style={{ display:'flex', gap:6 }}>
+          {chartTabs.map(t => (
+            <button key={t.id} onClick={() => setActiveChart(t.id)}
+              style={{
+                padding:'8px 16px', fontSize:12, fontWeight:600, borderRadius:10, border:'none', cursor:'pointer',
+                background: activeChart===t.id ? 'linear-gradient(135deg,#1A365D,#3769AF)' : 'rgba(255,255,255,0.65)',
+                color: activeChart===t.id ? '#fff' : C.textMid,
+                boxShadow: activeChart===t.id ? '0 3px 12px rgba(26,54,93,0.28)' : 'none',
+                transition:'all 0.2s',
+              }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ ...panel, padding:'18px 20px', flex:1 }}>
+          {activeChart === 'benchmark' && (
+            <>
+              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:6, gap:8 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.text, display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', flex:1 }}>
+                  {applied.breakdown === '年代×性別' ? '性別×年齢層別 1人あたり医療費（2023年）' : applied.breakdown === '年代別' ? '年齢層別 1人あたり医療費（2023年）' : '1人あたり医療費（年次推移）'}
+                  <div className="data-tip-wrap">
+                    <span style={{ fontSize:13, lineHeight:1, opacity:0.70 }}>ℹ️</span>
+                    <div className="data-tip-box">
+                      <strong style={{ color:'#FCD34D', fontSize:11 }}>⚠️ データ留意事項</strong>
+                      <div style={{ marginTop:6 }}>レセプトデータは診療月から審査を経て反映されるため、<strong>直近2ヶ月分は欠損を含みます。</strong></div>
+                      <div style={{ marginTop:5, color:'rgba(226,232,240,0.72)' }}>NDBへの収録は原則、診療翌々月以降。速報値と確定値の差異にご注意ください。</div>
+                      <a href="#" onClick={e => e.preventDefault()} style={{ color:'#93C5FD', marginTop:8, display:'inline-block', fontSize:10.5, textDecoration:'underline' }}>📚 データカタログで詳細定義を見る</a>
+                    </div>
+                  </div>
+                  <span style={{ fontSize:10, color:C.textLight, fontWeight:400 }}>— A市 vs {({'national':'全国平均','similar':'同規模自治体','prefecture':'県平均','pref_city':'県内他自治体'})[applied.comparison]} · {applied.breakdown}</span>
+                </div>
+                <button className="airlock-btn" onClick={() => openAirlock('ベンチマーク比較')}>📤 Airlock持出申請</button>
+              </div>
+              {(applied.gender !== '全体' || applied.insurer !== '全体' || applied.age !== '全年齢') && (
+                <div style={{ display:'flex', gap:5, marginBottom:8, flexWrap:'wrap' }}>
+                  {applied.age    !== '全年齢' && <span style={{ fontSize:10, padding:'2px 9px', borderRadius:999, background:'rgba(5,150,105,0.12)', color:'#065F46', border:'1px solid rgba(5,150,105,0.25)', fontWeight:600 }}>年齢: {applied.age}</span>}
+                  {applied.gender !== '全体'   && <span style={{ fontSize:10, padding:'2px 9px', borderRadius:999, background:'rgba(55,105,175,0.12)', color:'#1A365D', border:'1px solid rgba(55,105,175,0.25)', fontWeight:600 }}>性別: {applied.gender}</span>}
+                  {applied.insurer !== '全体'  && <span style={{ fontSize:10, padding:'2px 9px', borderRadius:999, background:'rgba(249,115,22,0.10)', color:'#9A3412', border:'1px solid rgba(249,115,22,0.25)', fontWeight:600 }}>保険者: {applied.insurer}</span>}
+                  <span style={{ fontSize:10, color:C.textLight, alignSelf:'center' }}>のデータに補正済み</span>
+                </div>
+              )}
+              {/* クイック比較トグル（全体の場合のみ表示） */}
+              {(applied.age === '全年齢' || applied.gender === '全体') && (
+                <div style={{ display:'flex', gap:6, marginBottom:8, flexWrap:'wrap', alignItems:'center', padding:'7px 10px', background:'rgba(26,54,93,0.04)', borderRadius:9, border:'1px solid rgba(26,54,93,0.08)' }}>
+                  <span style={{ fontSize:9.5, color:C.textLight, fontWeight:700, marginRight:2 }}>🔬 クイック比較：</span>
+                  {applied.age === '全年齢' && <>
+                    <span style={{ fontSize:9.5, color:C.textLight }}>年齢</span>
+                    {['全年齢','40-49歳','50-59歳','60-69歳','70-74歳'].map(o => (
+                      <button key={o} onClick={() => setBenchQuickAge(o)}
+                        style={{ padding:'3px 8px', fontSize:9.5, fontWeight:600, borderRadius:5, border:'none', cursor:'pointer', transition:'all 0.15s',
+                          background: benchQuickAge===o ? '#1A365D' : 'rgba(26,54,93,0.10)',
+                          color: benchQuickAge===o ? '#fff' : C.textMid }}>{o}</button>
+                    ))}
+                  </>}
+                  {applied.gender === '全体' && <>
+                    <span style={{ fontSize:9.5, color:C.textLight, marginLeft:4 }}>性別</span>
+                    {['全体','男性','女性'].map(o => (
+                      <button key={o} onClick={() => setBenchQuickGender(o)}
+                        style={{ padding:'3px 8px', fontSize:9.5, fontWeight:600, borderRadius:5, border:'none', cursor:'pointer', transition:'all 0.15s',
+                          background: benchQuickGender===o ? '#3769AF' : 'rgba(26,54,93,0.10)',
+                          color: benchQuickGender===o ? '#fff' : C.textMid }}>{o}</button>
+                    ))}
+                  </>}
+                </div>
+              )}
+              <div style={{ height:220 }}>
+                <BenchmarkChart comparison={applied.comparison} breakdown={applied.breakdown}
+                  appliedGender={applied.gender !== '全体' ? applied.gender : benchQuickGender}
+                  appliedInsurer={applied.insurer}
+                  appliedAge={applied.age !== '全年齢' ? applied.age : benchQuickAge}/>
+              </div>
+              <div style={{ display:'flex', gap:8, marginTop:14 }}>
+                {[
+                  ['▲ 全国比 +10.1%','rgba(220,38,38,0.10)','#B91C1C'],
+                  ['■ 増加傾向 2019→2023','rgba(249,115,22,0.10)','#C2410C'],
+                  [`● 対象者 ${calcAppliedCount(applied.age, applied.disease, applied.gender, applied.insurer)}名`,'rgba(26,54,93,0.07)',C.textMid],
+                ].map(([l,bg,cl]) => (
+                  <div key={l} style={{ background:bg, borderRadius:8, padding:'6px 12px', fontSize:11, color:cl, fontWeight:600 }}>{l}</div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {activeChart === 'journey' && (
+            <>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8, gap:8 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.text, display:'flex', alignItems:'center', gap:6 }}>
+                  ペイシェントジャーニー分析
+                  <div className="data-tip-wrap">
+                    <span style={{ fontSize:13, lineHeight:1, opacity:0.70 }}>ℹ️</span>
+                    <div className="data-tip-box">
+                      <strong style={{ color:'#FCD34D', fontSize:11 }}>⚠️ データ留意事項</strong>
+                      <div style={{ marginTop:6 }}>ステージ分類はレセプトの傷病名・手術コードによる<strong>推定値</strong>です。実際の臨床ステージとは乖離が生じる場合があります。</div>
+                      <div style={{ marginTop:5, color:'rgba(226,232,240,0.72)' }}>費用は補正後の推計値（実費ではありません）。同一患者が複数ステージに計上される場合があります。</div>
+                      <a href="#" onClick={e => e.preventDefault()} style={{ color:'#93C5FD', marginTop:8, display:'inline-block', fontSize:10.5, textDecoration:'underline' }}>📚 データカタログで詳細定義を見る</a>
+                    </div>
+                  </div>
+                </div>
+                <button className="airlock-btn" onClick={() => openAirlock('ペイシェントジャーニー')}>📤 Airlock持出申請</button>
+              </div>
+              {/* 疾患セレクタ */}
+              <div style={{ display:'flex', gap:6, marginBottom:8, flexWrap:'wrap' }}>
+                {Object.entries(diseaseData).map(([key, d]) => (
+                  <button key={key} onClick={() => setJourneyDisease(key)}
+                    style={{
+                      padding:'5px 13px', fontSize:11.5, fontWeight:600, borderRadius:8, border:'none', cursor:'pointer', transition:'all 0.18s',
+                      background: journeyDisease===key ? d.accentColor : 'rgba(26,54,93,0.06)',
+                      color: journeyDisease===key ? '#fff' : C.textMid,
+                      boxShadow: journeyDisease===key ? `0 2px 10px ${d.accentColor}55` : 'none',
+                    }}>
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* フィルタ適用バッジ */}
+              {(applied.gender !== '全体' || applied.insurer !== '全体' || applied.age !== '全年齢' || applied.breakdown !== '全体') && (
+                <div style={{ marginBottom:8, padding:'5px 10px', background:'rgba(55,105,175,0.08)', borderRadius:7, border:'1px solid rgba(55,105,175,0.18)', fontSize:10.5, color:'#1e3a8a', display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
+                  <span>📊 フィルタ適用中：</span>
+                  {applied.breakdown !== '全体' && <strong>集計軸: {applied.breakdown}</strong>}
+                  {applied.age    !== '全年齢' && <strong>年齢: {applied.age}</strong>}
+                  {applied.gender !== '全体'   && <strong>性別: {applied.gender}</strong>}
+                  {applied.insurer !== '全体'  && <strong>保険者: {applied.insurer}</strong>}
+                  <span style={{ fontSize:9.5, color:'#3D5280' }}>（費用は補正値）</span>
+                </div>
+              )}
+              {/* クイック比較トグル（全体の場合のみ） */}
+              {(applied.age === '全年齢' || applied.gender === '全体') && (
+                <div style={{ display:'flex', gap:6, marginBottom:8, flexWrap:'wrap', alignItems:'center', padding:'7px 10px', background:'rgba(249,115,22,0.05)', borderRadius:9, border:'1px solid rgba(249,115,22,0.15)' }}>
+                  <span style={{ fontSize:9.5, color:'#9A3412', fontWeight:700, marginRight:2 }}>🔬 クイック比較：</span>
+                  {applied.age === '全年齢' && <>
+                    <span style={{ fontSize:9.5, color:C.textLight }}>年齢</span>
+                    {['全年齢','40-49歳','50-59歳','60-69歳','70-74歳'].map(o => (
+                      <button key={o} onClick={() => setJourneyQuickAge(o)}
+                        style={{ padding:'3px 8px', fontSize:9.5, fontWeight:600, borderRadius:5, border:'none', cursor:'pointer', transition:'all 0.15s',
+                          background: journeyQuickAge===o ? '#C2410C' : 'rgba(249,115,22,0.12)',
+                          color: journeyQuickAge===o ? '#fff' : C.textMid }}>{o}</button>
+                    ))}
+                  </>}
+                  {applied.gender === '全体' && <>
+                    <span style={{ fontSize:9.5, color:C.textLight, marginLeft:4 }}>性別</span>
+                    {['全体','男性','女性'].map(o => (
+                      <button key={o} onClick={() => setJourneyQuickGender(o)}
+                        style={{ padding:'3px 8px', fontSize:9.5, fontWeight:600, borderRadius:5, border:'none', cursor:'pointer', transition:'all 0.15s',
+                          background: journeyQuickGender===o ? '#C2410C' : 'rgba(249,115,22,0.12)',
+                          color: journeyQuickGender===o ? '#fff' : C.textMid }}>{o}</button>
+                    ))}
+                  </>}
+                </div>
+              )}
+
+              {/* NDB疾病定義バッジ */}
+              <div style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:10, padding:'8px 12px', background:'rgba(26,54,93,0.04)', borderRadius:10, border:'1px solid rgba(26,54,93,0.08)' }}>
+                <span style={{ fontSize:10, color:C.textLight, fontWeight:700, flexShrink:0, marginTop:1 }}>NDB定義</span>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:4, flex:1 }}>
+                  {jd.codes.map(c => (
+                    <span key={c} style={{ fontSize:10, padding:'2px 7px', background:`${jd.accentColor}18`, color:jd.accentColor, borderRadius:5, fontWeight:700, fontFamily:'monospace' }}>{c}</span>
+                  ))}
+                  <span style={{ fontSize:10, color:C.textLight, alignSelf:'center' }}>— {jd.codeNote}</span>
+                </div>
+                <div style={{ flexShrink:0, fontSize:9.5, color:C.textLight, textAlign:'right', lineHeight:1.5 }}>
+                  対象 <strong style={{ color:jd.accentColor }}>{jd.count}名</strong>
+                </div>
+              </div>
+
+              {/* ジャーニーバー */}
+              <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+                {jd.stages.map((s, i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:12 }}>
+                    <div style={{ width:84, display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                      <span style={{ fontSize:16 }}>{s.icon}</span>
+                      <span style={{ fontSize:10.5, color:C.textMid, fontWeight:600 }}>{s.label}</span>
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
+                        <span style={{ fontSize:9.5, color:C.textLight }}>{s.pct}%</span>
+                        <span style={{ fontSize:10.5, fontWeight:700, color: s.high ? jd.accentColor : C.text }}>
+                          {s.cost === '0' ? '未受診' : `${(parseFloat(s.cost) * journeyScale).toFixed(1)}万円/人`}
+                        </span>
+                      </div>
+                      <div style={{ background:'rgba(26,54,93,0.08)', borderRadius:4, height:11, overflow:'hidden' }}>
+                        <div style={{ width:`${s.pct*2.5}%`, height:'100%', borderRadius:4, transition:'width 0.4s ease',
+                          background: s.high
+                            ? `linear-gradient(to right,${jd.accentColor}cc,${jd.accentColor})`
+                            : 'linear-gradient(to right,#3769AF,#059669)',
+                        }}/>
+                      </div>
+                    </div>
+                    <div style={{ background: s.high ? `${jd.accentColor}18` : 'rgba(26,54,93,0.07)', border: `1px solid ${s.high ? jd.accentColor+'44' : 'rgba(26,54,93,0.12)'}`, borderRadius:6, padding:'3px 8px', fontSize:9.5, color: s.high ? jd.accentColor : C.textMid, flexShrink:0, fontWeight:600 }}>{s.badge}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 未受診 = 特定健診未受診 + 保険者種別内訳 */}
+              <div style={{ marginTop:10, padding:'10px 12px', background:'rgba(26,54,93,0.03)', borderRadius:10, border:'1px solid rgba(26,54,93,0.08)' }}>
+                <div style={{ fontSize:10, fontWeight:700, color:C.text, marginBottom:6 }}>
+                  📋 「未受診」の定義と保険者種別内訳
+                  <span style={{ fontSize:9, color:C.textLight, fontWeight:400, marginLeft:6 }}>特定健診未受診者（NDB特定健診データに記録なし）をNDB上で抽出可能</span>
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:5 }}>
+                  {[['共済組合','共済','18%','2,990名','#059669'],['健保組合','健保組合','31%','5,142名','#3769AF'],['国民健康保険','国保','42%','7,021名','#F97316'],['後期高齢者','後期高齢','9%','1,490名','#8B5CF6']].map(([l,key,p,n,c]) => {
+                    const isSelected = applied.insurer === key;
+                    return (
+                      <div key={l} style={{ textAlign:'center', background: isSelected ? `${c}28` : `${c}12`, borderRadius:7, padding:'7px 4px', border:`1.5px solid ${isSelected ? c : c+'33'}`, boxShadow: isSelected ? `0 2px 10px ${c}44` : 'none', transition:'all 0.2s' }}>
+                        <div style={{ fontSize:8.5, color: isSelected ? c : C.textLight, marginBottom:2, fontWeight: isSelected ? 700 : 400 }}>{l}{isSelected && ' ✓'}</div>
+                        <div style={{ fontSize:15, fontWeight:800, color:c }}>{p}</div>
+                        <div style={{ fontSize:8.5, color:C.textLight }}>{n}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* NDB完全定義ノート */}
+              <div style={{ marginTop:8, padding:'6px 10px', background:'rgba(26,54,93,0.03)', borderRadius:8, border:'1px solid rgba(26,54,93,0.07)', fontSize:9.5, color:C.textLight, lineHeight:1.6 }}>
+                📋 <strong>NDB定義（最大範囲）：</strong>{jd.note}
+              </div>
+
+              {/* インサイト */}
+              <div style={{ marginTop:8, padding:'10px 14px', background:`${jd.accentColor}0d`, borderRadius:10, border:`1px solid ${jd.accentColor}33`, fontSize:11, color: jd.accentColor==='#F97316'?'#9A3412': jd.accentColor==='#DC2626'?'#991B1B': jd.accentColor==='#9333EA'?'#6B21A8':'#1e3a8a', lineHeight:1.7 }}
+                dangerouslySetInnerHTML={{ __html:`💡 <strong>重症化予防の効果推定：</strong>${jd.insight}` }}
+              />
+            </>
+          )}
+
+          {activeChart === 'insurer' && (
+            <>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6, gap:8 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.text, display:'flex', alignItems:'center', gap:6, flex:1, flexWrap:'wrap' }}>
+                  保険者別 医療費・性別構成比較
+                  <div className="data-tip-wrap">
+                    <span style={{ fontSize:13, lineHeight:1, opacity:0.70 }}>ℹ️</span>
+                    <div className="data-tip-box">
+                      <strong style={{ color:'#FCD34D', fontSize:11 }}>⚠️ データ留意事項</strong>
+                      <div style={{ marginTop:6 }}>保険者別データは被保険者資格の切替時期（年度末など）に<strong>一時的な二重計上</strong>が生じる場合があります。</div>
+                      <div style={{ marginTop:5, color:'rgba(226,232,240,0.72)' }}>後期高齢者医療制度は2008年度開始のため、縦断分析では保険者区分の連続性に注意が必要です。</div>
+                      <a href="#" onClick={e => e.preventDefault()} style={{ color:'#93C5FD', marginTop:8, display:'inline-block', fontSize:10.5, textDecoration:'underline' }}>📚 データカタログで詳細定義を見る</a>
+                    </div>
+                  </div>
+                  {applied.insurer !== '全体' && (
+                    <span style={{ fontSize:10, padding:'2px 9px', borderRadius:999, background:'rgba(249,115,22,0.10)', color:'#9A3412', border:'1px solid rgba(249,115,22,0.25)', fontWeight:700 }}>分析条件: {applied.insurer}</span>
+                  )}
+                </div>
+                <button className="airlock-btn" onClick={() => openAirlock('保険者比較')}>📤 Airlock持出申請</button>
+              </div>
+              {/* ビュー切り替え + 保険者トグル */}
+              <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:12, flexWrap:'wrap' }}>
+                {[['cost','💴 年代別医療費'],['gender','👥 性別構成比']].map(([v,l]) => (
+                  <button key={v} onClick={() => setInsCompView(v)}
+                    style={{ padding:'6px 14px', fontSize:11.5, fontWeight:600, borderRadius:8, border:'none', cursor:'pointer', transition:'all 0.2s',
+                      background: insCompView===v ? 'linear-gradient(135deg,#1A365D,#3769AF)' : 'rgba(26,54,93,0.07)',
+                      color: insCompView===v ? '#fff' : C.textMid,
+                      boxShadow: insCompView===v ? '0 2px 10px rgba(26,54,93,0.28)' : 'none' }}>
+                    {l}
+                  </button>
+                ))}
+                <div style={{ marginLeft:'auto', display:'flex', gap:5, alignItems:'center', flexWrap:'wrap' }}>
+                  <span style={{ fontSize:10, color:C.textLight, fontWeight:600 }}>保険者：</span>
+                  {Object.entries(INS_COMP_DATA).map(([k,d]) => {
+                    const on = insSelected.includes(k);
+                    return (
+                      <button key={k} onClick={() => setInsSelected(prev => {
+                        if (on && prev.length > 1) return prev.filter(x => x !== k);
+                        if (!on) return [...prev, k];
+                        return prev;
+                      })}
+                        style={{ padding:'4px 10px', fontSize:10.5, fontWeight:600, borderRadius:6, border:`1px solid ${on ? d.borderColor : 'rgba(26,54,93,0.12)'}`, cursor:'pointer', transition:'all 0.18s',
+                          background: on ? d.bgColor : 'transparent',
+                          color: on ? d.solidColor : C.textLight,
+                          fontFamily:'inherit' }}>
+                        {d.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* グラフ */}
+              <div style={{ height:185 }}>
+                <InsurerCompChart view={insCompView} selected={insSelected}/>
+              </div>
+              {/* 被保険者数サマリー */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:7, marginTop:12 }}>
+                {Object.entries(INS_COMP_DATA).map(([k,d]) => {
+                  const on = insSelected.includes(k);
+                  return (
+                    <div key={k} style={{ textAlign:'center', background: on ? d.bgColor : 'rgba(26,54,93,0.03)', borderRadius:10, padding:'9px 6px', border:`1px solid ${on ? d.borderColor : 'rgba(26,54,93,0.08)'}`, transition:'all 0.25s', cursor:'pointer' }}
+                      onClick={() => setInsSelected(prev => {
+                        const isOn = prev.includes(k);
+                        if (isOn && prev.length > 1) return prev.filter(x => x !== k);
+                        if (!isOn) return [...prev, k];
+                        return prev;
+                      })}>
+                      <div style={{ fontSize:8.5, color: on ? d.solidColor : C.textLight, fontWeight:700, marginBottom:3 }}>{d.name}</div>
+                      <div style={{ fontSize:17, fontWeight:800, color: on ? d.solidColor : C.textLight }}>{d.cnt.toLocaleString()}<span style={{ fontSize:9, fontWeight:400 }}>名</span></div>
+                      <div style={{ fontSize:8.5, color:C.textLight, marginTop:2 }}>男{d.malePct}% / 女{100-d.malePct}%</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ marginTop:8, padding:'6px 10px', background:'rgba(26,54,93,0.03)', borderRadius:8, border:'1px solid rgba(26,54,93,0.07)', fontSize:9.5, color:C.textLight, lineHeight:1.7 }}>
+                📋 <strong>NDB保険者種別：</strong>後期高齢者（75歳以上）は医療費が際立って高額。国保は中小・自営業者中心で健康格差が大きい傾向。健保・共済は比較的若く就労層が主体。
+              </div>
+            </>
+          )}
+
+          {activeChart === 'kpi' && (
+            <>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8, gap:8 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.text, display:'flex', alignItems:'center', gap:6, flex:1, flexWrap:'wrap' }}>
+                  特定保健指導 実施効果（年齢層別 医療費比較）
+                  <div className="data-tip-wrap">
+                    <span style={{ fontSize:13, lineHeight:1, opacity:0.70 }}>ℹ️</span>
+                    <div className="data-tip-box">
+                      <strong style={{ color:'#FCD34D', fontSize:11 }}>⚠️ データ留意事項</strong>
+                      <div style={{ marginTop:6 }}>実施群・未実施群の比較はRCTではなく<strong>観察研究</strong>です。選択バイアスの影響を受ける可能性があります。</div>
+                      <div style={{ marginTop:5, color:'rgba(226,232,240,0.72)' }}>費用は翌年度レセプトとの突合値（保健指導受講後12ヶ月の累積医療費）です。直近年度は暫定値を含みます。</div>
+                      <a href="#" onClick={e => e.preventDefault()} style={{ color:'#93C5FD', marginTop:8, display:'inline-block', fontSize:10.5, textDecoration:'underline' }}>📚 データカタログで詳細定義を見る</a>
+                    </div>
+                  </div>
+                  <span style={{ fontSize:10, padding:'2px 9px', borderRadius:999, background:'rgba(249,115,22,0.12)', color:'#9A3412', border:'1px solid rgba(249,115,22,0.30)', fontWeight:700 }}>国保被保険者対象</span>
+                </div>
+                <button className="airlock-btn" onClick={() => openAirlock('KPI比較（特定保健指導）')}>📤 Airlock持出申請</button>
+              </div>
+              <div style={{ height:220 }}>
+                <KpiChart/>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginTop:14 }}>
+                {[['保健指導削減効果','-13.2万円/人','#059669'],['実施率','+8.3pt改善','#3769AF'],['費用対効果','1:4.2','#F97316']].map(([l,v,c]) => (
+                  <div key={l} style={{ textAlign:'center', background:'rgba(26,54,93,0.04)', borderRadius:10, padding:'10px' }}>
+                    <div style={{ fontSize:9.5, color:C.textLight, marginBottom:4 }}>{l}</div>
+                    <div style={{ fontSize:15, fontWeight:800, color:c }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop:10, padding:'8px 12px', background:'rgba(26,54,93,0.03)', borderRadius:8, border:'1px solid rgba(26,54,93,0.08)', fontSize:9.5, color:C.textLight, lineHeight:1.7 }}>
+                📋 <strong>未実施群の定義（NDB）：</strong>特定健診結果で腹囲・BMI・血圧・血糖・脂質のうち2項目以上が基準超過かつ特定保健指導を未受講の群。実施群と<strong>同一の対象者基準</strong>でNDB特定健診データ×特定保健指導利用データの突合により抽出可能。
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ─── 右ペイン: AIチャット ─── */}
+      <div style={{ ...panel, padding:'16px 14px', display:'flex', flexDirection:'column' }}>
+        <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:12, borderBottom:'1px solid rgba(26,54,93,0.10)', paddingBottom:8 }}>
+          🤖 AI分析アシスト
+        </div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10 }}>
+          {['糖尿病医療費の傾向は？','保健指導の効果は？','高い疾患は何？'].map(q => (
+            <button key={q} onClick={() => setChatInput(q)}
+              style={{ fontSize:10, padding:'4px 9px', borderRadius:6, border:'1px solid rgba(26,54,93,0.16)', background:'rgba(26,54,93,0.04)', color:C.textMid, cursor:'pointer', fontWeight:500 }}>
+              {q}
+            </button>
+          ))}
+        </div>
+        <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:8, marginBottom:10, maxHeight:380 }}>
+          {chatMessages.map((m, i) => (
+            <div key={i}>
+              <div style={{ display:'flex', justifyContent:m.role==='user'?'flex-end':'flex-start' }}>
+                {m.role==='ai' && <span style={{ fontSize:16, marginRight:6, flexShrink:0, marginTop:2 }}>🤖</span>}
+                <div style={{
+                  maxWidth:'88%', padding:'9px 12px',
+                  borderRadius: m.role==='user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                  background: m.role==='user' ? 'linear-gradient(135deg,#1A365D,#3769AF)' : 'rgba(26,54,93,0.06)',
+                  color: m.role==='user' ? '#fff' : C.text,
+                  fontSize:11.5, lineHeight:1.7,
+                }}>
+                  {m.text}
+                </div>
+              </div>
+              {m.role === 'ai' && (
+                <div style={{ marginLeft:22, marginTop:5 }}>
+                  <button onClick={() => setOpenSqlIdx(openSqlIdx === i ? null : i)}
+                    style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 10px', background:'rgba(15,23,42,0.86)', color:'rgba(148,163,184,0.90)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:7, fontSize:10, cursor:'pointer', fontFamily:'monospace', letterSpacing:'0.02em', transition:'all 0.15s' }}>
+                    <span style={{ fontSize:9 }}>{openSqlIdx === i ? '▼' : '▶'}</span>
+                    🔍 推論過程・実行SQLを確認（根拠の確認）
+                  </button>
+                  {openSqlIdx === i && (
+                    <div className="fade-in" style={{ marginTop:5, background:'rgba(15,23,42,0.94)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:10, padding:'12px 14px' }}>
+                      <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:9 }}>
+                        <span style={{ fontSize:9.5, padding:'2px 8px', background:'rgba(249,115,22,0.15)', color:'#FCA5A5', border:'1px solid rgba(249,115,22,0.28)', borderRadius:5, fontWeight:700 }}>利用テーブル: NDB 医科レセプト MNテーブル</span>
+                        <span style={{ fontSize:9.5, padding:'2px 8px', background:'rgba(55,105,175,0.15)', color:'#93C5FD', border:'1px solid rgba(55,105,175,0.28)', borderRadius:5, fontWeight:700 }}>特定健診 TK01テーブル</span>
+                      </div>
+                      <pre style={{ margin:0, fontSize:9.5, lineHeight:1.80, overflowX:'auto' }}
+                        dangerouslySetInnerHTML={{ __html:
+                          `<span class="sql-cm">-- AI自動生成クエリ（A市 ${applied.disease} ${applied.period}）</span>\n` +
+                          `<span class="sql-kw">SELECT</span>\n` +
+                          `    age_group_cd, sex_cd,\n` +
+                          `    <span class="sql-fn">COUNT</span>(*) <span class="sql-kw">AS</span> patient_cnt,\n` +
+                          `    <span class="sql-fn">ROUND</span>(<span class="sql-fn">SUM</span>(iryohi_total) / <span class="sql-fn">COUNT</span>(*) / 10000, 1)\n` +
+                          `        <span class="sql-kw">AS</span> iryohi_man_yen\n` +
+                          `<span class="sql-kw">FROM</span>  <span class="sql-tbl">ndb.medical_receipt_mn</span> r\n` +
+                          `<span class="sql-kw">JOIN</span>  <span class="sql-tbl">ndb.tokutei_kenshin_tk01</span> k\n` +
+                          `  <span class="sql-kw">ON</span>  r.hihokensha_id = k.hID\n` +
+                          `<span class="sql-kw">WHERE</span>\n` +
+                          `    r.傷病名コード <span class="sql-kw">LIKE</span> <span class="sql-str">'${applied.disease==='2型糖尿病'?'E11%':applied.disease==='本態性高血圧症'?'I10%':applied.disease==='慢性腎臓病'?'N18%':'E78%'}'</span>\n` +
+                          `    <span class="sql-kw">AND</span> r.市区町村コード = <span class="sql-str">'14100'</span>  <span class="sql-cm">-- A市コード</span>\n` +
+                          `    <span class="sql-kw">AND</span> r.診療年月 <span class="sql-kw">BETWEEN</span>\n` +
+                          `        <span class="sql-str">'${applied.period.slice(0,4)}01'</span> <span class="sql-kw">AND</span> <span class="sql-str">'${applied.period.slice(5,9)}12'</span>\n` +
+                          `<span class="sql-kw">GROUP BY</span> age_group_cd, sex_cd\n` +
+                          `<span class="sql-kw">ORDER BY</span> age_group_cd`
+                        }}/>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+          <div ref={chatBottomRef}/>
+        </div>
+        <div style={{ display:'flex', gap:6 }}>
+          <input value={chatInput} onChange={e => setChatInput(e.target.value)}
+            onKeyDown={e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
+            className="input-glass" placeholder="質問を入力…"
+            style={{ flex:1, padding:'8px 11px', fontSize:11.5, borderRadius:10 }}/>
+          <button onClick={sendChat} className="btn-primary" style={{ padding:'8px 12px', fontSize:13 }}>➤</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Academia: Chart.js サブコンポーネント ── */
+function AcEdaChart() {
+  const cvs = useRef(null); const ch = useRef(null);
+  useEffect(() => {
+    if (ch.current) ch.current.destroy();
+    ch.current = new Chart(cvs.current.getContext('2d'), {
+      type:'bar',
+      data:{ labels:['4〜5','5〜6','6〜7','7〜8','8〜9','9〜10','10超'],
+        datasets:[{ label:'HbA1c分布', data:[312,1840,4210,3190,1820,890,585],
+          backgroundColor:'rgba(55,105,175,0.62)', borderColor:'#3769AF', borderWidth:1, borderRadius:3 }] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:600},
+        plugins:{ legend:{display:false} },
+        scales:{ x:{ticks:{color:'#8096B8',font:{size:9}},grid:{color:'rgba(26,54,93,0.07)'}},
+                 y:{ticks:{color:'#8096B8',font:{size:9}},grid:{color:'rgba(26,54,93,0.07)'}} } }
+    });
+    return () => { if(ch.current) ch.current.destroy(); };
+  }, []);
+  return React.createElement('canvas', { ref:cvs });
+}
+function AcKMChart() {
+  const cvs = useRef(null); const ch = useRef(null);
+  useEffect(() => {
+    if (ch.current) ch.current.destroy();
+    ch.current = new Chart(cvs.current.getContext('2d'), {
+      type:'line',
+      data:{ labels:[0,6,12,18,24,30,36,42,48,54,60],
+        datasets:[
+          { label:'治療群（メトホルミン）', data:[1.00,0.98,0.95,0.91,0.87,0.83,0.80,0.77,0.74,0.72,0.70],
+            borderColor:'#3769AF', backgroundColor:'rgba(55,105,175,0.07)', borderWidth:2.5, pointRadius:3, stepped:'before', fill:true },
+          { label:'対照群', data:[1.00,0.96,0.90,0.83,0.76,0.69,0.63,0.57,0.52,0.48,0.44],
+            borderColor:'#F97316', backgroundColor:'rgba(249,115,22,0.06)', borderWidth:2.5, pointRadius:3, stepped:'before', fill:true, borderDash:[5,3] },
+        ] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:{duration:700},
+        plugins:{ legend:{ position:'top', labels:{color:'#3D5280',font:{size:10},boxWidth:20} } },
+        scales:{ x:{title:{display:true,text:'観察月数',color:'#8096B8',font:{size:9}},ticks:{color:'#8096B8'},grid:{color:'rgba(26,54,93,0.06)'}},
+                 y:{title:{display:true,text:'生存率',color:'#8096B8',font:{size:9}},min:0,max:1,ticks:{color:'#8096B8'},grid:{color:'rgba(26,54,93,0.06)'}} } }
+    });
+    return () => { if(ch.current) ch.current.destroy(); };
+  }, []);
+  return React.createElement('canvas', { ref:cvs });
+}
+function AcFeatChart() {
+  const cvs = useRef(null); const ch = useRef(null);
+  useEffect(() => {
+    if (ch.current) ch.current.destroy();
+    ch.current = new Chart(cvs.current.getContext('2d'), {
+      type:'bar',
+      data:{ labels:['BMI','入院回数','eGFR','年齢','HbA1c（最新）'],
+        datasets:[{ label:'重要度', data:[0.38,0.43,0.55,0.64,0.82],
+          backgroundColor:['rgba(55,105,175,0.65)','rgba(55,105,175,0.65)','rgba(55,105,175,0.65)','rgba(249,115,22,0.70)','rgba(249,115,22,0.92)'],
+          borderRadius:4, borderWidth:0 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, animation:{duration:600},
+        plugins:{ legend:{display:false} },
+        scales:{ x:{max:1.0,ticks:{color:'#8096B8',font:{size:9}},grid:{color:'rgba(26,54,93,0.07)'}},
+                 y:{ticks:{color:'#3D5280',font:{size:10}}} } }
+    });
+    return () => { if(ch.current) ch.current.destroy(); };
+  }, []);
+  return React.createElement('canvas', { ref:cvs });
+}
+
+/* ── Academia: テンプレート別出力コンポーネント ── */
+function AcOutEDA() {
+  return (
+    <div className="fade-in">
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:12 }}>
+        {[['Missing Rate','1.2%','#F97316'],['Unique Values','45','#3769AF'],['Row Count','12,847','#059669']].map(([l,v,c])=>(
+          <div key={l} style={{ background:`${c}12`, border:`1px solid ${c}35`, borderRadius:8, padding:'8px', textAlign:'center' }}>
+            <div style={{ fontSize:9, color:C.textLight, marginBottom:2 }}>{l}</div>
+            <div style={{ fontSize:15, fontWeight:800, color:c }}>{v}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ overflowX:'auto', marginBottom:12 }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:9 }}>
+          <thead><tr style={{ background:'rgba(26,54,93,0.06)' }}>
+            {['stat','hba1c','egfr','bmi','age_num'].map(h=><th key={h} style={{ padding:'4px 8px', textAlign:'right', color:C.textMid, fontWeight:700, borderBottom:'1px solid rgba(26,54,93,0.10)', whiteSpace:'nowrap' }}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {[['count','12,847','12,847','12,847','12,847'],['mean','6.94','66.2','24.1','69.3'],['std','1.21','18.4','3.82','6.74'],['min','4.1','6.0','14.2','60'],['max','14.8','135.0','52.3','85']].map(([r,...vs])=>(
+              <tr key={r} style={{ borderBottom:'1px solid rgba(26,54,93,0.05)' }}>
+                <td style={{ padding:'4px 8px', color:C.textLight, fontFamily:'monospace', fontWeight:600 }}>{r}</td>
+                {vs.map((v,i)=><td key={i} style={{ padding:'4px 8px', color:C.text, fontFamily:'monospace', textAlign:'right' }}>{v}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ fontSize:9.5, fontWeight:700, color:C.textMid, marginBottom:5 }}>HbA1c 分布ヒストグラム</div>
+      <div style={{ height:130 }}><AcEdaChart/></div>
+    </div>
+  );
+}
+function AcOutPreproc() {
+  const logs = [
+    { t:'0.12', hi:false, msg:'Input: ndb_2021_2023.cohort_main loaded — 12,847 rows × 24 cols' },
+    { t:'0.28', hi:false, msg:'dropna(subset=["hba1c","egfr","bmi"]) — Null values removed: 3,421 rows' },
+    { t:'0.55', hi:false, msg:'withColumn("age_num", regexp_extract(...)) — age parsed successfully' },
+    { t:'0.83', hi:false, msg:'StandardScaler fit+transform on 18 numeric features' },
+    { t:'1.10', hi:false, msg:'OrdinalEncoder applied to 6 categorical features' },
+    { t:'1.22', hi:true,  msg:'✅  Rows Processed: 1,250,000  |  Output shape: (9,426, 24)  |  Exec: 1.2s' },
+    { t:'1.22', hi:'warn',msg:'⚠  Warning: class imbalance detected (positive rate = 14.3%)' },
+  ];
+  return (
+    <div className="fade-in" style={{ background:'rgba(15,23,42,0.93)', borderRadius:8, padding:'11px 14px', fontFamily:'monospace', fontSize:9.5, lineHeight:2.0 }}>
+      {logs.map((l,i)=>(
+        <div key={i} style={{ display:'flex', gap:10 }}>
+          <span style={{ color:'rgba(100,116,139,0.50)', flexShrink:0, userSelect:'none' }}>[{l.t}s]</span>
+          <span style={{ color:l.hi==='warn'?'#FCD34D':l.hi?'#6EE7B7':'rgba(226,232,240,0.82)' }}>{l.msg}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+function AcOutJoin() {
+  const rows = [
+    ['#1a2f…','E11','28,400','2021-04','40-49歳','7.2','68.5','21.3'],
+    ['#2b3c…','I10','14,200','2021-06','60-69歳','6.8','72.1','25.1'],
+    ['#3c4d…','E11','51,000','2022-01','70-74歳','9.1','44.3','28.7'],
+    ['#4d5e…','E78', '9,800','2022-03','50-59歳','6.1','88.2','22.4'],
+    ['#5e6f…','I10','22,100','2022-09','60-69歳','7.4','61.0','26.8'],
+  ];
+  return (
+    <div className="fade-in">
+      <div style={{ display:'flex', gap:7, flexWrap:'wrap', marginBottom:12 }}>
+        {[['Match Rate','98.5%','#059669'],['Total Records','854,000件','#3769AF'],['Unmatched IDs','12,782件','#D97706']].map(([l,v,c])=>(
+          <div key={l} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 11px', background:`${c}12`, border:`1px solid ${c}40`, borderRadius:8 }}>
+            <span style={{ fontSize:9.5, color:C.textLight }}>{l}</span>
+            <span style={{ fontSize:12, fontWeight:800, color:c, marginLeft:3 }}>{v}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize:9.5, fontWeight:700, color:C.textMid, marginBottom:6 }}>結合結果プレビュー（先頭 5 行）</div>
+      <div style={{ overflowX:'auto' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:9 }}>
+          <thead><tr style={{ background:'rgba(26,54,93,0.07)' }}>
+            {['hash_id','傷病名CD','医療費(円)','診療年月','年代','HbA1c','eGFR','BMI'].map(h=><th key={h} style={{ padding:'4px 7px', textAlign:'left', color:C.textMid, fontWeight:700, borderBottom:'1px solid rgba(26,54,93,0.12)', whiteSpace:'nowrap' }}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {rows.map((row,i)=>(
+              <tr key={i} style={{ borderBottom:'1px solid rgba(26,54,93,0.05)', background:i%2?'rgba(26,54,93,0.02)':'transparent' }}>
+                {row.map((v,j)=><td key={j} style={{ padding:'4px 7px', color:C.text, fontFamily:'monospace', whiteSpace:'nowrap' }}>{v}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+function AcOutSurvival() {
+  return (
+    <div className="fade-in">
+      <div style={{ display:'flex', gap:7, flexWrap:'wrap', marginBottom:12 }}>
+        {[['p-value','< 0.001','#059669'],['Hazard Ratio','0.65','#3769AF'],['95% CI','[0.58, 0.73]','#3D5280'],['log-rank χ²','24.3','#D97706']].map(([l,v,c])=>(
+          <div key={l} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 11px', background:`${c}12`, border:`1px solid ${c}40`, borderRadius:8 }}>
+            <span style={{ fontSize:9.5, color:C.textLight }}>{l}</span>
+            <span style={{ fontSize:12, fontWeight:800, color:c, marginLeft:3 }}>{v}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize:9.5, fontWeight:700, color:C.textMid, marginBottom:5 }}>Kaplan-Meier 生存曲線（観察期間 60ヶ月）</div>
+      <div style={{ height:155 }}><AcKMChart/></div>
+      <div style={{ marginTop:9, fontSize:9, color:C.textLight, background:'rgba(55,105,175,0.05)', border:'1px solid rgba(55,105,175,0.15)', borderRadius:7, padding:'6px 10px', lineHeight:1.7 }}>
+        ℹ 治療群 n=6,423（メトホルミン投与）vs 対照群 n=6,424（非投与）· 2型糖尿病コホート · NDB 2021–2023年
+      </div>
+    </div>
+  );
+}
+function AcOutML() {
+  return (
+    <div className="fade-in">
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:12 }}>
+        {[['ROC-AUC','0.847','#F97316'],['AUPRC','0.712','#3769AF'],['Acc.','82.3%','#059669']].map(([l,v,c])=>(
+          <div key={l} style={{ background:`${c}10`, border:`1px solid ${c}40`, borderRadius:9, padding:'9px', textAlign:'center' }}>
+            <div style={{ fontSize:9.5, color:C.textLight, marginBottom:3 }}>{l}</div>
+            <div style={{ fontSize:19, fontWeight:800, color:c }}>{v}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize:9.5, fontWeight:700, color:C.textMid, marginBottom:5 }}>Feature Importance（Random Forest · Top 5）</div>
+      <div style={{ height:125 }}><AcFeatChart/></div>
+    </div>
+  );
+}
+
+/* アカデミア・研究者モード（従来のDatabricks UI） */
+function AcademiaMode() {
+  const [selTemplate,  setSelTemplate]  = useState('eda');
+  const [lang,         setLang]         = useState('python');
+  const [gitPushed,    setGitPushed]    = useState(false);
+  const [cellRunning,  setCellRunning]  = useState(false);
+  const [cellDone,     setCellDone]     = useState(false);
+  const [execTime,     setExecTime]     = useState(null);
+  const [acAirlockOpen,   setAcAirlockOpen]   = useState(false);
+  const [acAirlockTarget, setAcAirlockTarget] = useState('');
+  const [acChk1, setAcChk1] = useState(false);
+  const [acChk2, setAcChk2] = useState(false);
+
+  const closeAcAirlock = () => { setAcAirlockOpen(false); setAcChk1(false); setAcChk2(false); };
+  const openAcAirlock  = (t) => { setAcAirlockTarget(t); setAcChk1(false); setAcChk2(false); setAcAirlockOpen(true); };
+
+  const templates = [
+    { id:'eda',      icon:'📊', title:'探索的データ分析',     sub:'EDA プロファイリング',       tags:['分布確認','相関行列','外れ値'] },
+    { id:'preproc',  icon:'🧹', title:'前処理パイプライン',   sub:'欠損補完・正規化',           tags:['欠損処理','正規化','エンコード'] },
+    { id:'join',     icon:'🔗', title:'DB結合・コホート作成', sub:'NDB×DPC×電子カルテ結合',    tags:['JOIN','コホート','マッチング'] },
+    { id:'survival', icon:'📈', title:'統計解析',             sub:'Kaplan-Meier / Cox 回帰',    tags:['KM曲線','Cox回帰','Log-rank'] },
+    { id:'ml',       icon:'🤖', title:'機械学習（予後予測）', sub:'XGBoost / Random Forest',   tags:['XGBoost','SHAP','ROC-AUC'] },
+  ];
+  const catalog = [
+    { db:'NDB', color:'#3769AF', tables:[
+      { name:'medical_receipt_mn', label:'医科レセプト MNテーブル', cols:[
+        { name:'hihokensha_id', type:'STRING', miss:'0%' },
+        { name:'傷病名コード',  type:'STRING', miss:'0%', note:'ICD-10準拠' },
+        { name:'iryohi_total',  type:'BIGINT', miss:'0.3%', min:'200', max:'4,200,000', mean:'28,400' },
+        { name:'診療年月',      type:'STRING', miss:'0%' },
+        { name:'age_group_cd',  type:'STRING', miss:'0%' },
+      ]},
+      { name:'tokutei_kenshin_tk01', label:'特定健診 TK01テーブル', cols:[
+        { name:'hID',   type:'STRING', miss:'0%' },
+        { name:'hba1c', type:'DOUBLE', miss:'4.2%', min:'4.1',  max:'14.8',  mean:'6.7' },
+        { name:'egfr',  type:'DOUBLE', miss:'8.1%', min:'6.0',  max:'135.0', mean:'68.4' },
+        { name:'bmi',   type:'DOUBLE', miss:'1.8%', min:'14.2', max:'52.3',  mean:'23.9' },
+      ]},
+    ]},
+    { db:'DPC', color:'#059669', tables:[
+      { name:'dpc_discharge', label:'DPC退院患者データ', cols:[
+        { name:'patient_id',       type:'STRING', miss:'0%' },
+        { name:'MDC_code',         type:'STRING', miss:'0%' },
+        { name:'LOS',              type:'INT',    miss:'0%',   min:'1', max:'364', mean:'12.3' },
+        { name:'discharge_status', type:'STRING', miss:'0.5%' },
+      ]},
+    ]},
+    { db:'電子カルテ(試)', color:'#D97706', tables:[
+      { name:'ehr_vitals', label:'バイタルサイン（試行）', cols:[
+        { name:'patient_id',  type:'STRING', miss:'0%' },
+        { name:'systolic_bp', type:'INT',    miss:'6.2%', min:'68', max:'240', mean:'132.1' },
+        { name:'pulse',       type:'INT',    miss:'6.8%', min:'34', max:'148', mean:'74.2' },
+      ]},
+    ]},
+  ];
+
+  const SNIP = {
+    python:{
+      eda:      '%python\n# ① データプロファイリング（EDA）\ndisplay(df.describe())\n\n# Databricks 専用サマリー\ndbutils.data.summarize(df)\n\nprint(f"欠損率 max: {df.isnull().mean().max():.1%}  |  Unique age_group_cd: {df.age_group_cd.nunique()}")',
+      preproc:  '%python\n# ② データ前処理・ラングリング\ndf_clean = (\n  df\n  .dropna(subset=["hba1c", "egfr", "bmi"])\n  .withColumn("age_num",\n      regexp_extract("age_group_cd", r"(\\d+)", 1).cast("int"))\n)\n\nfrom sklearn.preprocessing import StandardScaler\nscaler = StandardScaler()\nX_scaled = scaler.fit_transform(\n    df_clean.select(num_cols).toPandas()\n)\nprint(f"Rows Processed: {df_clean.count():,}  |  Null removed: 3,421")',
+      join:     '%python\n# ③ DB 結合・コホート作成\nndb     = spark.table("ndb.medical_receipt_mn")\nkenshin = spark.table("ndb.tokutei_kenshin_tk01")\ndpc     = spark.table("dpc.dpc_discharge")\n\njoined = (\n    ndb\n    .join(kenshin, ndb.hihokensha_id == kenshin.hID, "left")\n    .join(dpc,     "hihokensha_id",                   "left")\n)\njoined.write.mode("overwrite")\n      .saveAsTable("ndb_2021_2023.joined_cohort")',
+      survival: '%python\n# ④ 生存時間分析（Kaplan-Meier）\nfrom lifelines import KaplanMeierFitter\nfrom lifelines.statistics import logrank_test\n\nkmf = KaplanMeierFitter()\nfor grp, label in [(1, "治療群"), (0, "対照群")]:\n    mask = df["treatment"] == grp\n    kmf.fit(df[mask]["survival_days"], df[mask]["event"],\n            label=label)\n    kmf.plot_survival_function()\n\n# Log-rank 検定\nresults = logrank_test(T1, T2, E1, E2)\nprint(f"p-value: {results.p_value:.4f}  HR: 0.65")',
+      ml:       '%python\n# ⑤ 機械学習モデル（Random Forest）\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import roc_auc_score, average_precision_score\n\nmodel = RandomForestClassifier(\n    n_estimators=300, max_depth=8,\n    random_state=42, n_jobs=-1\n)\nmodel.fit(X_train, y_train)\n\ny_prob = model.predict_proba(X_test)[:, 1]\nprint(f"ROC-AUC: {roc_auc_score(y_test, y_prob):.3f}")\nprint(f"AUPRC:   {average_precision_score(y_test, y_prob):.3f}")',
+    },
+    sql:{
+      eda:      '%sql\n-- ① データプロファイリング\nSELECT\n  age_group_cd,\n  COUNT(*)                                 AS cnt,\n  ROUND(AVG(hba1c), 2)                     AS mean_hba1c,\n  ROUND(STDDEV(hba1c), 2)                  AS sd_hba1c,\n  ROUND(COUNT_IF(hba1c IS NULL)*100.0\n        / COUNT(*), 1)                     AS miss_pct\nFROM ndb_2021_2023.cohort_main\nGROUP BY age_group_cd\nORDER BY age_group_cd',
+      preproc:  '%sql\n-- ② 欠損率確認\nSELECT col,\n  ROUND(miss_cnt * 100.0 / total, 1) AS miss_pct\nFROM (\n  SELECT "hba1c" AS col,\n    SUM(CASE WHEN hba1c IS NULL THEN 1 ELSE 0 END) AS miss_cnt,\n    COUNT(*) AS total\n  FROM ndb_2021_2023.cohort_main\n  UNION ALL\n  SELECT "egfr",\n    SUM(CASE WHEN egfr  IS NULL THEN 1 ELSE 0 END), COUNT(*)\n  FROM ndb_2021_2023.cohort_main\n  UNION ALL\n  SELECT "bmi",\n    SUM(CASE WHEN bmi   IS NULL THEN 1 ELSE 0 END), COUNT(*)\n  FROM ndb_2021_2023.cohort_main\n)',
+      join:     '%sql\n-- ③ NDB × DPC 結合\nCREATE OR REPLACE TABLE ndb_2021_2023.joined_cohort AS\nSELECT\n  n.hihokensha_id, n.傷病名コード,\n  n.iryohi_total,  n.診療年月,\n  n.age_group_cd,  n.sex_cd,\n  k.hba1c, k.egfr, k.bmi,\n  d.LOS,   d.discharge_status\nFROM ndb.medical_receipt_mn    n\nLEFT JOIN ndb.tokutei_kenshin_tk01 k\n  ON n.hihokensha_id = k.hID\nLEFT JOIN dpc.dpc_discharge     d\n  ON n.hihokensha_id = d.patient_id',
+      survival: '%sql\n-- ④ 生存期間集計\nSELECT\n  treatment_group,\n  COUNT(*)                     AS n,\n  SUM(event)                   AS events,\n  ROUND(AVG(survival_days))    AS mean_days,\n  ROUND(PERCENTILE(survival_days, 0.5)) AS median_days\nFROM ndb_2021_2023.survival_cohort\nGROUP BY treatment_group',
+      ml:       '%sql\n-- ⑤ 特徴量テーブル作成（MLパイプライン前処理）\nCREATE OR REPLACE TABLE ndb_2021_2023.ml_features AS\nSELECT\n  hihokensha_id,\n  hba1c, egfr, bmi,\n  age_group_cd, sex_cd,\n  LOS, systolic_bp,\n  CASE WHEN next_admission_dt IS NOT NULL\n       THEN 1 ELSE 0 END  AS label\nFROM ndb_2021_2023.joined_cohort',
+    },
+    r:{
+      eda:      '%r\nlibrary(dplyr); library(ggplot2)\n\ndf <- collect(sql("SELECT * FROM ndb_2021_2023.cohort_main"))\ncat(sprintf("欠損率 HbA1c: %.1f%%\\n", mean(is.na(df$hba1c))*100))\n\n# プロファイル\nsummary(df[, c("hba1c","egfr","bmi","age_num")])',
+      preproc:  '%r\nlibrary(mice)\n\n# 多重代入法（m=5, PMM）\nimp <- mice(\n  df[, c("hba1c","egfr","bmi")],\n  m=5, method="pmm", seed=42\n)\ndf_complete <- complete(imp, 1)\ncat("補完後欠損数:", sum(is.na(df_complete)), "\\n")\ncat("Rows:", nrow(df_complete))',
+      join:     '%r\n# SparkR JOIN\njoined <- sql("\n  SELECT n.*, k.hba1c, k.egfr, k.bmi, d.LOS\n  FROM ndb.medical_receipt_mn n\n  LEFT JOIN ndb.tokutei_kenshin_tk01 k\n    ON n.hihokensha_id = k.hID\n  LEFT JOIN dpc.dpc_discharge d\n    ON n.hihokensha_id = d.patient_id\n")\ncache(joined)\ncat("Rows:", count(joined))',
+      survival: '%r\nlibrary(survival); library(survminer)\n\n# Kaplan-Meier + Log-rank\nfit <- survfit(\n  Surv(survival_days, event) ~ treatment,\n  data = df\n)\nggsurvplot(fit, data=df,\n  conf.int=TRUE, pval=TRUE,\n  risk.table=TRUE,\n  palette=c("#3769AF","#F97316"))',
+      ml:       '%r\nlibrary(randomForest)\n\nmodel <- randomForest(\n  x         = X_train,\n  y         = as.factor(y_train),\n  ntree     = 300,\n  importance= TRUE\n)\nprint(model)\nvarImpPlot(model)',
+    },
+  };
+
+  const timerRef = useRef(null);
+  const runCell = () => {
+    if (cellRunning) return;
+    const t = (1.5 + Math.random() * 2.2).toFixed(1);
+    setCellRunning(true); setCellDone(false); setExecTime(null);
+    timerRef.current = setTimeout(() => {
+      setCellRunning(false); setCellDone(true); setExecTime(t);
+    }, parseFloat(t) * 1000);
+  };
+  useEffect(() => () => { clearTimeout(timerRef.current); }, []);
+
+  const curSnip = (SNIP[lang] && SNIP[lang][selTemplate]) || SNIP.python[selTemplate] || '';
+  const langBg  = { python:'rgba(249,115,22,0.12)', sql:'rgba(55,105,175,0.14)', r:'rgba(5,150,105,0.12)' };
+  const langCl  = { python:'#C2570D', sql:'#93C5FD', r:'#6EE7B7' };
+  const langMag = { python:'%python', sql:'%sql', r:'%r' };
+
+  return (
+    <div style={{ position:'relative' }}>
+      {/* Airlock modal（AcademiaMode ローカル） */}
+      {acAirlockOpen && (
+        <div className="airlock-overlay" onClick={e => { if(e.target===e.currentTarget) closeAcAirlock(); }}>
+          <div className="glass" style={{ width:440, borderRadius:18, padding:'28px 32px', border:'1px solid rgba(249,115,22,0.28)', boxShadow:'0 24px 80px rgba(0,0,0,0.55)' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18 }}>
+              <div style={{ width:38, height:38, background:'rgba(249,115,22,0.12)', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🔐</div>
+              <div>
+                <div style={{ fontSize:15, fontWeight:800, color:C.text, letterSpacing:'-0.02em' }}>Airlock 持出申請</div>
+                <div style={{ fontSize:11, color:C.textLight, marginTop:1 }}>{acAirlockTarget}</div>
+              </div>
+              <button onClick={closeAcAirlock} style={{ marginLeft:'auto', background:'none', border:'none', fontSize:18, color:C.textLight, cursor:'pointer', lineHeight:1 }}>×</button>
+            </div>
+            {[[acChk1,setAcChk1,'n数が5未満の集計セルが存在しないことを確認した'],[acChk2,setAcChk2,'本データの利用目的は申請書記載の研究目的に限定される']].map(([val,setter,label],ki) => (
+              <label key={ki} onClick={() => setter(v => !v)} style={{ display:'flex', alignItems:'flex-start', gap:10, cursor:'pointer', padding:'11px 14px', background:'rgba(26,54,93,0.04)', border:`1px solid ${val?'rgba(249,115,22,0.38)':'rgba(26,54,93,0.10)'}`, borderRadius:10, marginBottom:10, transition:'all 0.18s' }}>
+                <div style={{ width:18, height:18, borderRadius:5, border:`2px solid ${val?'#F97316':'rgba(26,54,93,0.25)'}`, background:val?'#F97316':'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:1, transition:'all 0.15s' }}>
+                  {val && <span style={{ color:'#fff', fontSize:11, fontWeight:800 }}>✓</span>}
+                </div>
+                <span style={{ fontSize:11.5, color:C.textMid, lineHeight:1.55 }}>{label}</span>
+              </label>
+            ))}
+            <button disabled={!acChk1||!acChk2} onClick={() => { alert('申請が完了しました。承認後にダウンロード可能になります。'); closeAcAirlock(); }}
+              style={{ width:'100%', padding:'13px', fontSize:13, fontWeight:700, border:'none', borderRadius:10, cursor:(!acChk1||!acChk2)?'default':'pointer', background:(!acChk1||!acChk2)?'rgba(26,54,93,0.10)':'linear-gradient(135deg,#F97316,#FBBF24)', color:(!acChk1||!acChk2)?C.textLight:'#fff', transition:'all 0.2s', boxShadow:(!acChk1||!acChk2)?'none':'0 4px 18px rgba(249,115,22,0.40)' }}>
+              申請する
+            </button>
+            <div style={{ textAlign:'center', fontSize:9.5, color:C.textLight, marginTop:10 }}>Airlock機能 — 厚労省調達仕様 3.(1)オ.2 準拠</div>
+          </div>
+        </div>
+      )}
+
+      {/* 3カラムレイアウト */}
+      <div style={{ display:'grid', gridTemplateColumns:'210px 1fr 290px', gap:14 }}>
+
+        {/* ── 左ペイン: データカタログ ── */}
+        <div className="glass" style={{ borderRadius:13, padding:'13px 12px', border:'1px solid rgba(26,54,93,0.10)', alignSelf:'start' }}>
+          <div style={{ fontSize:11, fontWeight:800, color:C.textMid, letterSpacing:'0.04em', marginBottom:10 }}>📚 データカタログ</div>
+          {catalog.map(db => (
+            <div key={db.db} style={{ marginBottom:14 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:6 }}>
+                <span style={{ width:7, height:7, borderRadius:'50%', background:db.color, display:'inline-block', flexShrink:0 }}/>
+                <span style={{ fontSize:10, fontWeight:800, color:db.color, letterSpacing:'0.05em' }}>{db.db}</span>
+              </div>
+              {db.tables.map(tbl => (
+                <div key={tbl.name} style={{ marginBottom:8 }}>
+                  <div style={{ fontSize:9, fontWeight:700, color:C.text, fontFamily:'monospace', background:'rgba(26,54,93,0.05)', borderRadius:5, padding:'3px 6px', border:'1px solid rgba(26,54,93,0.08)', marginBottom:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{tbl.name}</div>
+                  <div style={{ fontSize:9, color:C.textLight, marginBottom:4 }}>{tbl.label}</div>
+                  {tbl.cols.map(col => (
+                    <div key={col.name} className="data-tip-wrap" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'1px 0' }}>
+                      <span style={{ fontSize:9, color:C.textMid, fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:115 }}>{col.name}</span>
+                      <span style={{ fontSize:8, color:C.textLight, flexShrink:0, marginLeft:3 }}>{col.type}</span>
+                      <div className="data-tip-box" style={{ left:'100%', top:'-4px', marginLeft:6, minWidth:220 }}>
+                        <div style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,0.92)', marginBottom:6, fontFamily:'monospace' }}>{col.name}</div>
+                        <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                          <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'rgba(148,163,184,0.80)', fontSize:9.5 }}>型</span><span style={{ color:'#93C5FD', fontSize:9.5, fontFamily:'monospace' }}>{col.type}</span></div>
+                          <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'rgba(148,163,184,0.80)', fontSize:9.5 }}>欠損率</span><span style={{ color:col.miss&&col.miss!=='0%'?'#FCA5A5':'#6EE7B7', fontSize:9.5, fontWeight:700 }}>{col.miss||'0%'}</span></div>
+                          {col.min  && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'rgba(148,163,184,0.80)', fontSize:9.5 }}>最小値</span><span style={{ color:'rgba(226,232,240,0.88)', fontSize:9.5 }}>{col.min}</span></div>}
+                          {col.max  && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'rgba(148,163,184,0.80)', fontSize:9.5 }}>最大値</span><span style={{ color:'rgba(226,232,240,0.88)', fontSize:9.5 }}>{col.max}</span></div>}
+                          {col.mean && <div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'rgba(148,163,184,0.80)', fontSize:9.5 }}>平均値</span><span style={{ color:'rgba(226,232,240,0.88)', fontSize:9.5 }}>{col.mean}</span></div>}
+                          {col.note && <div style={{ marginTop:4, fontSize:9, color:'#FCD34D', borderTop:'1px solid rgba(255,255,255,0.08)', paddingTop:4 }}>{col.note}</div>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* ── 中央ペイン: テンプレート + Databricks ノートブックセル ── */}
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          {/* テンプレート選択 */}
+          <div className="glass" style={{ borderRadius:13, padding:'11px 12px', border:'1px solid rgba(26,54,93,0.10)' }}>
+            <div style={{ fontSize:10.5, fontWeight:700, color:C.textMid, marginBottom:8, letterSpacing:'0.03em' }}>解析テンプレート</div>
+            <div style={{ display:'flex', gap:7, overflowX:'auto', paddingBottom:3 }}>
+              {templates.map((t, idx) => (
+                <button key={t.id} onClick={() => { setSelTemplate(t.id); setCellDone(false); setCellRunning(false); clearTimeout(timerRef.current); }}
+                  style={{ flexShrink:0, padding:'8px 12px', border:`1px solid ${selTemplate===t.id?'rgba(249,115,22,0.50)':'rgba(26,54,93,0.12)'}`, borderRadius:10, background:selTemplate===t.id?'rgba(249,115,22,0.09)':'rgba(26,54,93,0.03)', cursor:'pointer', textAlign:'left', minWidth:128, transition:'all 0.18s' }}>
+                  <div style={{ fontSize:9.5, color:C.textLight, marginBottom:2 }}>{['①','②','③','④','⑤'][idx]}</div>
+                  <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:2 }}>{t.icon} {t.title}</div>
+                  <div style={{ fontSize:9.5, color:selTemplate===t.id?'#C2570D':C.textLight }}>{t.sub}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notebook コンテナ */}
+          <div className="glass" style={{ borderRadius:13, border:'1px solid rgba(26,54,93,0.10)', overflow:'hidden' }}>
+            {/* Git ヘッダーバー */}
+            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', background:'rgba(15,23,42,0.88)', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+              <span style={{ fontSize:9.5, color:'rgba(100,116,139,0.90)', fontFamily:'monospace' }}>📓 notebook.py</span>
+              <div style={{ height:13, width:1, background:'rgba(255,255,255,0.08)' }}/>
+              <span style={{ fontSize:9.5, color:'#6EE7B7', fontFamily:'monospace' }}>🔀 branch: <strong>main</strong></span>
+              <button onClick={() => setGitPushed(v => !v)}
+                style={{ marginLeft:'auto', padding:'3px 9px', fontSize:9.5, fontWeight:700, border:'none', borderRadius:6, cursor:'pointer', background:gitPushed?'rgba(5,150,105,0.18)':'rgba(249,115,22,0.14)', color:gitPushed?'#6EE7B7':'#C2570D', transition:'all 0.2s' }}>
+                {gitPushed ? '✅ Push済み' : '💾 コミット・Push'}
+              </button>
+            </div>
+            {/* 言語トグル */}
+            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 14px', background:'rgba(15,23,42,0.60)', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+              <span style={{ fontSize:9.5, color:'rgba(148,163,184,0.70)', fontWeight:600 }}>言語:</span>
+              <div style={{ display:'flex', background:'rgba(255,255,255,0.05)', borderRadius:7, padding:2, gap:1 }}>
+                {[['python','Python'],['sql','SQL'],['r','R']].map(([k,l]) => (
+                  <button key={k} onClick={() => setLang(k)}
+                    style={{ padding:'3px 11px', fontSize:10, fontWeight:lang===k?700:400, border:'none', borderRadius:5, cursor:'pointer', background:lang===k?langBg[k]:'transparent', color:lang===k?langCl[k]:'rgba(148,163,184,0.70)', transition:'all 0.15s' }}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <span style={{ fontSize:9, padding:'2px 8px', background:langBg[lang], color:langCl[lang], border:`1px solid ${langCl[lang]}55`, borderRadius:5, fontFamily:'monospace', fontWeight:700 }}>
+                {langMag[lang]}
+              </span>
+            </div>
+
+            {/* ─ コードセル（Databricks スタイル） ─ */}
+            <div style={{ borderBottom: (cellRunning||cellDone) ? '2px solid rgba(55,105,175,0.22)' : 'none' }}>
+              {/* セルヘッダー: In[n]: + 実行ボタン */}
+              <div style={{ display:'flex', alignItems:'center', padding:'5px 12px 5px 10px', background:'rgba(15,23,42,0.72)', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ fontFamily:'monospace', fontSize:9, color:'rgba(100,116,139,0.55)', userSelect:'none', minWidth:44 }}>
+                  In [{cellDone ? '1' : ' '}]:
+                </span>
+                <div style={{ marginLeft:'auto', display:'flex', gap:6, alignItems:'center' }}>
+                  <button onClick={runCell} disabled={cellRunning}
+                    style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 13px', fontSize:10.5, fontWeight:700, border:`1px solid ${cellRunning?'rgba(26,54,93,0.20)':'rgba(249,115,22,0.42)'}`, borderRadius:7, cursor:cellRunning?'default':'pointer', background:cellRunning?'rgba(26,54,93,0.12)':'rgba(249,115,22,0.11)', color:cellRunning?C.textLight:'#C2570D', transition:'all 0.2s' }}>
+                    {cellRunning
+                      ? <><span className="spin" style={{ display:'inline-block' }}>⟳</span> 実行中…</>
+                      : <><span>▶</span> 実行 <kbd style={{ fontSize:8.5, padding:'1px 5px', background:'rgba(249,115,22,0.10)', border:'1px solid rgba(249,115,22,0.28)', borderRadius:3, fontFamily:'monospace', fontWeight:400 }}>Shift+Enter</kbd></>}
+                  </button>
+                </div>
+              </div>
+              {/* コードエリア */}
+              <pre style={{ margin:0, padding:'14px 16px', fontSize:10.5, lineHeight:1.80, fontFamily:'monospace', color:'rgba(226,232,240,0.88)', background:'rgba(15,23,42,0.93)', minHeight:185, overflowX:'auto', whiteSpace:'pre-wrap', wordBreak:'break-all' }}>
+                {curSnip || '# テンプレートを選択してください'}
+              </pre>
+            </div>
+
+            {/* ─ 出力エリア（コードセルの直下・Databricks スタイル） ─ */}
+            {(cellRunning || cellDone) && (
+              <div style={{ background:'rgba(250,251,255,0.94)', borderTop:'none', padding:'12px 16px' }}>
+                {/* Out[n]: ヘッダー */}
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom: cellDone ? 12 : 0 }}>
+                  <span style={{ fontFamily:'monospace', fontSize:9, color:'rgba(100,116,139,0.60)', userSelect:'none', minWidth:44 }}>
+                    Out [{cellDone ? '1' : ' '}]:
+                  </span>
+                  {cellRunning && (
+                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                      <span className="spin" style={{ display:'inline-block', color:C.accent, fontSize:14 }}>⟳</span>
+                      <span style={{ fontSize:9.5, color:C.textLight }}>処理中…</span>
+                    </div>
+                  )}
+                  {cellDone && (
+                    <span style={{ marginLeft:'auto', fontSize:9, color:C.success, background:'rgba(5,150,105,0.08)', border:'1px solid rgba(5,150,105,0.22)', borderRadius:5, padding:'2px 8px' }}>
+                      ✅ {execTime}s
+                    </span>
+                  )}
+                </div>
+                {cellDone && (
+                  <div className="fade-in">
+                    {selTemplate==='eda'      && <AcOutEDA/>}
+                    {selTemplate==='preproc'  && <AcOutPreproc/>}
+                    {selTemplate==='join'     && <AcOutJoin/>}
+                    {selTemplate==='survival' && <AcOutSurvival/>}
+                    {selTemplate==='ml'       && <AcOutML/>}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── 右ペイン: コホート + クラスター + Airlock ── */}
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <Card>
+            <SectionTitle sub="コホート参照画面から引き継ぎ">エクスポート済みコホート</SectionTitle>
+            <div style={{ background:'rgba(26,54,93,0.04)', borderRadius:10, padding:'11px 13px', border:'1px solid rgba(26,54,93,0.08)', marginBottom:4 }}>
+              <div style={{ display:'flex', alignItems:'baseline', gap:6, marginBottom:6 }}>
+                <span style={{ fontSize:26, fontWeight:800, color:C.accent, letterSpacing:'-0.04em' }}>12,847</span>
+                <span style={{ fontSize:11, color:C.textLight }}>名</span>
+              </div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:5 }}>
+                {['E11 2型糖尿病','I10 本態性高血圧症'].map(d => <span key={d} className="chip-disease" style={{ fontSize:9.5, padding:'2px 7px', borderRadius:5 }}>{d}</span>)}
+                <span className="chip-drug" style={{ fontSize:9.5, padding:'2px 7px', borderRadius:5 }}>メトホルミン</span>
+              </div>
+              <div style={{ fontSize:10, color:C.textLight }}>60–85歳 · NDB 2021–2023年</div>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:10, color:'#065F46', background:'rgba(5,150,105,0.07)', border:'1px solid rgba(5,150,105,0.18)', borderRadius:8, padding:'6px 10px', marginTop:7 }}>
+              <span>✅</span> Delta Lake <code style={{ fontFamily:'monospace', background:'rgba(5,150,105,0.12)', padding:'0 4px', borderRadius:4, fontSize:9 }}>ndb_2021_2023</code>
+            </div>
+          </Card>
+
+          <Card>
+            <SectionTitle>クラスター設定</SectionTitle>
+            <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:4 }}>
+              {[['クラスタータイプ',['Standard_DS3_v2（共有）','Standard_DS4_v2（専有）','Standard_DS5_v2（大規模）']],['ノード数',['4 ノード','8 ノード','16 ノード']],['タイムアウト',['60 分','120 分','240 分']]].map(([label,opts]) => (
+                <div key={label}>
+                  <label style={{ fontSize:9.5, fontWeight:700, color:C.textMid, display:'block', marginBottom:4 }}>{label}</label>
+                  <select className="input-glass" style={{ width:'100%', padding:'6px 8px', fontSize:10.5 }}>
+                    {opts.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {cellDone && (
+            <Card className="slide-up">
+              <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:10 }}>
+                <span style={{ fontSize:12 }}>✅</span>
+                <span style={{ fontSize:11, fontWeight:700, color:C.success }}>セル実行完了</span>
+                <span style={{ marginLeft:'auto', fontSize:9.5, color:C.textLight, fontFamily:'monospace' }}>{execTime}s</span>
+              </div>
+              <button className="airlock-btn" onClick={() => openAcAirlock('セル実行結果（' + templates.find(t=>t.id===selTemplate)?.title + '）')}
+                style={{ width:'100%', textAlign:'center', padding:'9px', fontSize:11 }}>
+                🔐 Airlock 持出申請
+              </button>
+            </Card>
+          )}
+
+          {!cellRunning && !cellDone && (
+            <div className="glass" style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10, padding:32, border:'1px dashed rgba(26,54,93,0.16)', minHeight:160, borderRadius:13 }}>
+              <div style={{ fontSize:38, opacity:0.12 }}>⬡</div>
+              <div style={{ fontSize:10.5, color:C.textLight, textAlign:'center', lineHeight:1.9 }}>
+                テンプレートを選択して<br/>「▶ 実行」を押してください
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* DatabricksScreen: モード切替 */
+function DatabricksScreen() {
+  const [mode, setMode] = useState('municipal');
+  return (
+    <div className="slide-up">
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, padding:'14px 20px', background:'rgba(255,255,255,0.65)', backdropFilter:'blur(12px)', borderRadius:14, border:'1px solid rgba(26,54,93,0.10)', boxShadow:'0 2px 12px rgba(26,54,93,0.07)' }}>
+        <span style={{ fontSize:12, fontWeight:700, color:C.textMid }}>利用者モード：</span>
+        <div style={{ display:'flex', background:'rgba(26,54,93,0.07)', borderRadius:10, padding:3, gap:2 }}>
+          {[['municipal','🏢 自治体・保険者モード'],['academia','👨‍🔬 アカデミア・研究者モード']].map(([val, label]) => (
+            <button key={val} onClick={() => setMode(val)}
+              style={{
+                padding:'8px 18px', fontSize:12.5, fontWeight:600, borderRadius:8, border:'none', cursor:'pointer', transition:'all 0.2s',
+                background: mode===val ? 'linear-gradient(135deg,#1A365D,#3769AF)' : 'transparent',
+                color: mode===val ? '#fff' : C.textMid,
+                boxShadow: mode===val ? '0 2px 10px rgba(26,54,93,0.30)' : 'none',
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div style={{ marginLeft:'auto', fontSize:11, color:C.textLight }}>
+          {mode === 'municipal' ? '📊 ノーコードで医療費分析' : '🔬 Databricks 解析ジョブ実行'}
+        </div>
+      </div>
+      {mode === 'municipal' ? <MunicipalMode/> : <AcademiaMode/>}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
    ヘッダー
 ══════════════════════════════════════════ */
 function Header() {
@@ -1211,6 +2664,29 @@ function Header() {
           {['NDB','DPC','レセプト','電子カルテ(試)'].map(db => (
             <span key={db} style={{ padding:'2px 8px', background:'rgba(55,105,175,0.20)', border:'1px solid rgba(55,105,175,0.30)', borderRadius:5, fontSize:9.5, color:'rgba(147,197,253,0.90)', fontWeight:600, letterSpacing:'0.04em' }}>{db}</span>
           ))}
+        </div>
+        {/* 認可コンテキストバッジ */}
+        <div className="auth-tip-wrap">
+          <div style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 12px', background:'rgba(5,150,105,0.15)', border:'1px solid rgba(5,150,105,0.38)', borderRadius:999, cursor:'default' }}>
+            <span style={{ width:6, height:6, borderRadius:'50%', background:'#4ADE80', display:'inline-block', flexShrink:0, boxShadow:'0 0 6px rgba(74,222,128,0.60)' }}/>
+            <span style={{ fontSize:10, color:'#6EE7B7', fontWeight:700, letterSpacing:'0.01em', whiteSpace:'nowrap' }}>🔒 認可コンテキスト: A市 データヘルス計画策定権限</span>
+          </div>
+          <div className="auth-tip-box">
+            <div style={{ color:'#6EE7B7', fontWeight:700, fontSize:12, marginBottom:8 }}>🔐 アクセス制御ポリシー</div>
+            <div style={{ color:'rgba(226,232,240,0.80)', fontSize:10.5, marginBottom:10, lineHeight:1.6 }}>
+              認証済みユーザー: <strong style={{ color:'white' }}>太郎（A市 保健予防課）</strong>
+            </div>
+            <div style={{ fontSize:9.5, fontWeight:700, color:'rgba(148,163,184,0.75)', marginBottom:6, letterSpacing:'0.05em', textTransform:'uppercase' }}>閲覧可能データ</div>
+            {[['NDB','A県分 レセプト・特定健診'],['特定健診DB','A市 2019–2023年分'],['後期高齢DB','参照のみ（詳細は制限）']].map(([d,desc]) => (
+              <div key={d} style={{ display:'flex', gap:7, alignItems:'center', marginBottom:5 }}>
+                <span style={{ fontSize:9.5, padding:'1px 7px', background:'rgba(55,105,175,0.25)', color:'#93C5FD', borderRadius:4, fontWeight:700, flexShrink:0 }}>{d}</span>
+                <span style={{ fontSize:10, color:'rgba(226,232,240,0.65)' }}>{desc}</span>
+              </div>
+            ))}
+            <div style={{ marginTop:10, padding:'7px 10px', background:'rgba(249,115,22,0.10)', border:'1px solid rgba(249,115,22,0.28)', borderRadius:8, fontSize:10, color:'rgba(253,186,116,0.90)', lineHeight:1.6 }}>
+              ⚠️ 個票データへのアクセスは不可。統計値の参照のみ許可（個人情報保護法 準拠）
+            </div>
+          </div>
         </div>
       </div>
       <div style={{ display:'flex', alignItems:'center', gap:16 }}>
@@ -1235,10 +2711,11 @@ function Header() {
 ══════════════════════════════════════════ */
 function TabNav({ active, setActive }) {
   const tabs = [
-    { id:'home',   label:'プロジェクトホーム',            icon:'🏠' },
-    { id:'search', label:'類似研究検索',                  icon:'📚', badge:'NEW' },
-    { id:'cohort', label:'コホート参照（フィージビリティ調査）', icon:'🔍', badge:'MAIN' },
-    { id:'ai',     label:'AI分析アシスト（Genie）',       icon:'🤖' },
+    { id:'home',        label:'プロジェクトホーム',               icon:'🏠' },
+    { id:'search',      label:'類似研究検索',                    icon:'📚', badge:'NEW' },
+    { id:'cohort',      label:'コホート参照（フィージビリティ調査）', icon:'🔍', badge:'MAIN' },
+    { id:'ai',          label:'AI分析アシスト（Genie）',          icon:'🤖' },
+    { id:'databricks',  label:'Databricks 解析環境',              icon:'⬡',  badge:'NEW' },
   ];
   return (
     <div className="glass-blue" style={{ padding:'0 24px', display:'flex' }}>
@@ -1263,10 +2740,11 @@ function App() {
       <Header/>
       <TabNav active={tab} setActive={setTab}/>
       <main style={{ padding:'22px 24px', maxWidth:1440, margin:'0 auto' }}>
-        {tab==='home'   && <HomeScreen setTab={setTab}/>}
-        {tab==='search' && <ResearchSearchScreen setTab={setTab}/>}
-        {tab==='cohort' && <CohortScreen/>}
-        {tab==='ai'     && <AIScreen/>}
+        {tab==='home'        && <HomeScreen setTab={setTab}/>}
+        {tab==='search'      && <ResearchSearchScreen setTab={setTab}/>}
+        {tab==='cohort'      && <CohortScreen/>}
+        {tab==='ai'          && <AIScreen/>}
+        {tab==='databricks'  && <DatabricksScreen/>}
       </main>
     </div>
   );
