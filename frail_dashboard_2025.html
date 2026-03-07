@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>村上市 高齢者総合検診 2025 フレイル分析ダッシュボード</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Sans','Yu Gothic','Meiryo',sans-serif;background:#F1F5F9;color:#1E293B;font-size:14px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#94A3B8;border-radius:10px}
+
+/* ヘッダー */
+#header{background:linear-gradient(135deg,#1E3A5F 0%,#2563EB 100%);padding:16px 28px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 12px rgba(0,0,0,.18);position:sticky;top:0;z-index:100}
+#header h1{color:#fff;font-size:18px;font-weight:800;letter-spacing:.01em;line-height:1.3}
+#header .sub{color:rgba(255,255,255,.78);font-size:11px;margin-top:3px;font-weight:500}
+#header .badge{background:rgba(255,255,255,.14);border-radius:10px;padding:10px 18px;text-align:right;flex-shrink:0}
+#header .badge .num{color:#fff;font-size:26px;font-weight:800;line-height:1}
+#header .badge .lbl{color:rgba(255,255,255,.80);font-size:11px;margin-top:2px}
+
+/* レイアウト */
+#wrap{display:flex;min-height:calc(100vh - 56px)}
+#sidebar{width:220px;flex-shrink:0;background:#fff;border-right:1px solid #E2E8F0;padding:18px 14px;overflow-y:auto}
+#main{flex:1;padding:20px 22px;overflow-x:hidden}
+
+/* サイドバー */
+.sb-title{font-size:11px;font-weight:800;color:#1E3A5F;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #2563EB;padding-bottom:5px;margin-bottom:12px}
+.sb-group{margin-bottom:18px}
+.sb-label{font-size:11.5px;font-weight:700;color:#475569;margin-bottom:7px}
+.chk-item{display:flex;align-items:center;gap:7px;margin-bottom:5px;cursor:pointer}
+.chk-item input{accent-color:#2563EB;cursor:pointer}
+.chk-item span{font-size:12.5px;color:#1E293B;font-weight:500}
+.sb-stat{background:#F8FAFC;border-radius:8px;padding:10px 12px;font-size:12px;color:#475569;margin-top:4px;line-height:1.7}
+.sb-stat b{color:#1E3A5F}
+
+/* セクションヘッダ */
+.sec-head{font-size:13.5px;font-weight:800;color:#1E3A5F;border-left:4px solid #2563EB;padding:2px 0 2px 12px;margin:24px 0 14px;display:flex;align-items:center;gap:6px}
+.sec-head.red{border-left-color:#DC2626;color:#7F1D1D}
+.sec-head.gray{border-left-color:#94A3B8;color:#64748B}
+.sec-head.green{border-left-color:#059669;color:#065F46}
+
+/* KPIカード */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:4px}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+.kpi-card{background:#fff;border-radius:12px;padding:14px 12px 12px;box-shadow:0 1px 3px rgba(0,0,0,.07),0 3px 12px rgba(0,0,0,.05);border-top:4px solid var(--ac);height:100%}
+.kpi-icon{font-size:20px;margin-bottom:4px}
+.kpi-name{font-size:10px;font-weight:700;color:#475569;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;min-height:28px}
+.kpi-pct{font-size:32px;font-weight:800;color:var(--ac);line-height:1}
+.kpi-unit{font-size:13px;color:#475569;font-weight:500}
+.kpi-detail{font-size:11px;color:#475569;margin-top:4px;font-weight:500}
+.kpi-bar-bg{background:#E2E8F0;border-radius:4px;height:5px;margin-top:9px;overflow:hidden}
+.kpi-bar-fill{height:5px;border-radius:4px;background:var(--ac)}
+.kpi-basis{font-size:9.5px;color:#64748B;margin-top:6px;line-height:1.45}
+
+/* 実施状況カード */
+.bin-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+@media(max-width:1100px){.bin-grid{grid-template-columns:repeat(3,1fr)}}
+.bin-card{background:#fff;border-radius:12px;padding:14px 12px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-top:4px solid var(--ac)}
+.bin-n{font-size:28px;font-weight:800;color:var(--ac);line-height:1}
+.bin-pct{font-size:11.5px;color:#475569;margin-top:3px;font-weight:600}
+.bin-lbl{font-size:9px;color:#64748B;margin-top:8px}
+.risk-sub{margin-top:8px;padding:6px 8px;border-radius:6px;background:var(--ac-bg);border-left:3px solid var(--ac)}
+.risk-sub-pct{font-size:17px;font-weight:800;color:var(--ac)}
+.risk-sub-lbl{font-size:9.5px;color:var(--ac);font-weight:700}
+
+/* チャートグリッド */
+.chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+@media(max-width:900px){.chart-grid-2{grid-template-columns:1fr}}
+.chart-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.chart-title{font-size:12px;font-weight:700;color:#1E3A5F;margin-bottom:14px}
+
+/* アラートバナー */
+.alert-box{background:#FEF2F2;border:1.5px solid #FECACA;border-left:4px solid #DC2626;border-radius:10px;padding:14px 18px;margin-bottom:14px}
+.alert-n{font-size:28px;font-weight:800;color:#991B1B}
+.alert-sub{font-size:13px;color:#7F1D1D;font-weight:500;margin-left:8px}
+.alert-tip{font-size:11px;color:#B91C1C;margin-top:4px}
+
+/* テーブル */
+.tbl-wrap{overflow-x:auto;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:12px}
+thead th{background:#1E3A5F;color:#fff;padding:10px 8px;text-align:center;font-weight:700;font-size:11px;white-space:nowrap;position:sticky;top:0}
+thead th:first-child{border-radius:10px 0 0 0}
+thead th:last-child{border-radius:0 10px 0 0}
+tbody tr:nth-child(even){background:#F8FAFC}
+tbody tr:hover{background:#EFF6FF}
+tbody td{padding:8px 8px;text-align:center;color:#1E293B;border-bottom:1px solid #F1F5F9;white-space:nowrap}
+tbody td.risk-flag-yes{color:#DC2626;font-weight:700}
+tbody td.risk-flag-no{color:#94A3B8}
+
+/* フィルター表示 */
+#filter-info{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:8px 14px;font-size:12px;color:#1E40AF;margin-bottom:14px;font-weight:600}
+
+/* リスク重複ラベル */
+.risk-badge-0{background:#DCFCE7;color:#166534;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+.risk-badge-1{background:#FEF9C3;color:#854D0E;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+.risk-badge-2{background:#FFEDD5;color:#9A3412;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+.risk-badge-3{background:#FEE2E2;color:#991B1B;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+
+/* レスポンシブ */
+@media(max-width:768px){
+  #sidebar{display:none}
+  .kpi-grid,.bin-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div id="header">
+  <div style="font-size:32px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))">🏥</div>
+  <div style="flex:1">
+    <div id="header" style="all:unset">
+      <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:.01em">村上市 高齢者総合検診 2025年度 — フレイル分析ダッシュボード</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.78);margin-top:3px">AWGS2019・WHO基準準拠 ／ 高齢者支援課・保健師・行政幹部向け ／ データ更新: 2025年度</div>
+    </div>
+  </div>
+  <div style="background:rgba(255,255,255,.14);border-radius:10px;padding:10px 18px;text-align:right;flex-shrink:0">
+    <div style="color:#fff;font-size:26px;font-weight:800;line-height:1" id="hdr-n">205</div>
+    <div style="color:rgba(255,255,255,.80);font-size:11px;margin-top:2px" id="hdr-sub">男性46名 ／ 女性159名</div>
+  </div>
+</div>
+
+<div id="wrap">
+<!-- サイドバー -->
+<div id="sidebar">
+  <div class="sb-title">データフィルター</div>
+
+  <div class="sb-group">
+    <div class="sb-label">性別</div>
+    <label class="chk-item"><input type="checkbox" value="男性" checked onchange="applyFilter()"><span>男性</span></label>
+    <label class="chk-item"><input type="checkbox" value="女性" checked onchange="applyFilter()"><span>女性</span></label>
+  </div>
+
+  <div class="sb-group">
+    <div class="sb-label">年齢階級</div>
+    <label class="chk-item"><input type="checkbox" value="65歳未満" checked onchange="applyFilter()"><span>65歳未満</span></label>
+    <label class="chk-item"><input type="checkbox" value="65-69歳" checked onchange="applyFilter()"><span>65-69歳</span></label>
+    <label class="chk-item"><input type="checkbox" value="70-74歳" checked onchange="applyFilter()"><span>70-74歳</span></label>
+    <label class="chk-item"><input type="checkbox" value="75-79歳" checked onchange="applyFilter()"><span>75-79歳</span></label>
+    <label class="chk-item"><input type="checkbox" value="80歳以上" checked onchange="applyFilter()"><span>80歳以上</span></label>
+  </div>
+
+  <div class="sb-group">
+    <div class="sb-label">最低リスク重複数</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <input type="range" id="min-risk" min="1" max="5" value="2" style="flex:1;accent-color:#2563EB" oninput="document.getElementById('min-risk-val').textContent=this.value;renderHighRisk()">
+      <span id="min-risk-val" style="font-size:13px;font-weight:700;color:#1E3A5F;min-width:16px">2</span>
+    </div>
+    <div style="font-size:10.5px;color:#64748B;margin-top:4px">項目以上をリスト表示</div>
+  </div>
+
+  <div class="sb-stat" id="sb-stat-box">
+    対象: <b id="sb-n">205</b>名<br>
+    男性: <b id="sb-m">46</b>名 ／ 女性: <b id="sb-f">159</b>名<br>
+    3項目以上: <b id="sb-r3">-</b>名
+  </div>
+</div>
+
+<!-- メインコンテンツ -->
+<div id="main">
+  <div id="filter-info">フィルター適用中: 全205名 ／ 全年齢 ／ 全性別</div>
+
+  <!-- ── KPIカード ── -->
+  <div class="sec-head">📊 各指標リスク群サマリー（欠損値除外・実測ベース）</div>
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- ── 実施状況 ── -->
+  <div class="sec-head green">✅ 検査実施状況 — ID突合済み（全受診者）</div>
+  <div class="bin-grid" id="bin-grid"></div>
+
+  <!-- ── チャート ── -->
+  <div class="sec-head">🎯 全体リスク像</div>
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">指標別リスク該当率（レーダー）</div>
+      <canvas id="radarChart" height="260"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">指標別リスク該当率（横棒）</div>
+      <canvas id="barChart" height="260"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">年代別 歩行速度低下リスク率</div>
+      <canvas id="ageChart" height="220"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">フレイルリスク重複数の分布</div>
+      <canvas id="riskDistChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- ── 高リスクリスト ── -->
+  <div class="sec-head red">🚨 高リスク個人リスト（フォローアップ優先度順）</div>
+  <div class="alert-box">
+    <span class="alert-n" id="hi-n">-</span>
+    <span class="alert-sub" id="hi-sub"></span>
+    <div class="alert-tip">🔔 保健師による優先的なフォローアップが必要です</div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>性別</th><th>年齢</th><th>重複数</th>
+          <th>歩行↓</th><th>筋力↓</th><th>サルコ</th><th>骨密度↓</th><th>MCI</th><th>嚥下↓</th>
+          <th>歩行速度<br>(m/s)</th><th>STS<br>(秒)</th><th>MoCA</th><th>SMI</th><th>T-score</th><th>EAT-10</th>
+        </tr>
+      </thead>
+      <tbody id="risk-tbody"></tbody>
+    </table>
+  </div>
+</div><!-- /main -->
+</div><!-- /wrap -->
+
+<script>
+// ── 埋め込みデータ ──
+const D = {"records":[{"id":1,"sx":"男性","age":82,"ag":"80歳以上","h":160.0,"w":59.0,"bmi":23.0,"fat":34.1,"mus":20.7,"smi":6.3,"w1":null,"w2":null,"sts":null,"moca":22.0,"eat":5.0,"ts":0.2,"tp":102.0,"sos":1557,"bua":81.94,"osi":2.974,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":1,"fe":1,"risks":3},{"id":2,"sx":"女性","age":78,"ag":"75-79歳","h":155.1,"w":57.4,"bmi":23.9,"fat":38.2,"mus":18.7,"smi":5.8,"w1":1.32013201320132,"w2":1.3468013468013469,"sts":6.56,"moca":26.0,"eat":0.0,"ts":-2.24,"tp":75.0,"sos":1507,"bua":44.18,"osi":2.032,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":5,"sx":"女性","age":88,"ag":"80歳以上","h":142.0,"w":45.7,"bmi":22.7,"fat":34.2,"mus":15.4,"smi":5.5,"w1":1.0582010582010584,"w2":1.1428571428571428,"sts":9.6,"moca":16.0,"eat":1.0,"ts":null,"tp":null,"sos":1520,"bua":44.4,"osi":2.09,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":2},{"id":6,"sx":"女性","age":89,"ag":"80歳以上","h":136.8,"w":43.7,"bmi":23.4,"fat":36.9,"mus":13.9,"smi":5.0,"w1":0.8048289738430584,"w2":0.9259259259259258,"sts":8.31,"moca":19.0,"eat":0.0,"ts":null,"tp":null,"sos":1516,"bua":34.22,"osi":1.928,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":3},{"id":9,"sx":"女性","age":77,"ag":"75-79歳","h":148.3,"w":56.0,"bmi":25.5,"fat":30.3,"mus":20.9,"smi":6.8,"w1":1.0075566750629723,"w2":1.2461059190031152,"sts":4.81,"moca":27.0,"eat":0.0,"ts":-0.89,"tp":90.0,"sos":1527,"bua":74.58,"osi":2.432,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":14,"sx":"女性","age":73,"ag":"70-74歳","h":143.5,"w":45.1,"bmi":21.9,"fat":32.8,"mus":15.8,"smi":5.3,"w1":0.7952286282306162,"w2":0.7407407407407407,"sts":6.06,"moca":27.0,"eat":0.0,"ts":-2.08,"tp":77.0,"sos":1518,"bua":46.69,"osi":2.077,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":3},{"id":16,"sx":"女性","age":75,"ag":"75-79歳","h":152.5,"w":41.7,"bmi":17.9,"fat":23.9,"mus":16.6,"smi":5.0,"w1":1.3745704467353952,"w2":1.282051282051282,"sts":4.1,"moca":26.0,"eat":0.0,"ts":-1.68,"tp":81.0,"sos":1532,"bua":49.04,"osi":2.198,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":19,"sx":"男性","age":75,"ag":"75-79歳","h":162.6,"w":63.8,"bmi":24.1,"fat":22.6,"mus":27.1,"smi":8.0,"w1":1.015228426395939,"w2":1.0498687664041997,"sts":7.35,"moca":24.0,"eat":1.0,"ts":-0.36,"tp":96.0,"sos":1557,"bua":71.97,"osi":2.298,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":1},{"id":29,"sx":"女性","age":73,"ag":"70-74歳","h":151.5,"w":54.8,"bmi":23.9,"fat":30.9,"mus":20.2,"smi":6.4,"w1":0.8888888888888888,"w2":0.9411764705882352,"sts":11.69,"moca":27.0,"eat":1.0,"ts":-1.97,"tp":78.0,"sos":1513,"bua":44.0,"osi":2.111,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":33,"sx":"女性","age":73,"ag":"70-74歳","h":158.6,"w":59.9,"bmi":23.8,"fat":33.9,"mus":21.2,"smi":6.2,"w1":1.4388489208633095,"w2":1.4705882352941175,"sts":7.28,"moca":29.0,"eat":1.0,"ts":-1.23,"tp":86.0,"sos":1534,"bua":58.69,"osi":2.331,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":34,"sx":"女性","age":71,"ag":"70-74歳","h":149.7,"w":48.3,"bmi":21.6,"fat":29.5,"mus":18.1,"smi":5.9,"w1":1.075268817204301,"w2":1.092896174863388,"sts":8.57,"moca":28.0,"eat":1.0,"ts":-1.6,"tp":82.0,"sos":1531,"bua":57.26,"osi":2.22,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":37,"sx":"女性","age":77,"ag":"75-79歳","h":142.3,"w":31.9,"bmi":15.8,"fat":16.8,"mus":13.5,"smi":4.5,"w1":1.0840108401084012,"w2":1.095890410958904,"sts":9.79,"moca":23.0,"eat":0.0,"ts":-0.97,"tp":89.0,"sos":1543,"bua":62.68,"osi":2.409,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":2},{"id":38,"sx":"女性","age":80,"ag":"80歳以上","h":139.7,"w":48.4,"bmi":24.8,"fat":32.6,"mus":16.4,"smi":5.7,"w1":0.9638554216867468,"w2":1.0389610389610389,"sts":7.66,"moca":20.0,"eat":2.0,"ts":-1.78,"tp":80.0,"sos":1523,"bua":50.26,"osi":2.167,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":55,"sx":"女性","age":75,"ag":"75-79歳","h":158.2,"w":58.6,"bmi":23.4,"fat":32.4,"mus":21.4,"smi":6.6,"w1":1.0309278350515465,"w2":1.0389610389610389,"sts":7.04,"moca":28.0,"eat":12.0,"ts":-2.25,"tp":75.0,"sos":1517,"bua":37.16,"osi":2.027,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":1,"risks":2},{"id":59,"sx":"女性","age":72,"ag":"70-74歳","h":150.0,"w":47.3,"bmi":21.0,"fat":28.7,"mus":17.8,"smi":5.6,"w1":1.2539184952978055,"w2":1.4234875444839858,"sts":7.34,"moca":27.0,"eat":1.0,"ts":-2.18,"tp":76.0,"sos":1523,"bua":39.34,"osi":2.049,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":64,"sx":"女性","age":76,"ag":"75-79歳","h":157.2,"w":51.9,"bmi":21.0,"fat":30.2,"mus":19.3,"smi":5.7,"w1":1.0582010582010584,"w2":1.162790697674419,"sts":8.43,"moca":27.0,"eat":0.0,"ts":-1.07,"tp":88.0,"sos":1543,"bua":53.93,"osi":2.378,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":67,"sx":"女性","age":75,"ag":"75-79歳","h":149.0,"w":47.8,"bmi":21.5,"fat":34.1,"mus":16.6,"smi":5.5,"w1":1.0256410256410258,"w2":0.97799511002445,"sts":6.88,"moca":24.0,"eat":0.0,"ts":-1.35,"tp":85.0,"sos":1535,"bua":62.61,"osi":2.296,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":68,"sx":"女性","age":76,"ag":"75-79歳","h":144.0,"w":42.5,"bmi":20.5,"fat":25.2,"mus":16.7,"smi":5.5,"w1":1.0335917312661498,"w2":1.1142061281337048,"sts":7.53,"moca":23.0,"eat":0.0,"ts":-1.64,"tp":82.0,"sos":1532,"bua":51.11,"osi":2.211,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":71,"sx":"女性","age":75,"ag":"75-79歳","h":150.0,"w":56.4,"bmi":25.1,"fat":40.8,"mus":17.4,"smi":5.6,"w1":1.3793103448275863,"w2":1.5384615384615383,"sts":4.81,"moca":26.0,"eat":1.0,"ts":-0.69,"tp":92.0,"sos":1548,"bua":56.92,"osi":2.492,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":0,"fe":0,"risks":1},{"id":72,"sx":"女性","age":75,"ag":"75-79歳","h":146.5,"w":54.6,"bmi":25.4,"fat":34.8,"mus":18.9,"smi":6.3,"w1":1.13314447592068,"w2":1.095890410958904,"sts":4.41,"moca":26.0,"eat":0.0,"ts":-0.09,"tp":99.0,"sos":1552,"bua":64.26,"osi":2.672,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":74,"sx":"女性","age":70,"ag":"70-74歳","h":149.0,"w":48.1,"bmi":21.7,"fat":28.2,"mus":18.1,"smi":6.0,"w1":1.1142061281337048,"w2":1.1142061281337048,"sts":6.56,"moca":27.0,"eat":0.0,"ts":-2.05,"tp":77.0,"sos":1524,"bua":41.55,"osi":2.087,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":75,"sx":"男性","age":72,"ag":"70-74歳","h":162.3,"w":72.5,"bmi":27.5,"fat":33.1,"mus":26.7,"smi":8.2,"w1":0.8714596949891068,"w2":0.9153318077803204,"sts":6.06,"moca":25.0,"eat":0.0,"ts":0.01,"tp":100.0,"sos":1575,"bua":83.0,"osi":2.913,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":2},{"id":76,"sx":"女性","age":70,"ag":"70-74歳","h":161.0,"w":59.4,"bmi":22.9,"fat":35.4,"mus":20.5,"smi":6.3,"w1":0.7936507936507936,"w2":0.8547008547008548,"sts":8.31,"moca":28.0,"eat":0.0,"ts":-1.32,"tp":85.0,"sos":1527,"bua":50.54,"osi":2.304,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":81,"sx":"女性","age":72,"ag":"70-74歳","h":144.5,"w":47.3,"bmi":22.7,"fat":38.4,"mus":15.1,"smi":5.0,"w1":1.0075566750629723,"w2":1.1235955056179776,"sts":5.25,"moca":23.0,"eat":0.0,"ts":-1.47,"tp":84.0,"sos":1539,"bua":54.05,"osi":2.26,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":86,"sx":"男性","age":83,"ag":"80歳以上","h":159.5,"w":46.3,"bmi":18.2,"fat":19.6,"mus":19.6,"smi":5.9,"w1":1.0309278350515465,"w2":1.0230179028132993,"sts":8.37,"moca":15.0,"eat":0.0,"ts":null,"tp":null,"sos":1553,"bua":73.05,"osi":2.905,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":2},{"id":87,"sx":"女性","age":72,"ag":"70-74歳","h":159.0,"w":57.1,"bmi":22.6,"fat":37.3,"mus":18.9,"smi":5.8,"w1":1.2578616352201255,"w2":1.0389610389610389,"sts":7.34,"moca":24.0,"eat":0.0,"ts":-1.77,"tp":80.0,"sos":1525,"bua":52.78,"osi":2.171,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":88,"sx":"男性","age":82,"ag":"80歳以上","h":156.4,"w":49.2,"bmi":20.1,"fat":24.7,"mus":19.6,"smi":6.2,"w1":0.8474576271186441,"w2":0.8264462809917356,"sts":8.07,"moca":20.0,"eat":0.0,"ts":null,"tp":null,"sos":1515,"bua":47.21,"osi":2.112,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":3},{"id":103,"sx":"女性","age":82,"ag":"80歳以上","h":144.0,"w":42.6,"bmi":20.5,"fat":27.2,"mus":15.7,"smi":5.6,"w1":0.9411764705882352,"w2":0.954653937947494,"sts":5.72,"moca":26.0,"eat":2.0,"ts":null,"tp":null,"sos":1509,"bua":37.3,"osi":1.943,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":0,"fm":0,"fe":0,"risks":2},{"id":107,"sx":"女性","age":74,"ag":"70-74歳","h":146.8,"w":44.0,"bmi":20.4,"fat":21.5,"mus":18.2,"smi":5.8,"w1":1.1428571428571428,"w2":1.1764705882352942,"sts":7.81,"moca":29.0,"eat":2.0,"ts":-1.88,"tp":79.0,"sos":1525,"bua":44.47,"osi":2.138,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":113,"sx":"女性","age":78,"ag":"75-79歳","h":148.4,"w":52.1,"bmi":23.7,"fat":33.5,"mus":18.4,"smi":6.2,"w1":1.3888888888888888,"w2":1.4545454545454546,"sts":4.75,"moca":27.0,"eat":2.0,"ts":-1.66,"tp":82.0,"sos":1526,"bua":56.07,"osi":2.202,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":115,"sx":"女性","age":77,"ag":"75-79歳","h":145.0,"w":56.5,"bmi":26.9,"fat":37.0,"mus":18.5,"smi":6.3,"w1":1.075268817204301,"w2":1.0666666666666669,"sts":5.53,"moca":26.0,"eat":2.0,"ts":-1.19,"tp":87.0,"sos":1552,"bua":54.39,"osi":2.345,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":116,"sx":"女性","age":78,"ag":"75-79歳","h":153.7,"w":63.5,"bmi":26.9,"fat":43.3,"mus":19.0,"smi":6.2,"w1":1.1527377521613833,"w2":1.1976047904191618,"sts":5.81,"moca":26.0,"eat":0.0,"ts":-1.55,"tp":83.0,"sos":1520,"bua":62.41,"osi":2.237,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":118,"sx":"女性","age":67,"ag":"65-69歳","h":161.8,"w":57.6,"bmi":22.0,"fat":32.5,"mus":20.6,"smi":6.0,"w1":1.0335917312661498,"w2":1.3745704467353952,"sts":6.78,"moca":24.0,"eat":0.0,"ts":-2.08,"tp":77.0,"sos":1518,"bua":46.23,"osi":2.078,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":120,"sx":"女性","age":67,"ag":"65-69歳","h":153.2,"w":44.9,"bmi":19.1,"fat":25.8,"mus":17.5,"smi":5.2,"w1":1.183431952662722,"w2":1.2048192771084338,"sts":4.53,"moca":29.0,"eat":0.0,"ts":-2.03,"tp":78.0,"sos":1531,"bua":41.36,"osi":2.092,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":121,"sx":"男性","age":69,"ag":"65-69歳","h":null,"w":null,"bmi":null,"fat":3.0,"mus":null,"smi":29.3,"w1":1.092896174863388,"w2":0.9925558312655086,"sts":7.44,"moca":29.0,"eat":0.0,"ts":-1.02,"tp":89.0,"sos":1554,"bua":72.5,"osi":2.592,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":157,"sx":"男性","age":76,"ag":"75-79歳","h":167.0,"w":55.0,"bmi":19.7,"fat":20.0,"mus":23.9,"smi":7.1,"w1":0.6993006993006994,"w2":0.8830022075055187,"sts":10.31,"moca":22.0,"eat":0.0,"ts":-0.66,"tp":93.0,"sos":1546,"bua":75.2,"osi":2.705,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":2},{"id":160,"sx":"男性","age":84,"ag":"80歳以上","h":165.0,"w":54.7,"bmi":20.1,"fat":24.7,"mus":21.9,"smi":6.4,"w1":0.7751937984496123,"w2":0.8146639511201629,"sts":8.44,"moca":26.0,"eat":0.0,"ts":-1.04,"tp":89.0,"sos":1540,"bua":79.64,"osi":2.586,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":3},{"id":161,"sx":"女性","age":76,"ag":"75-79歳","h":152.0,"w":53.8,"bmi":23.3,"fat":33.0,"mus":18.9,"smi":6.0,"w1":0.97799511002445,"w2":1.0498687664041997,"sts":5.1,"moca":25.0,"eat":3.0,"ts":-2.02,"tp":78.0,"sos":1512,"bua":42.77,"osi":2.095,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":1,"risks":4},{"id":162,"sx":"男性","age":81,"ag":"80歳以上","h":161.0,"w":66.4,"bmi":25.6,"fat":26.2,"mus":26.8,"smi":8.0,"w1":0.8,"w2":0.8048289738430584,"sts":8.5,"moca":26.0,"eat":0.0,"ts":-1.17,"tp":88.0,"sos":1543,"bua":77.12,"osi":2.547,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":163,"sx":"女性","age":66,"ag":"65-69歳","h":157.3,"w":60.4,"bmi":24.4,"fat":29.6,"mus":22.8,"smi":7.0,"w1":1.1142061281337048,"w2":0.9950248756218908,"sts":7.06,"moca":24.0,"eat":1.0,"ts":-0.24,"tp":97.0,"sos":1544,"bua":66.67,"osi":2.627,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":1},{"id":164,"sx":"女性","age":65,"ag":"65-69歳","h":153.2,"w":58.0,"bmi":24.7,"fat":36.3,"mus":19.9,"smi":6.3,"w1":0.9828009828009828,"w2":1.13314447592068,"sts":5.66,"moca":30.0,"eat":0.0,"ts":-1.83,"tp":80.0,"sos":1518,"bua":45.09,"osi":2.151,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":165,"sx":"男性","age":71,"ag":"70-74歳","h":160.0,"w":58.3,"bmi":22.8,"fat":18.8,"mus":25.8,"smi":7.6,"w1":0.9569377990430624,"w2":1.0256410256410258,"sts":5.87,"moca":28.0,"eat":2.0,"ts":-2.12,"tp":77.0,"sos":1530,"bua":53.45,"osi":2.25,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":167,"sx":"女性","age":76,"ag":"75-79歳","h":153.1,"w":64.4,"bmi":27.5,"fat":38.2,"mus":21.2,"smi":7.1,"w1":1.1428571428571428,"w2":1.1869436201780414,"sts":7.91,"moca":25.0,"eat":0.0,"ts":-2.4,"tp":74.0,"sos":1505,"bua":38.32,"osi":1.983,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":179,"sx":"女性","age":74,"ag":"70-74歳","h":155.4,"w":53.7,"bmi":22.2,"fat":30.9,"mus":19.7,"smi":6.3,"w1":0.7407407407407407,"w2":0.7233273056057866,"sts":10.15,"moca":28.0,"eat":0.0,"ts":-1.37,"tp":85.0,"sos":1524,"bua":58.64,"osi":2.289,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":191,"sx":"女性","age":86,"ag":"80歳以上","h":147.8,"w":43.3,"bmi":19.8,"fat":26.8,"mus":16.2,"smi":5.3,"w1":1.0666666666666669,"w2":1.1235955056179776,"sts":7.41,"moca":22.0,"eat":1.0,"ts":null,"tp":null,"sos":1495,"bua":38.98,"osi":1.88,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":2},{"id":203,"sx":"男性","age":78,"ag":"75-79歳","h":163.5,"w":54.6,"bmi":20.4,"fat":21.2,"mus":23.3,"smi":6.8,"w1":0.9852216748768474,"w2":1.075268817204301,"sts":7.03,"moca":22.0,"eat":0.0,"ts":-1.55,"tp":83.0,"sos":1544,"bua":63.44,"osi":2.43,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":4},{"id":211,"sx":"女性","age":61,"ag":"65歳未満","h":156.0,"w":54.0,"bmi":22.2,"fat":26.7,"mus":21.4,"smi":6.5,"w1":1.1527377521613833,"w2":1.162790697674419,"sts":4.72,"moca":25.0,"eat":0.0,"ts":-0.65,"tp":93.0,"sos":1551,"bua":63.89,"osi":2.506,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":1},{"id":229,"sx":"女性","age":71,"ag":"70-74歳","h":146.5,"w":47.7,"bmi":22.2,"fat":33.3,"mus":16.7,"smi":5.8,"w1":1.13314447592068,"w2":1.092896174863388,"sts":4.37,"moca":28.0,"eat":0.0,"ts":-1.2,"tp":87.0,"sos":1536,"bua":63.59,"osi":2.34,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":305,"sx":"男性","age":76,"ag":"75-79歳","h":162.5,"w":52.1,"bmi":19.7,"fat":19.8,"mus":22.7,"smi":6.5,"w1":1.4234875444839858,"w2":1.5267175572519085,"sts":5.47,"moca":26.0,"eat":0.0,"ts":-0.13,"tp":99.0,"sos":1563,"bua":70.41,"osi":2.87,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":0,"fe":0,"risks":1},{"id":306,"sx":"女性","age":70,"ag":"70-74歳","h":154.8,"w":52.9,"bmi":22.1,"fat":39.5,"mus":16.7,"smi":5.4,"w1":0.9216589861751152,"w2":0.9756097560975612,"sts":6.53,"moca":28.0,"eat":0.0,"ts":-1.89,"tp":79.0,"sos":1517,"bua":46.6,"osi":2.136,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":3},{"id":309,"sx":"女性","age":82,"ag":"80歳以上","h":156.0,"w":61.4,"bmi":25.2,"fat":34.2,"mus":21.2,"smi":7.1,"w1":0.7952286282306162,"w2":0.8421052631578947,"sts":9.06,"moca":30.0,"eat":0.0,"ts":-1.63,"tp":82.0,"sos":1513,"bua":52.62,"osi":2.212,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":310,"sx":"男性","age":85,"ag":"80歳以上","h":163.7,"w":66.3,"bmi":24.7,"fat":32.5,"mus":24.3,"smi":7.1,"w1":0.8888888888888888,"w2":0.9132420091324202,"sts":10.12,"moca":30.0,"eat":0.0,"ts":-1.68,"tp":82.0,"sos":1519,"bua":63.88,"osi":2.386,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":311,"sx":"女性","age":75,"ag":"75-79歳","h":153.0,"w":54.6,"bmi":23.3,"fat":29.1,"mus":20.3,"smi":6.1,"w1":1.0498687664041997,"w2":1.13314447592068,"sts":9.03,"moca":20.0,"eat":0.0,"ts":-0.5,"tp":94.0,"sos":1546,"bua":62.68,"osi":2.549,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":1},{"id":315,"sx":"男性","age":71,"ag":"70-74歳","h":170.5,"w":72.6,"bmi":25.0,"fat":29.3,"mus":28.1,"smi":7.7,"w1":0.8888888888888888,"w2":0.8421052631578947,"sts":7.0,"moca":26.0,"eat":0.0,"ts":-1.32,"tp":86.0,"sos":1541,"bua":68.88,"osi":2.501,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":316,"sx":"女性","age":70,"ag":"70-74歳","h":156.4,"w":56.6,"bmi":23.1,"fat":33.0,"mus":20.2,"smi":6.5,"w1":1.1976047904191618,"w2":1.3745704467353952,"sts":7.62,"moca":24.0,"eat":0.0,"ts":-1.58,"tp":83.0,"sos":1520,"bua":56.18,"osi":2.228,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":323,"sx":"女性","age":73,"ag":"70-74歳","h":155.0,"w":59.3,"bmi":24.7,"fat":36.4,"mus":19.9,"smi":6.3,"w1":0.8146639511201629,"w2":0.8888888888888888,"sts":8.78,"moca":27.0,"eat":0.0,"ts":-2.06,"tp":77.0,"sos":1511,"bua":45.35,"osi":2.085,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":324,"sx":"女性","age":66,"ag":"65-69歳","h":156.2,"w":62.6,"bmi":25.7,"fat":37.1,"mus":21.0,"smi":6.4,"w1":1.075268817204301,"w2":1.1204481792717087,"sts":8.66,"moca":29.0,"eat":0.0,"ts":0.58,"tp":106.0,"sos":1573,"bua":57.3,"osi":2.871,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":325,"sx":"女性","age":70,"ag":"70-74歳","h":145.7,"w":44.5,"bmi":21.0,"fat":23.9,"mus":18.0,"smi":6.1,"w1":0.894854586129754,"w2":0.8639308855291576,"sts":5.41,"moca":25.0,"eat":0.0,"ts":-1.3,"tp":86.0,"sos":1533,"bua":55.21,"osi":2.31,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":331,"sx":"女性","age":66,"ag":"65-69歳","h":153.6,"w":60.9,"bmi":25.8,"fat":40.7,"mus":19.1,"smi":6.1,"w1":1.162790697674419,"w2":1.2539184952978055,"sts":8.22,"moca":24.0,"eat":0.0,"ts":-1.07,"tp":88.0,"sos":1544,"bua":59.97,"osi":2.379,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":342,"sx":"男性","age":77,"ag":"75-79歳","h":156.0,"w":58.6,"bmi":24.1,"fat":29.2,"mus":22.6,"smi":6.7,"w1":1.0582010582010584,"w2":1.0256410256410258,"sts":7.16,"moca":24.0,"eat":0.0,"ts":-0.99,"tp":89.0,"sos":1553,"bua":73.84,"osi":2.602,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":2},{"id":343,"sx":"男性","age":81,"ag":"80歳以上","h":165.5,"w":58.5,"bmi":21.4,"fat":17.4,"mus":26.4,"smi":7.7,"w1":1.1235955056179776,"w2":1.2422360248447204,"sts":4.72,"moca":29.0,"eat":0.0,"ts":0.89,"tp":109.0,"sos":1571,"bua":90.54,"osi":3.186,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":352,"sx":"女性","age":79,"ag":"75-79歳","h":145.5,"w":42.6,"bmi":20.1,"fat":34.4,"mus":14.3,"smi":4.9,"w1":1.32013201320132,"w2":1.351351351351351,"sts":6.41,"moca":25.0,"eat":0.0,"ts":-2.04,"tp":77.0,"sos":1524,"bua":45.49,"osi":2.09,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":353,"sx":"女性","age":68,"ag":"65-69歳","h":155.5,"w":67.3,"bmi":27.8,"fat":39.2,"mus":22.0,"smi":6.9,"w1":0.9216589861751152,"w2":1.0075566750629723,"sts":8.53,"moca":28.0,"eat":0.0,"ts":-1.77,"tp":80.0,"sos":1515,"bua":50.73,"osi":2.172,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":355,"sx":"女性","age":70,"ag":"70-74歳","h":151.4,"w":53.4,"bmi":23.3,"fat":34.7,"mus":18.4,"smi":5.9,"w1":1.0335917312661498,"w2":1.015228426395939,"sts":5.78,"moca":27.0,"eat":0.0,"ts":-2.2,"tp":76.0,"sos":1529,"bua":38.35,"osi":2.041,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":357,"sx":"女性","age":67,"ag":"65-69歳","h":157.5,"w":51.7,"bmi":20.8,"fat":24.8,"mus":20.7,"smi":6.3,"w1":0.8639308855291576,"w2":0.8421052631578947,"sts":13.47,"moca":28.0,"eat":3.0,"ts":-0.62,"tp":93.0,"sos":1533,"bua":56.86,"osi":2.513,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":1,"fa":0,"fb":0,"fm":0,"fe":1,"risks":3},{"id":359,"sx":"女性","age":67,"ag":"65-69歳","h":171.8,"w":56.4,"bmi":19.1,"fat":23.6,"mus":23.2,"smi":6.3,"w1":0.9009009009009008,"w2":0.8583690987124464,"sts":6.63,"moca":28.0,"eat":0.0,"ts":-1.75,"tp":81.0,"sos":1513,"bua":57.45,"osi":2.176,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":360,"sx":"女性","age":67,"ag":"65-69歳","h":154.5,"w":55.0,"bmi":23.0,"fat":30.3,"mus":20.5,"smi":6.4,"w1":1.1527377521613833,"w2":1.1764705882352942,"sts":6.68,"moca":27.0,"eat":0.0,"ts":-2.24,"tp":75.0,"sos":1517,"bua":40.52,"osi":2.031,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":364,"sx":"女性","age":69,"ag":"65-69歳","h":147.5,"w":45.7,"bmi":21.0,"fat":34.4,"mus":15.8,"smi":5.3,"w1":1.183431952662722,"w2":1.2307692307692308,"sts":4.35,"moca":23.0,"eat":0.0,"ts":-1.89,"tp":79.0,"sos":1519,"bua":51.51,"osi":2.134,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":365,"sx":"女性","age":74,"ag":"70-74歳","h":null,"w":null,"bmi":null,"fat":null,"mus":null,"smi":null,"w1":1.2578616352201255,"w2":1.2578616352201255,"sts":6.97,"moca":26.0,"eat":0.0,"ts":-2.0,"tp":78.0,"sos":1526,"bua":39.73,"osi":2.101,"bf":1,"bs":1,"be":1,"bm":1,"bi":0,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":367,"sx":"女性","age":74,"ag":"70-74歳","h":153.5,"w":62.1,"bmi":26.4,"fat":42.5,"mus":18.5,"smi":6.1,"w1":0.8547008547008548,"w2":0.8771929824561404,"sts":10.03,"moca":28.0,"eat":0.0,"ts":-1.34,"tp":85.0,"sos":1518,"bua":61.05,"osi":2.298,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":376,"sx":"男性","age":69,"ag":"65-69歳","h":168.5,"w":80.4,"bmi":28.3,"fat":31.5,"mus":30.5,"smi":8.7,"w1":1.2422360248447204,"w2":1.1527377521613833,"sts":7.72,"moca":29.0,"eat":0.0,"ts":-0.25,"tp":97.0,"sos":1544,"bua":89.92,"osi":2.832,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":377,"sx":"女性","age":78,"ag":"75-79歳","h":151.5,"w":53.9,"bmi":23.5,"fat":30.1,"mus":19.8,"smi":6.6,"w1":0.8421052631578947,"w2":0.9478672985781992,"sts":7.34,"moca":27.0,"eat":0.0,"ts":-1.38,"tp":85.0,"sos":1536,"bua":60.64,"osi":2.287,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":378,"sx":"女性","age":77,"ag":"75-79歳","h":147.5,"w":58.5,"bmi":26.9,"fat":44.8,"mus":16.6,"smi":5.3,"w1":1.0230179028132993,"w2":1.2539184952978055,"sts":7.03,"moca":18.0,"eat":1.0,"ts":-0.33,"tp":96.0,"sos":1556,"bua":63.38,"osi":2.601,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":2},{"id":379,"sx":"男性","age":76,"ag":"75-79歳","h":162.0,"w":59.0,"bmi":22.5,"fat":24.7,"mus":24.3,"smi":6.9,"w1":1.3745704467353952,"w2":1.4234875444839858,"sts":4.6,"moca":24.0,"eat":0.0,"ts":-1.36,"tp":85.0,"sos":1541,"bua":61.87,"osi":2.486,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":380,"sx":"女性","age":78,"ag":"75-79歳","h":154.3,"w":61.5,"bmi":25.8,"fat":36.0,"mus":20.6,"smi":6.6,"w1":1.1235955056179776,"w2":1.2195121951219512,"sts":6.59,"moca":26.0,"eat":0.0,"ts":-2.57,"tp":72.0,"sos":1499,"bua":41.05,"osi":1.931,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":381,"sx":"女性","age":54,"ag":"65歳未満","h":150.3,"w":67.2,"bmi":29.7,"fat":37.6,"mus":22.9,"smi":7.7,"w1":0.8583690987124464,"w2":0.8888888888888888,"sts":8.6,"moca":20.0,"eat":0.0,"ts":0.65,"tp":107.0,"sos":1567,"bua":77.7,"osi":2.893,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":2},{"id":382,"sx":"女性","age":80,"ag":"80歳以上","h":146.8,"w":54.2,"bmi":25.2,"fat":37.8,"mus":17.6,"smi":5.9,"w1":1.015228426395939,"w2":1.162790697674419,"sts":4.13,"moca":16.0,"eat":5.0,"ts":0.2,"tp":102.0,"sos":1565,"bua":60.61,"osi":2.757,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":1,"risks":2},{"id":383,"sx":"女性","age":61,"ag":"65歳未満","h":153.8,"w":71.0,"bmi":30.0,"fat":42.1,"mus":22.3,"smi":7.3,"w1":0.9615384615384616,"w2":1.1235955056179776,"sts":5.47,"moca":23.0,"eat":0.0,"ts":-1.45,"tp":84.0,"sos":1528,"bua":61.06,"osi":2.265,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":385,"sx":"女性","age":69,"ag":"65-69歳","h":165.0,"w":49.0,"bmi":18.0,"fat":20.1,"mus":21.0,"smi":6.2,"w1":1.30718954248366,"w2":1.2084592145015105,"sts":6.19,"moca":30.0,"eat":0.0,"ts":-1.36,"tp":85.0,"sos":1536,"bua":54.67,"osi":2.293,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":386,"sx":"男性","age":66,"ag":"65-69歳","h":166.4,"w":77.0,"bmi":27.8,"fat":25.2,"mus":32.5,"smi":8.7,"w1":1.0582010582010584,"w2":1.11731843575419,"sts":8.47,"moca":29.0,"eat":0.0,"ts":0.48,"tp":105.0,"sos":1586,"bua":84.39,"osi":3.058,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":387,"sx":"女性","age":72,"ag":"70-74歳","h":157.5,"w":75.0,"bmi":30.2,"fat":39.0,"mus":25.0,"smi":7.7,"w1":1.1142061281337048,"w2":1.0582010582010584,"sts":8.25,"moca":26.0,"eat":0.0,"ts":-0.52,"tp":94.0,"sos":1541,"bua":67.25,"osi":2.544,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":388,"sx":"女性","age":70,"ag":"70-74歳","h":157.5,"w":57.1,"bmi":23.0,"fat":34.0,"mus":20.1,"smi":6.1,"w1":1.1976047904191618,"w2":1.2195121951219512,"sts":9.0,"moca":28.0,"eat":0.0,"ts":-2.31,"tp":74.0,"sos":1511,"bua":38.45,"osi":2.009,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":391,"sx":"女性","age":71,"ag":"70-74歳","h":158.0,"w":51.5,"bmi":20.6,"fat":24.9,"mus":20.6,"smi":6.0,"w1":1.1428571428571428,"w2":1.1527377521613833,"sts":5.5,"moca":28.0,"eat":0.0,"ts":-0.79,"tp":91.0,"sos":1526,"bua":70.58,"osi":2.464,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":392,"sx":"女性","age":79,"ag":"75-79歳","h":157.6,"w":44.5,"bmi":17.9,"fat":29.5,"mus":16.1,"smi":4.8,"w1":1.4184397163120568,"w2":1.3333333333333333,"sts":4.91,"moca":26.0,"eat":0.0,"ts":-1.61,"tp":82.0,"sos":1523,"bua":57.36,"osi":2.219,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":394,"sx":"女性","age":61,"ag":"65歳未満","h":160.0,"w":54.3,"bmi":21.2,"fat":24.1,"mus":22.3,"smi":6.5,"w1":1.1019283746556474,"w2":1.0256410256410258,"sts":5.94,"moca":30.0,"eat":0.0,"ts":-1.41,"tp":84.0,"sos":1534,"bua":53.94,"osi":2.277,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":396,"sx":"女性","age":63,"ag":"65歳未満","h":160.4,"w":61.6,"bmi":23.9,"fat":31.5,"mus":22.9,"smi":6.9,"w1":0.7407407407407407,"w2":0.7532956685499059,"sts":8.32,"moca":29.0,"eat":0.0,"ts":-1.28,"tp":86.0,"sos":1528,"bua":63.04,"osi":2.318,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":397,"sx":"女性","age":81,"ag":"80歳以上","h":165.5,"w":65.1,"bmi":23.8,"fat":32.4,"mus":23.7,"smi":6.6,"w1":1.2903225806451613,"w2":1.4234875444839858,"sts":10.53,"moca":29.0,"eat":0.0,"ts":-1.94,"tp":79.0,"sos":1520,"bua":48.49,"osi":2.12,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":398,"sx":"女性","age":66,"ag":"65-69歳","h":152.0,"w":44.0,"bmi":19.0,"fat":32.4,"mus":15.1,"smi":4.8,"w1":0.8316008316008316,"w2":0.8163265306122448,"sts":6.68,"moca":25.0,"eat":3.0,"ts":-2.44,"tp":73.0,"sos":1524,"bua":34.68,"osi":1.97,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":1,"fe":1,"risks":5},{"id":399,"sx":"女性","age":66,"ag":"65-69歳","h":152.3,"w":36.4,"bmi":15.7,"fat":16.3,"mus":16.0,"smi":5.0,"w1":0.7532956685499059,"w2":0.7366482504604052,"sts":7.46,"moca":21.0,"eat":0.0,"ts":-1.95,"tp":78.0,"sos":1528,"bua":49.93,"osi":2.116,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":4},{"id":401,"sx":"女性","age":73,"ag":"70-74歳","h":145.0,"w":40.5,"bmi":19.3,"fat":19.3,"mus":17.0,"smi":5.7,"w1":1.32013201320132,"w2":1.4705882352941175,"sts":3.5,"moca":24.0,"eat":0.0,"ts":-2.21,"tp":76.0,"sos":1518,"bua":43.95,"osi":2.038,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":402,"sx":"女性","age":74,"ag":"70-74歳","h":154.0,"w":59.2,"bmi":25.0,"fat":36.5,"mus":19.8,"smi":6.5,"w1":0.9638554216867468,"w2":0.9828009828009828,"sts":6.84,"moca":29.0,"eat":0.0,"ts":-1.93,"tp":79.0,"sos":1513,"bua":49.44,"osi":2.122,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":403,"sx":"女性","age":67,"ag":"65-69歳","h":156.0,"w":65.0,"bmi":26.7,"fat":39.2,"mus":21.2,"smi":6.8,"w1":1.3333333333333333,"w2":1.1940298507462686,"sts":6.41,"moca":27.0,"eat":0.0,"ts":-1.1,"tp":88.0,"sos":1534,"bua":60.05,"osi":2.371,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":405,"sx":"女性","age":75,"ag":"75-79歳","h":146.2,"w":51.4,"bmi":24.0,"fat":37.6,"mus":16.8,"smi":5.7,"w1":1.1560693641618498,"w2":1.162790697674419,"sts":5.84,"moca":30.0,"eat":0.0,"ts":-1.68,"tp":81.0,"sos":1520,"bua":54.24,"osi":2.197,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":409,"sx":"男性","age":75,"ag":"75-79歳","h":164.8,"w":68.1,"bmi":25.1,"fat":25.3,"mus":27.7,"smi":7.9,"w1":1.0869565217391304,"w2":1.1428571428571428,"sts":7.97,"moca":21.0,"eat":0.0,"ts":0.95,"tp":110.0,"sos":1596,"bua":106.25,"osi":3.207,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":1},{"id":413,"sx":"男性","age":73,"ag":"70-74歳","h":176.0,"w":71.3,"bmi":23.0,"fat":22.7,"mus":30.2,"smi":7.9,"w1":1.2307692307692308,"w2":1.2658227848101264,"sts":5.75,"moca":26.0,"eat":1.0,"ts":-1.65,"tp":82.0,"sos":1529,"bua":63.35,"osi":2.398,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":414,"sx":"女性","age":70,"ag":"70-74歳","h":157.7,"w":46.3,"bmi":18.6,"fat":23.0,"mus":18.9,"smi":5.5,"w1":1.282051282051282,"w2":1.3888888888888888,"sts":5.9,"moca":29.0,"eat":0.0,"ts":-2.3,"tp":75.0,"sos":1516,"bua":44.24,"osi":2.014,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":419,"sx":"男性","age":70,"ag":"70-74歳","h":170.0,"w":63.7,"bmi":22.0,"fat":18.4,"mus":28.9,"smi":7.4,"w1":1.075268817204301,"w2":1.1428571428571428,"sts":7.35,"moca":29.0,"eat":0.0,"ts":-1.03,"tp":89.0,"sos":1566,"bua":71.13,"osi":2.59,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":430,"sx":"男性","age":76,"ag":"75-79歳","h":173.2,"w":66.7,"bmi":22.2,"fat":24.8,"mus":27.4,"smi":7.2,"w1":1.0256410256410258,"w2":1.0498687664041997,"sts":6.82,"moca":23.0,"eat":1.0,"ts":-1.41,"tp":85.0,"sos":1537,"bua":61.85,"osi":2.473,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":432,"sx":"女性","age":79,"ag":"75-79歳","h":153.0,"w":50.0,"bmi":21.4,"fat":23.5,"mus":20.3,"smi":6.5,"w1":0.9280742459396752,"w2":0.9756097560975612,"sts":10.28,"moca":24.0,"eat":0.0,"ts":-1.28,"tp":86.0,"sos":1527,"bua":54.06,"osi":2.317,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":435,"sx":"男性","age":69,"ag":"65-69歳","h":165.0,"w":60.7,"bmi":22.3,"fat":19.0,"mus":26.9,"smi":7.5,"w1":1.2461059190031152,"w2":1.4545454545454546,"sts":6.97,"moca":24.0,"eat":0.0,"ts":-2.5,"tp":73.0,"sos":1510,"bua":42.09,"osi":2.132,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":436,"sx":"女性","age":76,"ag":"75-79歳","h":146.5,"w":53.4,"bmi":24.9,"fat":36.2,"mus":17.6,"smi":6.2,"w1":0.7952286282306162,"w2":0.7155635062611807,"sts":10.1,"moca":26.0,"eat":0.0,"ts":-2.39,"tp":74.0,"sos":1509,"bua":38.94,"osi":1.985,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":437,"sx":"女性","age":68,"ag":"65-69歳","h":154.0,"w":66.2,"bmi":27.9,"fat":38.2,"mus":22.2,"smi":6.9,"w1":0.9411764705882352,"w2":1.0075566750629723,"sts":5.35,"moca":29.0,"eat":0.0,"ts":-2.17,"tp":76.0,"sos":1511,"bua":41.23,"osi":2.053,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":438,"sx":"女性","age":67,"ag":"65-69歳","h":141.8,"w":56.6,"bmi":28.1,"fat":40.6,"mus":17.9,"smi":6.6,"w1":1.2658227848101264,"w2":1.2698412698412698,"sts":4.66,"moca":24.0,"eat":0.0,"ts":-1.2,"tp":87.0,"sos":1534,"bua":67.09,"osi":2.34,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":448,"sx":"男性","age":74,"ag":"70-74歳","h":168.5,"w":60.0,"bmi":21.1,"fat":20.5,"mus":26.3,"smi":7.1,"w1":1.1976047904191618,"w2":1.162790697674419,"sts":5.31,"moca":26.0,"eat":0.0,"ts":-1.07,"tp":89.0,"sos":1547,"bua":63.51,"osi":2.578,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":449,"sx":"女性","age":72,"ag":"70-74歳","h":157.5,"w":54.5,"bmi":22.0,"fat":35.1,"mus":18.7,"smi":5.9,"w1":1.1428571428571428,"w2":1.2658227848101264,"sts":7.41,"moca":22.0,"eat":0.0,"ts":-0.51,"tp":94.0,"sos":1534,"bua":76.44,"osi":2.546,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":1},{"id":451,"sx":"女性","age":90,"ag":"80歳以上","h":145.2,"w":32.2,"bmi":15.3,"fat":18.1,"mus":12.9,"smi":3.9,"w1":0.6153846153846154,"w2":0.6339144215530904,"sts":12.78,"moca":17.0,"eat":0.0,"ts":-1.75,"tp":81.0,"sos":1527,"bua":52.1,"osi":2.177,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":1,"fa":1,"fb":1,"fm":1,"fe":0,"risks":5},{"id":452,"sx":"女性","age":79,"ag":"75-79歳","h":153.5,"w":48.0,"bmi":20.4,"fat":22.6,"mus":19.7,"smi":6.0,"w1":1.015228426395939,"w2":0.9411764705882352,"sts":6.88,"moca":25.0,"eat":0.0,"ts":-2.17,"tp":76.0,"sos":1508,"bua":45.38,"osi":2.05,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":455,"sx":"女性","age":79,"ag":"75-79歳","h":140.8,"w":45.8,"bmi":23.1,"fat":32.5,"mus":15.8,"smi":5.8,"w1":0.9324009324009324,"w2":0.9569377990430624,"sts":7.75,"moca":21.0,"eat":0.0,"ts":-2.47,"tp":73.0,"sos":1505,"bua":39.02,"osi":1.963,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":503,"sx":"男性","age":67,"ag":"65-69歳","h":162.6,"w":63.0,"bmi":23.8,"fat":27.3,"mus":25.4,"smi":7.2,"w1":0.8528784648187633,"w2":0.8474576271186441,"sts":6.44,"moca":25.0,"eat":0.0,"ts":-1.01,"tp":89.0,"sos":1554,"bua":64.33,"osi":2.596,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":504,"sx":"女性","age":58,"ag":"65歳未満","h":164.8,"w":67.3,"bmi":24.8,"fat":33.3,"mus":24.3,"smi":6.8,"w1":1.2195121951219512,"w2":1.30718954248366,"sts":6.75,"moca":25.0,"eat":0.0,"ts":-1.17,"tp":87.0,"sos":1528,"bua":62.2,"osi":2.35,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1001,"sx":"女性","age":83,"ag":"80歳以上","h":151.5,"w":55.9,"bmi":24.4,"fat":35.7,"mus":18.8,"smi":6.3,"w1":1.0256410256410258,"w2":0.8888888888888888,"sts":10.81,"moca":21.0,"eat":5.0,"ts":-1.71,"tp":81.0,"sos":1516,"bua":56.99,"osi":2.188,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":1,"risks":3},{"id":1002,"sx":"男性","age":58,"ag":"65歳未満","h":179.0,"w":84.8,"bmi":26.5,"fat":30.6,"mus":32.7,"smi":8.2,"w1":1.1019283746556474,"w2":1.1764705882352942,"sts":8.4,"moca":24.0,"eat":1.0,"ts":-1.62,"tp":83.0,"sos":1523,"bua":59.14,"osi":2.406,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1005,"sx":"男性","age":71,"ag":"70-74歳","h":156.0,"w":56.3,"bmi":23.1,"fat":33.0,"mus":20.2,"smi":6.2,"w1":0.7042253521126761,"w2":0.6779661016949152,"sts":7.47,"moca":24.0,"eat":0.0,"ts":-1.69,"tp":82.0,"sos":1546,"bua":63.05,"osi":2.384,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":4},{"id":1006,"sx":"女性","age":53,"ag":"65歳未満","h":149.0,"w":45.8,"bmi":20.6,"fat":25.3,"mus":18.2,"smi":5.6,"w1":1.2461059190031152,"w2":1.2307692307692308,"sts":5.78,"moca":27.0,"eat":3.0,"ts":-1.29,"tp":86.0,"sos":1535,"bua":52.37,"osi":2.314,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":1,"risks":3},{"id":1007,"sx":"女性","age":68,"ag":"65-69歳","h":160.2,"w":49.1,"bmi":19.1,"fat":26.9,"mus":19.0,"smi":5.6,"w1":1.1204481792717087,"w2":1.1299435028248588,"sts":4.65,"moca":29.0,"eat":0.0,"ts":-1.54,"tp":83.0,"sos":1524,"bua":54.88,"osi":2.239,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1008,"sx":"女性","age":76,"ag":"75-79歳","h":150.5,"w":43.4,"bmi":19.2,"fat":21.4,"mus":17.8,"smi":5.8,"w1":0.9852216748768474,"w2":1.0666666666666669,"sts":9.09,"moca":22.0,"eat":0.0,"ts":-2.89,"tp":68.0,"sos":1551,"bua":24.28,"osi":1.837,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1009,"sx":"男性","age":72,"ag":"70-74歳","h":168.3,"w":63.6,"bmi":22.5,"fat":23.8,"mus":26.7,"smi":7.4,"w1":0.9280742459396752,"w2":0.894854586129754,"sts":6.19,"moca":25.0,"eat":0.0,"ts":-1.71,"tp":82.0,"sos":1533,"bua":63.72,"osi":2.379,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1010,"sx":"男性","age":75,"ag":"75-79歳","h":166.0,"w":72.1,"bmi":26.2,"fat":33.6,"mus":26.3,"smi":7.6,"w1":1.075268817204301,"w2":1.015228426395939,"sts":8.81,"moca":23.0,"eat":0.0,"ts":0.72,"tp":108.0,"sos":1565,"bua":87.22,"osi":3.135,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":1},{"id":1011,"sx":"男性","age":66,"ag":"65-69歳","h":172.0,"w":67.6,"bmi":22.8,"fat":25.3,"mus":27.7,"smi":7.9,"w1":0.6279434850863422,"w2":0.6920415224913494,"sts":7.85,"moca":24.0,"eat":0.0,"ts":0.49,"tp":105.0,"sos":1586,"bua":96.67,"osi":3.062,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":2},{"id":1012,"sx":"女性","age":75,"ag":"75-79歳","h":145.4,"w":51.3,"bmi":24.3,"fat":37.4,"mus":16.4,"smi":5.7,"w1":1.0335917312661498,"w2":0.97799511002445,"sts":8.62,"moca":21.0,"eat":0.0,"ts":-1.52,"tp":83.0,"sos":1521,"bua":55.41,"osi":2.244,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1013,"sx":"女性","age":74,"ag":"70-74歳","h":158.5,"w":41.2,"bmi":16.4,"fat":19.8,"mus":17.2,"smi":5.3,"w1":1.2944983818770228,"w2":1.3029315960912051,"sts":7.28,"moca":29.0,"eat":0.0,"ts":-1.34,"tp":85.0,"sos":1546,"bua":48.48,"osi":2.298,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1014,"sx":"女性","age":79,"ag":"75-79歳","h":153.7,"w":60.7,"bmi":25.7,"fat":38.5,"mus":19.4,"smi":6.9,"w1":0.9685230024213076,"w2":1.015228426395939,"sts":6.81,"moca":24.0,"eat":0.0,"ts":-2.33,"tp":74.0,"sos":1507,"bua":37.49,"osi":2.003,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1015,"sx":"女性","age":77,"ag":"75-79歳","h":158.7,"w":47.1,"bmi":18.7,"fat":23.5,"mus":18.9,"smi":5.4,"w1":1.1204481792717087,"w2":1.13314447592068,"sts":5.28,"moca":22.0,"eat":0.0,"ts":-1.92,"tp":79.0,"sos":1525,"bua":44.81,"osi":2.125,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1016,"sx":"女性","age":78,"ag":"75-79歳","h":143.5,"w":45.3,"bmi":22.0,"fat":25.7,"mus":17.4,"smi":5.9,"w1":0.9411764705882352,"w2":0.9259259259259258,"sts":8.44,"moca":19.0,"eat":1.0,"ts":-2.71,"tp":70.0,"sos":1507,"bua":30.68,"osi":1.89,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1018,"sx":"女性","age":65,"ag":"65-69歳","h":165.8,"w":61.2,"bmi":22.3,"fat":33.7,"mus":21.7,"smi":6.4,"w1":0.8528784648187633,"w2":0.894854586129754,"sts":7.81,"moca":25.0,"eat":null,"ts":-1.47,"tp":84.0,"sos":1536,"bua":57.94,"osi":2.261,"bf":1,"bs":1,"be":0,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1019,"sx":"女性","age":71,"ag":"70-74歳","h":155.5,"w":46.7,"bmi":19.3,"fat":26.3,"mus":18.1,"smi":5.5,"w1":1.3333333333333333,"w2":1.2307692307692308,"sts":6.91,"moca":25.0,"eat":0.0,"ts":-2.03,"tp":78.0,"sos":1527,"bua":40.25,"osi":2.092,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1020,"sx":"女性","age":65,"ag":"65-69歳","h":155.0,"w":54.6,"bmi":22.7,"fat":37.2,"mus":18.0,"smi":5.5,"w1":0.9029345372460498,"w2":1.2084592145015105,"sts":6.44,"moca":25.0,"eat":0.0,"ts":-1.4,"tp":85.0,"sos":1541,"bua":51.39,"osi":2.282,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":4},{"id":1021,"sx":"女性","age":61,"ag":"65歳未満","h":155.3,"w":50.5,"bmi":20.9,"fat":30.8,"mus":18.5,"smi":5.7,"w1":1.1235955056179776,"w2":1.1235955056179776,"sts":5.85,"moca":26.0,"eat":0.0,"ts":-1.85,"tp":80.0,"sos":1510,"bua":55.23,"osi":2.147,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1022,"sx":"女性","age":68,"ag":"65-69歳","h":157.7,"w":56.2,"bmi":22.6,"fat":33.1,"mus":20.1,"smi":6.4,"w1":0.9569377990430624,"w2":1.162790697674419,"sts":7.28,"moca":23.0,"eat":0.0,"ts":-1.36,"tp":85.0,"sos":1530,"bua":49.16,"osi":2.294,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1023,"sx":"女性","age":64,"ag":"65歳未満","h":156.3,"w":54.3,"bmi":22.2,"fat":33.2,"mus":19.2,"smi":6.1,"w1":0.8639308855291576,"w2":0.8528784648187633,"sts":7.32,"moca":28.0,"eat":0.0,"ts":-1.54,"tp":83.0,"sos":1532,"bua":51.03,"osi":2.239,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1024,"sx":"女性","age":76,"ag":"75-79歳","h":155.0,"w":44.9,"bmi":18.7,"fat":25.3,"mus":17.4,"smi":5.5,"w1":1.3937282229965156,"w2":1.3937282229965156,"sts":5.97,"moca":19.0,"eat":0.0,"ts":-1.67,"tp":82.0,"sos":1526,"bua":51.04,"osi":2.2,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1025,"sx":"女性","age":61,"ag":"65歳未満","h":163.5,"w":52.7,"bmi":19.7,"fat":22.4,"mus":21.8,"smi":6.4,"w1":1.1111111111111112,"w2":0.9925558312655086,"sts":6.0,"moca":26.0,"eat":0.0,"ts":-2.0,"tp":78.0,"sos":1514,"bua":47.11,"osi":2.101,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1026,"sx":"男性","age":86,"ag":"80歳以上","h":152.8,"w":59.2,"bmi":25.4,"fat":30.9,"mus":21.3,"smi":7.3,"w1":0.5714285714285714,"w2":0.6493506493506493,"sts":15.28,"moca":13.0,"eat":0.0,"ts":null,"tp":null,"sos":1539,"bua":58.54,"osi":2.508,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":1,"fa":0,"fb":0,"fm":1,"fe":0,"risks":3},{"id":1027,"sx":"女性","age":82,"ag":"80歳以上","h":150.0,"w":36.0,"bmi":16.0,"fat":16.8,"mus":14.9,"smi":4.9,"w1":0.6211180124223602,"w2":0.5899705014749262,"sts":11.72,"moca":29.0,"eat":3.0,"ts":null,"tp":null,"sos":1518,"bua":36.8,"osi":1.951,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":0,"fm":0,"fe":1,"risks":3},{"id":1029,"sx":"女性","age":72,"ag":"70-74歳","h":157.8,"w":46.2,"bmi":18.6,"fat":24.9,"mus":18.1,"smi":5.5,"w1":0.9216589861751152,"w2":0.9411764705882352,"sts":9.63,"moca":26.0,"eat":3.0,"ts":-1.86,"tp":79.0,"sos":1519,"bua":50.09,"osi":2.144,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":0,"fe":1,"risks":4},{"id":1030,"sx":"女性","age":64,"ag":"65歳未満","h":156.4,"w":60.8,"bmi":24.9,"fat":36.6,"mus":20.7,"smi":6.5,"w1":1.075268817204301,"w2":1.1049723756906078,"sts":8.44,"moca":26.0,"eat":1.0,"ts":-1.27,"tp":86.0,"sos":1532,"bua":63.26,"osi":2.32,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1031,"sx":"女性","age":73,"ag":"70-74歳","h":154.4,"w":48.5,"bmi":20.3,"fat":26.5,"mus":18.8,"smi":5.7,"w1":1.015228426395939,"w2":1.183431952662722,"sts":8.35,"moca":28.0,"eat":1.0,"ts":-0.93,"tp":90.0,"sos":1553,"bua":60.05,"osi":2.421,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":1033,"sx":"女性","age":71,"ag":"70-74歳","h":152.0,"w":54.9,"bmi":23.8,"fat":31.7,"mus":19.8,"smi":6.3,"w1":1.2779552715654952,"w2":1.4234875444839858,"sts":5.56,"moca":26.0,"eat":0.0,"ts":-1.41,"tp":84.0,"sos":1534,"bua":53.06,"osi":2.279,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1034,"sx":"男性","age":77,"ag":"75-79歳","h":161.3,"w":52.4,"bmi":20.1,"fat":17.8,"mus":23.3,"smi":6.9,"w1":0.7518796992481203,"w2":0.7575757575757576,"sts":9.22,"moca":19.0,"eat":1.0,"ts":-2.2,"tp":77.0,"sos":1521,"bua":53.45,"osi":2.227,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":4},{"id":1036,"sx":"女性","age":72,"ag":"70-74歳","h":155.0,"w":56.1,"bmi":23.4,"fat":36.3,"mus":19.1,"smi":6.1,"w1":1.0309278350515465,"w2":1.2944983818770228,"sts":6.97,"moca":22.0,"eat":0.0,"ts":-1.87,"tp":79.0,"sos":1513,"bua":48.22,"osi":2.14,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1037,"sx":"女性","age":73,"ag":"70-74歳","h":156.5,"w":53.6,"bmi":21.9,"fat":28.8,"mus":20.4,"smi":6.2,"w1":1.4234875444839858,"w2":1.4084507042253522,"sts":4.78,"moca":28.0,"eat":0.0,"ts":-1.33,"tp":85.0,"sos":1523,"bua":66.71,"osi":2.301,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1038,"sx":"女性","age":73,"ag":"70-74歳","h":151.5,"w":48.6,"bmi":21.2,"fat":35.7,"mus":16.1,"smi":5.3,"w1":1.3333333333333333,"w2":1.2903225806451613,"sts":8.6,"moca":16.0,"eat":0.0,"ts":-0.38,"tp":96.0,"sos":1556,"bua":58.38,"osi":2.584,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":2},{"id":1039,"sx":"女性","age":69,"ag":"65-69歳","h":158.2,"w":45.3,"bmi":18.1,"fat":12.9,"mus":21.0,"smi":6.3,"w1":1.2698412698412698,"w2":1.3605442176870748,"sts":6.59,"moca":26.0,"eat":0.0,"ts":-2.1,"tp":77.0,"sos":1521,"bua":48.06,"osi":2.072,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1040,"sx":"男性","age":76,"ag":"75-79歳","h":167.5,"w":54.1,"bmi":19.3,"fat":19.6,"mus":23.4,"smi":6.5,"w1":0.6430868167202572,"w2":0.7662835249042146,"sts":7.22,"moca":23.0,"eat":0.0,"ts":0.49,"tp":105.0,"sos":1562,"bua":100.88,"osi":3.062,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":3},{"id":1041,"sx":"女性","age":64,"ag":"65歳未満","h":153.4,"w":62.2,"bmi":26.4,"fat":40.5,"mus":19.6,"smi":6.4,"w1":1.1730205278592374,"w2":1.2084592145015105,"sts":6.53,"moca":26.0,"eat":1.0,"ts":-1.2,"tp":87.0,"sos":1540,"bua":58.68,"osi":2.342,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1042,"sx":"女性","age":74,"ag":"70-74歳","h":154.0,"w":50.9,"bmi":21.5,"fat":29.4,"mus":19.0,"smi":6.0,"w1":1.1560693641618498,"w2":1.2658227848101264,"sts":6.56,"moca":19.0,"eat":0.0,"ts":-1.9,"tp":79.0,"sos":1517,"bua":43.04,"osi":2.133,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1043,"sx":"女性","age":73,"ag":"70-74歳","h":154.3,"w":47.0,"bmi":19.7,"fat":29.1,"mus":17.5,"smi":5.6,"w1":1.282051282051282,"w2":1.2307692307692308,"sts":5.13,"moca":27.0,"eat":0.0,"ts":-1.92,"tp":79.0,"sos":1516,"bua":54.65,"osi":2.125,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1045,"sx":"女性","age":66,"ag":"65-69歳","h":161.3,"w":63.3,"bmi":24.3,"fat":37.8,"mus":21.0,"smi":6.2,"w1":1.2048192771084338,"w2":1.2422360248447204,"sts":7.5,"moca":29.0,"eat":0.0,"ts":-1.6,"tp":82.0,"sos":1532,"bua":47.7,"osi":2.22,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1046,"sx":"男性","age":79,"ag":"75-79歳","h":168.0,"w":61.0,"bmi":21.6,"fat":22.3,"mus":25.5,"smi":7.1,"w1":1.4388489208633095,"w2":1.4545454545454546,"sts":6.97,"moca":23.0,"eat":4.0,"ts":0.27,"tp":103.0,"sos":1562,"bua":82.16,"osi":2.993,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":1,"risks":2},{"id":1047,"sx":"男性","age":76,"ag":"75-79歳","h":163.2,"w":56.4,"bmi":21.2,"fat":19.4,"mus":25.0,"smi":7.4,"w1":1.4705882352941175,"w2":1.4869888475836432,"sts":7.5,"moca":25.0,"eat":0.0,"ts":0.33,"tp":103.0,"sos":1581,"bua":91.81,"osi":3.011,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":1},{"id":1048,"sx":"女性","age":74,"ag":"70-74歳","h":149.8,"w":51.0,"bmi":22.7,"fat":30.1,"mus":18.8,"smi":6.1,"w1":1.4184397163120568,"w2":1.1869436201780414,"sts":5.97,"moca":27.0,"eat":1.0,"ts":-2.12,"tp":77.0,"sos":1508,"bua":41.8,"osi":2.066,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1049,"sx":"男性","age":70,"ag":"70-74歳","h":null,"w":null,"bmi":null,"fat":null,"mus":null,"smi":null,"w1":1.1019283746556474,"w2":1.2084592145015105,"sts":7.44,"moca":26.0,"eat":0.0,"ts":0.7,"tp":107.0,"sos":1580,"bua":101.38,"osi":3.127,"bf":1,"bs":1,"be":1,"bm":1,"bi":0,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":1050,"sx":"男性","age":65,"ag":"65-69歳","h":173.5,"w":79.6,"bmi":26.4,"fat":30.3,"mus":30.9,"smi":7.9,"w1":0.970873786407767,"w2":0.954653937947494,"sts":6.16,"moca":23.0,"eat":0.0,"ts":0.02,"tp":100.0,"sos":1563,"bua":87.44,"osi":2.915,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":2},{"id":1051,"sx":"男性","age":71,"ag":"70-74歳","h":164.7,"w":61.9,"bmi":22.8,"fat":15.7,"mus":29.1,"smi":8.6,"w1":1.0075566750629723,"w2":0.8888888888888888,"sts":4.9,"moca":24.0,"eat":1.0,"ts":0.02,"tp":100.0,"sos":1551,"bua":79.22,"osi":2.917,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":1},{"id":1052,"sx":"男性","age":69,"ag":"65-69歳","h":168.0,"w":63.1,"bmi":22.4,"fat":16.0,"mus":29.5,"smi":7.9,"w1":1.2195121951219512,"w2":1.2084592145015105,"sts":7.0,"moca":23.0,"eat":0.0,"ts":-1.46,"tp":84.0,"sos":1527,"bua":64.67,"osi":2.457,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1053,"sx":"女性","age":61,"ag":"65歳未満","h":146.5,"w":39.9,"bmi":18.6,"fat":21.9,"mus":16.3,"smi":5.2,"w1":1.2422360248447204,"w2":1.30718954248366,"sts":6.59,"moca":27.0,"eat":0.0,"ts":-2.03,"tp":78.0,"sos":1535,"bua":44.8,"osi":2.092,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1054,"sx":"女性","age":71,"ag":"70-74歳","h":158.8,"w":55.7,"bmi":22.1,"fat":29.0,"mus":21.6,"smi":6.5,"w1":1.0471204188481675,"w2":1.1428571428571428,"sts":8.53,"moca":27.0,"eat":0.0,"ts":-0.79,"tp":91.0,"sos":1548,"bua":61.52,"osi":2.462,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":1055,"sx":"男性","age":73,"ag":"70-74歳","h":163.5,"w":51.7,"bmi":19.3,"fat":9.8,"mus":25.7,"smi":7.4,"w1":1.0335917312661498,"w2":1.3029315960912051,"sts":7.35,"moca":23.0,"eat":0.0,"ts":-0.53,"tp":94.0,"sos":1557,"bua":74.75,"osi":2.746,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":1},{"id":1056,"sx":"女性","age":69,"ag":"65-69歳","h":147.5,"w":44.2,"bmi":20.3,"fat":30.7,"mus":16.0,"smi":5.2,"w1":1.092896174863388,"w2":0.99009900990099,"sts":7.93,"moca":21.0,"eat":2.0,"ts":-1.62,"tp":82.0,"sos":1514,"bua":56.23,"osi":2.215,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1057,"sx":"女性","age":77,"ag":"75-79歳","h":153.0,"w":46.8,"bmi":20.0,"fat":33.3,"mus":16.0,"smi":5.0,"w1":1.2307692307692308,"w2":1.1976047904191618,"sts":5.93,"moca":36.0,"eat":0.0,"ts":-0.73,"tp":92.0,"sos":1543,"bua":60.46,"osi":2.481,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":0,"fe":0,"risks":1},{"id":1058,"sx":"女性","age":83,"ag":"80歳以上","h":144.4,"w":54.7,"bmi":26.2,"fat":42.3,"mus":16.0,"smi":5.4,"w1":1.0840108401084012,"w2":1.1730205278592374,"sts":6.5,"moca":20.0,"eat":1.0,"ts":null,"tp":null,"sos":1533,"bua":58.22,"osi":2.354,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":2},{"id":1059,"sx":"女性","age":69,"ag":"65-69歳","h":162.3,"w":55.4,"bmi":21.0,"fat":23.7,"mus":22.4,"smi":6.5,"w1":1.3333333333333333,"w2":1.5209125475285172,"sts":7.28,"moca":24.0,"eat":0.0,"ts":-1.37,"tp":85.0,"sos":1524,"bua":62.67,"osi":2.291,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1060,"sx":"女性","age":71,"ag":"70-74歳","h":152.8,"w":43.9,"bmi":18.8,"fat":22.3,"mus":18.0,"smi":5.7,"w1":1.0840108401084012,"w2":1.075268817204301,"sts":4.81,"moca":24.0,"eat":0.0,"ts":-2.0,"tp":78.0,"sos":1518,"bua":41.78,"osi":2.102,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1061,"sx":"女性","age":67,"ag":"65-69歳","h":148.6,"w":42.4,"bmi":19.2,"fat":26.4,"mus":16.2,"smi":5.2,"w1":1.1235955056179776,"w2":1.1976047904191618,"sts":5.75,"moca":25.0,"eat":1.0,"ts":-1.53,"tp":83.0,"sos":1534,"bua":53.94,"osi":2.243,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1063,"sx":"女性","age":68,"ag":"65-69歳","h":150.4,"w":38.1,"bmi":16.8,"fat":19.7,"mus":16.0,"smi":4.9,"w1":0.97799511002445,"w2":1.015228426395939,"sts":7.03,"moca":24.0,"eat":0.0,"ts":-2.1,"tp":77.0,"sos":1523,"bua":43.11,"osi":2.073,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":4},{"id":1064,"sx":"男性","age":69,"ag":"65-69歳","h":171.4,"w":67.1,"bmi":22.8,"fat":22.4,"mus":29.2,"smi":7.6,"w1":0.8602150537634408,"w2":0.8474576271186441,"sts":9.0,"moca":24.0,"eat":0.0,"ts":-1.59,"tp":83.0,"sos":1541,"bua":68.5,"osi":2.415,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1065,"sx":"女性","age":72,"ag":"70-74歳","h":144.0,"w":49.7,"bmi":24.0,"fat":40.1,"mus":15.5,"smi":5.5,"w1":0.954653937947494,"w2":0.9153318077803204,"sts":8.28,"moca":27.0,"eat":0.0,"ts":-1.68,"tp":81.0,"sos":1534,"bua":49.14,"osi":2.196,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":3},{"id":1066,"sx":"女性","age":57,"ag":"65歳未満","h":142.0,"w":40.5,"bmi":20.1,"fat":28.6,"mus":15.2,"smi":5.2,"w1":1.0582010582010584,"w2":1.2539184952978055,"sts":5.45,"moca":29.0,"eat":0.0,"ts":-1.41,"tp":84.0,"sos":1543,"bua":53.49,"osi":2.277,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1067,"sx":"男性","age":69,"ag":"65-69歳","h":162.2,"w":59.0,"bmi":22.4,"fat":24.3,"mus":24.7,"smi":7.2,"w1":0.8583690987124464,"w2":0.9925558312655086,"sts":7.31,"moca":22.0,"eat":0.0,"ts":-0.79,"tp":92.0,"sos":1553,"bua":66.14,"osi":2.665,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":0,"fm":1,"fe":0,"risks":2},{"id":1068,"sx":"女性","age":63,"ag":"65歳未満","h":157.0,"w":58.7,"bmi":23.8,"fat":34.1,"mus":20.7,"smi":6.5,"w1":0.8695652173913044,"w2":1.0256410256410258,"sts":6.25,"moca":29.0,"eat":2.0,"ts":-2.14,"tp":76.0,"sos":1508,"bua":46.17,"osi":2.06,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1069,"sx":"女性","age":69,"ag":"65-69歳","h":150.0,"w":52.0,"bmi":23.1,"fat":36.9,"mus":17.2,"smi":5.6,"w1":1.282051282051282,"w2":1.32013201320132,"sts":4.22,"moca":28.0,"eat":0.0,"ts":-2.03,"tp":78.0,"sos":1520,"bua":48.59,"osi":2.092,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1070,"sx":"女性","age":83,"ag":"80歳以上","h":147.8,"w":62.5,"bmi":28.6,"fat":45.7,"mus":17.9,"smi":5.7,"w1":0.8350730688935282,"w2":1.1019283746556474,"sts":11.22,"moca":15.0,"eat":27.0,"ts":null,"tp":null,"sos":1575,"bua":68.39,"osi":3.299,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":0,"fm":1,"fe":1,"risks":3},{"id":1071,"sx":"女性","age":64,"ag":"65歳未満","h":154.0,"w":50.1,"bmi":21.1,"fat":32.8,"mus":17.9,"smi":5.6,"w1":1.1976047904191618,"w2":1.3468013468013469,"sts":7.38,"moca":25.0,"eat":0.0,"ts":-1.05,"tp":88.0,"sos":1558,"bua":60.37,"osi":2.385,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1072,"sx":"女性","age":71,"ag":"70-74歳","h":151.8,"w":56.3,"bmi":24.4,"fat":34.5,"mus":19.7,"smi":6.4,"w1":1.1428571428571428,"w2":1.1235955056179776,"sts":5.47,"moca":29.0,"eat":2.0,"ts":-1.41,"tp":84.0,"sos":1531,"bua":54.91,"osi":2.277,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1073,"sx":"男性","age":72,"ag":"70-74歳","h":170.0,"w":73.4,"bmi":25.4,"fat":25.9,"mus":30.0,"smi":7.8,"w1":0.8421052631578947,"w2":1.0666666666666669,"sts":6.53,"moca":27.0,"eat":0.0,"ts":-0.98,"tp":90.0,"sos":1534,"bua":63.42,"osi":2.605,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":1,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":1},{"id":1074,"sx":"女性","age":71,"ag":"70-74歳","h":149.0,"w":47.6,"bmi":21.4,"fat":30.7,"mus":17.3,"smi":5.6,"w1":1.0416666666666667,"w2":1.162790697674419,"sts":9.31,"moca":26.0,"eat":0.0,"ts":-1.03,"tp":89.0,"sos":1542,"bua":57.51,"osi":2.391,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1075,"sx":"女性","age":64,"ag":"65歳未満","h":151.0,"w":48.2,"bmi":21.1,"fat":25.3,"mus":19.3,"smi":6.0,"w1":1.0389610389610389,"w2":1.0666666666666669,"sts":7.66,"moca":23.0,"eat":0.0,"ts":-1.05,"tp":88.0,"sos":1541,"bua":58.86,"osi":2.385,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1076,"sx":"女性","age":69,"ag":"65-69歳","h":164.2,"w":72.2,"bmi":26.8,"fat":38.9,"mus":23.7,"smi":6.6,"w1":1.3029315960912051,"w2":1.1428571428571428,"sts":11.22,"moca":21.0,"eat":0.0,"ts":-2.3,"tp":75.0,"sos":1509,"bua":41.37,"osi":2.014,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1077,"sx":"女性","age":63,"ag":"65歳未満","h":149.6,"w":43.2,"bmi":19.3,"fat":30.6,"mus":15.5,"smi":4.8,"w1":1.0075566750629723,"w2":0.9756097560975612,"sts":7.72,"moca":29.0,"eat":0.0,"ts":-2.46,"tp":73.0,"sos":1508,"bua":36.12,"osi":1.966,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":0,"fs":0,"fa":1,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1078,"sx":"女性","age":76,"ag":"75-79歳","h":158.0,"w":51.5,"bmi":20.6,"fat":22.9,"mus":21.0,"smi":6.4,"w1":1.1428571428571428,"w2":1.1976047904191618,"sts":7.0,"moca":24.0,"eat":0.0,"ts":-2.16,"tp":76.0,"sos":1507,"bua":50.48,"osi":2.053,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1079,"sx":"女性","age":66,"ag":"65-69歳","h":153.0,"w":62.0,"bmi":26.5,"fat":40.7,"mus":19.7,"smi":6.2,"w1":0.97799511002445,"w2":0.954653937947494,"sts":11.0,"moca":24.0,"eat":0.0,"ts":-1.59,"tp":82.0,"sos":1517,"bua":51.88,"osi":2.225,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1080,"sx":"女性","age":63,"ag":"65歳未満","h":158.8,"w":53.7,"bmi":21.3,"fat":32.7,"mus":19.0,"smi":5.8,"w1":1.5384615384615383,"w2":1.162790697674419,"sts":6.56,"moca":27.0,"eat":0.0,"ts":-1.64,"tp":82.0,"sos":1537,"bua":51.85,"osi":2.209,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":0,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1081,"sx":"女性","age":79,"ag":"75-79歳","h":145.7,"w":41.4,"bmi":19.5,"fat":27.3,"mus":15.3,"smi":5.0,"w1":1.015228426395939,"w2":0.9828009828009828,"sts":9.6,"moca":22.0,"eat":1.0,"ts":-1.23,"tp":86.0,"sos":1519,"bua":64.08,"osi":2.333,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1082,"sx":"女性","age":83,"ag":"80歳以上","h":147.8,"w":47.8,"bmi":21.9,"fat":36.6,"mus":15.6,"smi":5.1,"w1":0.4907975460122699,"w2":0.5788712011577424,"sts":12.59,"moca":22.0,"eat":0.0,"ts":-1.54,"tp":83.0,"sos":1519,"bua":54.62,"osi":2.238,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":1,"fa":1,"fb":1,"fm":1,"fe":0,"risks":5},{"id":1083,"sx":"女性","age":78,"ag":"75-79歳","h":152.0,"w":46.9,"bmi":20.3,"fat":27.9,"mus":17.7,"smi":5.4,"w1":1.4084507042253522,"w2":1.1049723756906078,"sts":6.78,"moca":25.0,"eat":0.0,"ts":-2.58,"tp":72.0,"sos":1511,"bua":28.14,"osi":1.929,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1084,"sx":"女性","age":81,"ag":"80歳以上","h":138.5,"w":42.9,"bmi":22.4,"fat":35.9,"mus":13.9,"smi":4.6,"w1":1.2903225806451613,"w2":1.3468013468013469,"sts":6.31,"moca":22.0,"eat":1.0,"ts":null,"tp":null,"sos":1548,"bua":65.09,"osi":2.512,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":0,"fm":1,"fe":0,"risks":2},{"id":1085,"sx":"女性","age":77,"ag":"75-79歳","h":null,"w":null,"bmi":null,"fat":null,"mus":null,"smi":null,"w1":0.7155635062611807,"w2":0.819672131147541,"sts":10.72,"moca":28.0,"eat":1.0,"ts":-2.1,"tp":77.0,"sos":1503,"bua":43.21,"osi":2.072,"bf":1,"bs":1,"be":1,"bm":1,"bi":0,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":2},{"id":1086,"sx":"女性","age":68,"ag":"65-69歳","h":148.6,"w":59.3,"bmi":26.9,"fat":43.7,"mus":17.6,"smi":6.0,"w1":1.2422360248447204,"w2":1.3333333333333333,"sts":3.72,"moca":27.0,"eat":0.0,"ts":-0.38,"tp":96.0,"sos":1556,"bua":60.04,"osi":2.584,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":1087,"sx":"女性","age":73,"ag":"70-74歳","h":152.5,"w":50.9,"bmi":21.9,"fat":31.9,"mus":18.5,"smi":5.7,"w1":1.0869565217391304,"w2":1.13314447592068,"sts":7.15,"moca":26.0,"eat":0.0,"ts":-1.18,"tp":87.0,"sos":1548,"bua":49.3,"osi":2.347,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1088,"sx":"女性","age":74,"ag":"70-74歳","h":155.5,"w":48.5,"bmi":20.1,"fat":22.6,"mus":20.1,"smi":5.8,"w1":1.3605442176870748,"w2":1.3605442176870748,"sts":5.85,"moca":26.0,"eat":0.0,"ts":-0.93,"tp":90.0,"sos":1548,"bua":52.74,"osi":2.421,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":1089,"sx":"女性","age":73,"ag":"70-74歳","h":143.0,"w":47.6,"bmi":23.3,"fat":40.0,"mus":14.7,"smi":5.3,"w1":0.7619047619047619,"w2":0.7476635514018692,"sts":5.28,"moca":22.0,"eat":0.0,"ts":-1.51,"tp":83.0,"sos":1521,"bua":49.41,"osi":2.248,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":4},{"id":1090,"sx":"女性","age":70,"ag":"70-74歳","h":154.0,"w":53.5,"bmi":22.6,"fat":28.4,"mus":20.4,"smi":6.3,"w1":1.3605442176870748,"w2":1.1204481792717087,"sts":7.42,"moca":28.0,"eat":0.0,"ts":-1.88,"tp":79.0,"sos":1521,"bua":44.42,"osi":2.137,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1091,"sx":"女性","age":83,"ag":"80歳以上","h":141.0,"w":53.5,"bmi":26.9,"fat":39.6,"mus":16.5,"smi":6.2,"w1":0.8771929824561404,"w2":0.9925558312655086,"sts":8.57,"moca":23.0,"eat":0.0,"ts":-2.23,"tp":75.0,"sos":1525,"bua":36.97,"osi":2.034,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1093,"sx":"女性","age":63,"ag":"65歳未満","h":148.3,"w":53.9,"bmi":24.5,"fat":35.2,"mus":18.6,"smi":6.1,"w1":0.8474576271186441,"w2":0.8474576271186441,"sts":8.56,"moca":22.0,"eat":0.0,"ts":-1.35,"tp":85.0,"sos":1529,"bua":53.97,"osi":2.296,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1094,"sx":"男性","age":78,"ag":"75-79歳","h":162.7,"w":74.2,"bmi":28.0,"fat":30.3,"mus":28.5,"smi":8.5,"w1":1.3745704467353952,"w2":1.2422360248447204,"sts":6.5,"moca":26.0,"eat":0.0,"ts":0.46,"tp":105.0,"sos":1580,"bua":93.89,"osi":3.053,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":0,"fm":0,"fe":0,"risks":0},{"id":1095,"sx":"女性","age":72,"ag":"70-74歳","h":157.8,"w":50.1,"bmi":20.1,"fat":22.0,"mus":20.8,"smi":6.3,"w1":1.0666666666666669,"w2":1.092896174863388,"sts":6.53,"moca":27.0,"eat":0.0,"ts":-1.67,"tp":82.0,"sos":1529,"bua":53.27,"osi":2.202,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1096,"sx":"女性","age":82,"ag":"80歳以上","h":151.5,"w":42.7,"bmi":18.6,"fat":25.9,"mus":16.2,"smi":5.0,"w1":0.8639308855291576,"w2":0.9615384615384616,"sts":7.0,"moca":18.0,"eat":11.0,"ts":-1.52,"tp":83.0,"sos":1549,"bua":49.68,"osi":2.244,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":1,"fe":1,"risks":5},{"id":1097,"sx":"女性","age":75,"ag":"75-79歳","h":154.2,"w":54.1,"bmi":22.8,"fat":34.4,"mus":18.7,"smi":5.7,"w1":1.0840108401084012,"w2":1.162790697674419,"sts":6.63,"moca":25.0,"eat":0.0,"ts":-1.51,"tp":83.0,"sos":1529,"bua":58.52,"osi":2.248,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1098,"sx":"女性","age":68,"ag":"65-69歳","h":156.6,"w":67.2,"bmi":27.4,"fat":39.4,"mus":21.8,"smi":6.6,"w1":1.0256410256410258,"w2":1.075268817204301,"sts":8.09,"moca":28.0,"eat":0.0,"ts":-1.45,"tp":84.0,"sos":1534,"bua":55.12,"osi":2.265,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":0,"fe":0,"risks":1},{"id":1099,"sx":"女性","age":72,"ag":"70-74歳","h":155.8,"w":48.7,"bmi":20.1,"fat":18.5,"mus":21.0,"smi":6.1,"w1":1.092896174863388,"w2":1.095890410958904,"sts":10.0,"moca":22.0,"eat":0.0,"ts":-2.05,"tp":77.0,"sos":1525,"bua":45.27,"osi":2.089,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1100,"sx":"女性","age":60,"ag":"65歳未満","h":162.5,"w":46.2,"bmi":17.5,"fat":21.3,"mus":19.2,"smi":5.4,"w1":1.0230179028132993,"w2":1.0389610389610389,"sts":7.03,"moca":24.0,"eat":0.0,"ts":-1.03,"tp":89.0,"sos":1539,"bua":59.13,"osi":2.39,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1101,"sx":"女性","age":60,"ag":"65歳未満","h":161.3,"w":63.1,"bmi":24.3,"fat":30.2,"mus":24.1,"smi":7.0,"w1":0.8639308855291576,"w2":0.9756097560975612,"sts":5.85,"moca":25.0,"eat":0.0,"ts":-1.54,"tp":83.0,"sos":1526,"bua":54.07,"osi":2.24,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1102,"sx":"女性","age":67,"ag":"65-69歳","h":152.5,"w":52.7,"bmi":22.7,"fat":39.2,"mus":16.8,"smi":5.5,"w1":1.075268817204301,"w2":1.0,"sts":7.34,"moca":22.0,"eat":2.0,"ts":-1.44,"tp":84.0,"sos":1532,"bua":49.78,"osi":2.27,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":1,"fb":1,"fm":1,"fe":0,"risks":3},{"id":1103,"sx":"女性","age":73,"ag":"70-74歳","h":154.0,"w":51.7,"bmi":21.8,"fat":32.9,"mus":18.2,"smi":5.7,"w1":1.0,"w2":1.1730205278592374,"sts":7.88,"moca":21.0,"eat":0.0,"ts":-1.39,"tp":85.0,"sos":1529,"bua":49.61,"osi":2.285,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":0,"fs":0,"fa":0,"fb":1,"fm":1,"fe":0,"risks":2},{"id":1104,"sx":"男性","age":69,"ag":"65-69歳","h":172.3,"w":66.0,"bmi":22.2,"fat":31.4,"mus":24.5,"smi":6.9,"w1":0.8474576271186441,"w2":0.9280742459396752,"sts":7.07,"moca":22.0,"eat":15.0,"ts":-2.19,"tp":77.0,"sos":1518,"bua":44.53,"osi":2.228,"bf":1,"bs":1,"be":1,"bm":1,"bi":1,"bb":1,"fw":1,"fs":0,"fa":1,"fb":1,"fm":1,"fe":1,"risks":5}],"N":205,"NM":46,"NF":159,"KPI":{"walk":{"risk":71,"safe":133,"valid":204,"pct":34.8},"sts":{"risk":4,"safe":200,"valid":204,"pct":2.0},"sarco":{"risk":65,"safe":137,"valid":202,"pct":32.2},"bone":{"risk":151,"safe":43,"valid":194,"pct":77.8},"mci":{"risk":104,"safe":101,"valid":205,"pct":50.7},"eat":{"risk":14,"safe":190,"valid":204,"pct":6.9}},"BIN":{"form":{"n":205,"pct":100.0},"sppb":{"n":205,"pct":100.0},"eat10":{"n":204,"pct":99.5},"moca":{"n":205,"pct":100.0},"inbody":{"n":202,"pct":98.5},"bone_d":{"n":194,"pct":94.6}},"age_kpi":{"65歳未満":{"n":23,"fw":30.4,"fs":0.0,"fa":26.1,"fb":91.3,"fm":43.5,"fe":4.3},"65-69歳":{"n":44,"fw":40.9,"fs":2.3,"fa":27.3,"fb":79.5,"fm":56.8,"fe":7.0},"70-74歳":{"n":61,"fw":29.5,"fs":0.0,"fa":23.7,"fb":80.3,"fm":31.1,"fe":1.6},"75-79歳":{"n":52,"fw":25.0,"fs":0.0,"fa":37.3,"fb":67.3,"fm":63.5,"fe":5.8},"80歳以上":{"n":25,"fw":62.5,"fs":12.5,"fa":56.0,"fb":78.6,"fm":68.0,"fe":24.0}},"risk_dist":{"0":14,"1":53,"2":77,"3":47,"4":9,"5":5,"6":0}};
+let filtered = D.records.slice();
+
+// ── フィルター適用 ──
+function applyFilter() {
+  const sexVals = [...document.querySelectorAll('#sidebar input[type=checkbox][value="男性"],[value="女性"]')]
+    .filter(e=>e.checked).map(e=>e.value);
+  const ageVals = [...document.querySelectorAll('#sidebar input[type=checkbox]')]
+    .filter(e=>e.checked && !['男性','女性'].includes(e.value)).map(e=>e.value);
+  filtered = D.records.filter(r=>
+    (sexVals.includes(r.sx)) &&
+    (ageVals.length===0 || ageVals.includes(r.ag))
+  );
+  renderAll();
+}
+
+// ── 統計計算 ──
+function calcKPI(records, key, baseKey) {
+  const valid = records.filter(r=>r[baseKey]!==null && r[baseKey]!==undefined);
+  const risk  = valid.filter(r=>r[key]===1);
+  const pct   = valid.length>0 ? (risk.length/valid.length*100).toFixed(1) : '0.0';
+  return {risk:risk.length, valid:valid.length, pct:parseFloat(pct)};
+}
+
+function calcBIN(records, key) {
+  const n = records.filter(r=>r[key]===1).length;
+  return {n, pct:(n/records.length*100).toFixed(1)};
+}
+
+// ── KPI設定 ──
+const KPI_CFG = [
+  {key:'fw',base:'w1', label:'歩行速度低下',   icon:'🚶', color:'#DC2626', basis:'AWGS2019: 歩行速度 < 1.0 m/s'},
+  {key:'fs',base:'sts',label:'下肢筋力低下',   icon:'🦵', color:'#EA580C', basis:'SPPB準拠: 5回STS ≥ 12秒'},
+  {key:'fa',base:'smi',label:'サルコペニア疑い',icon:'💪', color:'#D97706', basis:'AWGS2019: SMI < 7.0(男)/5.7(女)'},
+  {key:'fb',base:'ts', label:'骨密度低下',     icon:'🦴', color:'#CA8A04', basis:'WHO基準: Tスコア ≤ −1.0 SD'},
+  {key:'fm',base:'moca',label:'MCI疑い',       icon:'🧠', color:'#7C3AED', basis:'Nasreddine 2005: MoCA ≤ 25点'},
+  {key:'fe',base:'eat', label:'嚥下機能低下リスク',icon:'🍽', color:'#0284C7', basis:'Belafsky 2008: EAT-10 ≥ 3点'},
+];
+
+const BIN_CFG = [
+  {key:'bf', label:'評価用紙',color:'#475569', desc:'問診・質問紙', riskKey:null},
+  {key:'bs', label:'SPPB',   color:'#EA580C', desc:'短身体機能バッテリー', riskKey:'fw', riskLabel:'歩行速度低下'},
+  {key:'be', label:'EAT-10', color:'#0284C7', desc:'嚥下スクリーニング',   riskKey:'fe', riskLabel:'嚥下リスク≥3点'},
+  {key:'bm', label:'MoCA-J', color:'#7C3AED', desc:'認知機能スクリーニング',riskKey:'fm', riskLabel:'MCI疑い≤25点'},
+  {key:'bi', label:'InBody', color:'#D97706', desc:'体組成・SMI測定',      riskKey:'fa', riskLabel:'サルコペニア疑い'},
+  {key:'bb', label:'骨密度', color:'#CA8A04', desc:'超音波骨密度',         riskKey:'fb', riskLabel:'骨密度低下'},
+];
+
+// ── チャートインスタンス ──
+let radarChart, barChart, ageChart, riskDistChart;
+
+function destroyCharts() {
+  [radarChart,barChart,ageChart,riskDistChart].forEach(c=>c&&c.destroy());
+}
+
+// ── KPIカード描画 ──
+function renderKPI() {
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = '';
+  KPI_CFG.forEach(cfg=>{
+    const s = calcKPI(filtered, cfg.key, cfg.base);
+    const bar = Math.min(s.pct,100).toFixed(1);
+    grid.innerHTML += `
+    <div class="kpi-card" style="--ac:${cfg.color}">
+      <div class="kpi-icon">${cfg.icon}</div>
+      <div class="kpi-name">${cfg.label}</div>
+      <div><span class="kpi-pct">${s.pct.toFixed(1)}</span><span class="kpi-unit">%</span></div>
+      <div class="kpi-detail">リスク <b>${s.risk}名</b> ／ 正常 ${s.valid-s.risk}名</div>
+      <div class="kpi-detail" style="color:#64748B">測定 N=${s.valid}名</div>
+      <div class="kpi-bar-bg"><div class="kpi-bar-fill" style="width:${bar}%"></div></div>
+      <div class="kpi-basis">📐 ${cfg.basis}</div>
+    </div>`;
+  });
+}
+
+// ── 実施状況カード描画 ──
+function renderBIN() {
+  const grid = document.getElementById('bin-grid');
+  grid.innerHTML = '';
+  BIN_CFG.forEach(cfg=>{
+    const s = calcBIN(filtered, cfg.key);
+    let riskHtml = '';
+    if(cfg.riskKey) {
+      const implementers = filtered.filter(r=>r[cfg.key]===1);
+      const riskN = implementers.filter(r=>r[cfg.riskKey]===1).length;
+      const riskPct = implementers.length>0 ? (riskN/implementers.length*100).toFixed(1) : '0.0';
+      riskHtml = `<div class="risk-sub" style="--ac:${cfg.color};--ac-bg:${cfg.color}18">
+        <div class="risk-sub-lbl">${cfg.riskLabel}</div>
+        <div class="risk-sub-pct">${riskPct}<span style="font-size:11px">%</span>
+          <span style="font-size:10px;color:#475569;margin-left:3px">${riskN}/${implementers.length}名</span>
+        </div>
+      </div>`;
+    }
+    const bar = Math.min(parseFloat(s.pct),100).toFixed(1);
+    grid.innerHTML += `
+    <div class="bin-card" style="--ac:${cfg.color}">
+      <div class="kpi-icon" style="font-size:18px">${cfg.key==='bf'?'📋':cfg.key==='bs'?'🚶':cfg.key==='be'?'🍽':cfg.key==='bm'?'🧠':cfg.key==='bi'?'💪':'🦴'}</div>
+      <div class="kpi-name">${cfg.label}</div>
+      <div class="bin-n">${s.n}</div>
+      <div class="bin-pct">実施率 <b>${s.pct}%</b>（${filtered.length}名中）</div>
+      <div class="kpi-bar-bg"><div class="kpi-bar-fill" style="width:${bar}%"></div></div>
+      <div class="bin-lbl">📎 ${cfg.desc}</div>
+      ${riskHtml}
+    </div>`;
+  });
+}
+
+// ── レーダーチャート ──
+function renderRadar() {
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  if(radarChart) radarChart.destroy();
+  const labels = KPI_CFG.map(c=>c.icon+' '+c.label.replace('機能低下リスク','↓リスク'));
+  const vals   = KPI_CFG.map(c=>{
+    const s=calcKPI(filtered,c.key,c.base);
+    return parseFloat(s.pct.toFixed(1));
+  });
+  radarChart = new Chart(ctx,{
+    type:'radar',
+    data:{
+      labels,
+      datasets:[
+        {label:'背景',data:Array(6).fill(100),fill:true,
+          backgroundColor:'rgba(226,232,240,0.35)',borderColor:'#CBD5E1',borderWidth:1,pointRadius:0},
+        {label:'リスク該当率',data:vals,fill:true,
+          backgroundColor:'rgba(220,38,38,0.12)',borderColor:'#DC2626',borderWidth:2.5,
+          pointBackgroundColor:'#DC2626',pointRadius:5,pointHoverRadius:7}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{r:{min:0,max:100,ticks:{stepSize:25,callback:v=>v+'%',font:{size:9}},
+        grid:{color:'#E2E8F0'},angleLines:{color:'#CBD5E1'},
+        pointLabels:{font:{size:10},color:'#1E3A5F'}}}
+    }
+  });
+}
+
+// ── 横棒グラフ ──
+function renderBar() {
+  const ctx = document.getElementById('barChart').getContext('2d');
+  if(barChart) barChart.destroy();
+  const sorted = [...KPI_CFG].map(c=>{
+    const s=calcKPI(filtered,c.key,c.base);
+    return {...c,pct:parseFloat(s.pct.toFixed(1)),n:s.risk,v:s.valid};
+  }).sort((a,b)=>a.pct-b.pct);
+  barChart = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:sorted.map(c=>c.icon+' '+c.label),
+      datasets:[
+        {data:Array(6).fill(100),backgroundColor:'#F1F5F9',borderWidth:0,label:''},
+        {data:sorted.map(c=>c.pct),backgroundColor:sorted.map(c=>c.color),borderWidth:0,
+          label:'リスク該当率',
+          datalabels:{anchor:'end',align:'end'}}
+      ]
+    },
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.x.toFixed(1)}%　${sorted[ctx.dataIndex].n}/${sorted[ctx.dataIndex].v}名`}}
+      },
+      scales:{
+        x:{stacked:false,max:120,ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'#E2E8F0'}},
+        y:{ticks:{font:{size:11},color:'#1E3A5F'},grid:{display:false}}
+      }
+    }
+  });
+}
+
+// ── 年代別グラフ ──
+function renderAge() {
+  const ctx = document.getElementById('ageChart').getContext('2d');
+  if(ageChart) ageChart.destroy();
+  const AGE_LABS = ['65歳未満','65-69歳','70-74歳','75-79歳','80歳以上'];
+  const agePct = AGE_LABS.map(ag=>{
+    const sub = filtered.filter(r=>r.ag===ag);
+    const valid = sub.filter(r=>r.w1!==null);
+    const risk  = valid.filter(r=>r.fw===1);
+    return valid.length>0 ? parseFloat((risk.length/valid.length*100).toFixed(1)) : 0;
+  });
+  const ageN = AGE_LABS.map(ag=>filtered.filter(r=>r.ag===ag).length);
+  ageChart = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:AGE_LABS,
+      datasets:[
+        {label:'歩行速度低下',data:agePct,backgroundColor:'rgba(234,88,12,0.78)',borderWidth:0,
+          borderRadius:5,borderSkipped:false},
+        {label:'正常',data:agePct.map(p=>100-p),backgroundColor:'rgba(203,213,225,0.45)',borderWidth:0,
+          borderRadius:5,borderSkipped:false}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:10}}},
+        tooltip:{callbacks:{
+          label:ctx=>ctx.datasetIndex===0?` 歩行速度低下 ${ctx.parsed.y.toFixed(1)}%`:` 正常 ${ctx.parsed.y.toFixed(1)}%`,
+          afterBody:(items)=>[`N=${ageN[items[0].dataIndex]}名`]
+        }}
+      },
+      scales:{
+        x:{stacked:true,ticks:{font:{size:10},color:'#1E3A5F'},grid:{display:false}},
+        y:{stacked:true,max:100,ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'#E2E8F0'}}
+      }
+    }
+  });
+}
+
+// ── リスク重複分布 ──
+function renderRiskDist() {
+  const ctx = document.getElementById('riskDistChart').getContext('2d');
+  if(riskDistChart) riskDistChart.destroy();
+  const counts = Array.from({length:7},(_,k)=>filtered.filter(r=>r.risks===k).length);
+  const colors = ['#16A34A','#B45309','#EA580C','#DC2626','#9B1C1C','#7F1D1D','#450A0A'];
+  riskDistChart = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:counts.map((_,k)=>`${k}項目`),
+      datasets:[{
+        data:counts,
+        backgroundColor:colors,
+        borderWidth:0,borderRadius:6,borderSkipped:false,
+        label:'人数'
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y}名 (${(ctx.parsed.y/filtered.length*100).toFixed(1)}%)`}}
+      },
+      scales:{
+        x:{ticks:{font:{size:11},color:'#1E3A5F'},grid:{display:false}},
+        y:{ticks:{font:{size:10}},grid:{color:'#E2E8F0'},title:{display:true,text:'人数（名）',font:{size:10}}}
+      }
+    }
+  });
+}
+
+// ── 高リスクリスト ──
+function renderHighRisk() {
+  const minR = parseInt(document.getElementById('min-risk').value);
+  const hi   = filtered.filter(r=>r.risks>=minR).sort((a,b)=>b.risks-a.risks);
+  document.getElementById('hi-n').textContent = hi.length;
+  document.getElementById('hi-sub').textContent =
+    `（対象${filtered.length}名中 ${(hi.length/filtered.length*100).toFixed(1)}%）に${minR}項目以上のリスクが重複`;
+  const badges = (n)=>n===0?'<span class="risk-badge-0">0</span>':n<=1?`<span class="risk-badge-1">${n}</span>`:n<=2?`<span class="risk-badge-2">${n}</span>`:`<span class="risk-badge-3">${n}</span>`;
+  const flag = (v,yes='🔴',no='✅')=>v===1?`<td class="risk-flag-yes">${yes}</td>`:`<td class="risk-flag-no">${no}</td>`;
+  const fmt  = (v,d=2)=>v===null||v===undefined?'—':v.toFixed(d);
+  document.getElementById('risk-tbody').innerHTML = hi.map(r=>`
+    <tr>
+      <td>${r.id}</td>
+      <td>${r.sx||'—'}</td>
+      <td>${r.age||'—'}</td>
+      <td>${badges(r.risks)}</td>
+      ${flag(r.fw)}${flag(r.fs)}${flag(r.fa)}${flag(r.fb)}${flag(r.fm)}${flag(r.fe)}
+      <td>${fmt(r.w1,3)}</td><td>${fmt(r.sts,1)}</td>
+      <td>${r.moca===null?'—':r.moca}</td>
+      <td>${fmt(r.smi,2)}</td><td>${fmt(r.ts,2)}</td>
+      <td>${r.eat===null?'—':r.eat}</td>
+    </tr>`).join('');
+}
+
+// ── サイドバー統計 ──
+function renderSidebarStat() {
+  const N  = filtered.length;
+  const nm = filtered.filter(r=>r.sx==='男性').length;
+  const nf = filtered.filter(r=>r.sx==='女性').length;
+  const r3 = filtered.filter(r=>r.risks>=3).length;
+  document.getElementById('sb-n').textContent = N;
+  document.getElementById('sb-m').textContent = nm;
+  document.getElementById('sb-f').textContent = nf;
+  document.getElementById('sb-r3').textContent = r3;
+  document.getElementById('hdr-n').textContent = N;
+  document.getElementById('hdr-sub').textContent = `男性${nm}名 ／ 女性${nf}名`;
+
+  const sexChk = [...document.querySelectorAll('#sidebar input[type=checkbox][value="男性"],[value="女性"]')]
+    .filter(e=>e.checked).map(e=>e.value);
+  const ageChk = [...document.querySelectorAll('#sidebar input[type=checkbox]')]
+    .filter(e=>e.checked && !['男性','女性'].includes(e.value)).map(e=>e.value);
+  const sexStr = sexChk.length===2?'全性別':sexChk.join('・')||'なし';
+  const ageStr = ageChk.length===5?'全年齢':ageChk.length===0?'なし':ageChk.join('・');
+  document.getElementById('filter-info').textContent =
+    `フィルター適用中: ${N}名 ／ ${ageStr} ／ ${sexStr}`;
+}
+
+// ── 全描画 ──
+function renderAll() {
+  renderSidebarStat();
+  renderKPI();
+  renderBIN();
+  renderRadar();
+  renderBar();
+  renderAge();
+  renderRiskDist();
+  renderHighRisk();
+}
+
+// 初期描画
+renderAll();
+</script>
+</body>
+</html>
