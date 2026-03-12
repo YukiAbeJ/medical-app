@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>村上市 総合フレイル分析ダッシュボード</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    body { font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', system-ui, sans-serif; }
+    .gradient-header { background: linear-gradient(135deg, #0F2044 0%, #1A5FB4 60%, #3B9FE8 100%); }
+    .kpi-card { background: white; border-radius: 14px; padding: 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; transition: transform 0.15s; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+    .hero-card { background: linear-gradient(135deg, #B91C1C 0%, #DC2626 100%); border-radius: 16px; padding: 24px; color: white; box-shadow: 0 4px 20px rgba(185,28,28,0.3); }
+    .upload-zone { border: 2.5px dashed #93c5fd; border-radius: 16px; background: #eff6ff; transition: all 0.2s; }
+    .upload-zone.drag-over { border-color: #2563eb; background: #dbeafe; }
+    .badge-risk { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; }
+    .tab-btn { padding: 10px 20px; border-radius: 8px 8px 0 0; font-weight: 600; font-size: 13px; transition: all 0.15s; }
+    .tab-btn.active { background: white; color: #0F2044; box-shadow: 0 -2px 8px rgba(0,0,0,0.06); }
+    .tab-btn:not(.active) { color: #94a3b8; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    .file-chip { display: inline-flex; align-items: center; gap: 6px; background: #e0f2fe; color: #0369a1; border-radius: 9999px; padding: 4px 12px; font-size: 12px; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+<!-- ══ HEADER ══ -->
+<header class="gradient-header shadow-xl sticky top-0 z-50">
+  <div class="max-w-screen-2xl mx-auto px-5 py-3 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background:rgba(255,255,255,0.15);">🏥</div>
+      <div>
+        <div class="text-xs text-blue-200 tracking-wide">村上市 保健事業 / AWGS2019・J-CHS・WHO基準準拠</div>
+        <h1 class="font-bold text-white text-base leading-tight">総合フレイル分析ダッシュボード</h1>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 text-xs text-blue-200" id="header-stats" style="display:none!important">
+      <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block"></span>
+      <span id="header-n">N=0名</span>
+      <span id="header-build" class="opacity-60">v2026</span>
+    </div>
+  </div>
+</header>
+
+<!-- ══ UPLOAD SECTION ══ -->
+<div id="upload-section" class="max-w-2xl mx-auto px-4 pt-16 pb-8">
+  <div class="text-center mb-8">
+    <div class="text-5xl mb-4">📂</div>
+    <h2 class="text-2xl font-extrabold text-slate-700 mb-2">CSVファイルをアップロード</h2>
+    <p class="text-sm text-slate-500 leading-relaxed">
+      村上市フレイル検診データ（CSV形式）をアップロードすると<br>
+      分析ダッシュボードが表示されます。複数ファイルは自動でIDをキーに統合されます。
+    </p>
+  </div>
+
+  <div class="upload-zone p-10 text-center cursor-pointer mb-4" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <div class="text-4xl mb-3">⬆️</div>
+    <div class="text-slate-600 font-semibold mb-1">ここにドラッグ＆ドロップ</div>
+    <div class="text-slate-400 text-sm">または クリックしてファイルを選択</div>
+    <input type="file" id="file-input" multiple accept=".csv" class="hidden">
+  </div>
+
+  <div id="selected-files" class="flex flex-wrap gap-2 mb-4"></div>
+
+  <div id="upload-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700"></div>
+  <div id="upload-info" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700 space-y-1"></div>
+
+  <button id="load-btn" class="hidden w-full py-3 rounded-xl font-bold text-white text-base shadow-lg transition-all" style="background:linear-gradient(135deg,#1A5FB4,#3B9FE8);" onclick="loadData()">
+    ダッシュボードを表示 →
+  </button>
+</div>
+
+<!-- ══ DASHBOARD SECTION ══ -->
+<div id="dashboard-section" class="hidden max-w-screen-2xl mx-auto px-4 pb-12 fade-in">
+
+  <!-- Filters + File info bar -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 px-5 py-3 mb-5 flex flex-wrap items-center gap-4">
+    <div class="flex items-center gap-2 text-sm font-semibold text-slate-600">🔍 フィルター</div>
+    <div class="flex items-center gap-2">
+      <label class="text-xs text-slate-500">性別</label>
+      <div id="sex-filter" class="flex gap-1"></div>
+    </div>
+    <div class="flex items-center gap-2">
+      <label class="text-xs text-slate-500">年齢階級</label>
+      <div id="age-filter" class="flex gap-1"></div>
+    </div>
+    <button onclick="resetFilters()" class="ml-auto text-xs text-blue-600 hover:text-blue-800 font-semibold">リセット</button>
+    <button onclick="resetData()" class="text-xs text-red-500 hover:text-red-700 font-semibold">← 別ファイルを読み込む</button>
+  </div>
+
+  <!-- Summary banner -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 px-5 py-4 mb-5">
+    <div class="flex flex-wrap gap-6 text-sm">
+      <div><span class="text-slate-500">対象者数</span> <span class="font-bold text-slate-800 text-lg" id="summ-n">--</span><span class="text-slate-500 ml-1">名</span></div>
+      <div><span class="text-slate-500">平均年齢</span> <span class="font-bold text-slate-800 text-lg" id="summ-age">--</span><span class="text-slate-500 ml-1">歳</span></div>
+      <div><span class="text-slate-500">男性</span> <span class="font-bold text-blue-700 text-lg" id="summ-male">--</span><span class="text-slate-500 ml-1">名</span></div>
+      <div><span class="text-slate-500">女性</span> <span class="font-bold text-pink-600 text-lg" id="summ-female">--</span><span class="text-slate-500 ml-1">名</span></div>
+      <div id="summ-files" class="flex flex-wrap gap-1 items-center"></div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 mb-0 px-1" style="border-bottom:2px solid #e2e8f0;">
+    <button class="tab-btn active" onclick="switchTab('kpi',this)">📊 KPI・リスク指標</button>
+    <button class="tab-btn" onclick="switchTab('chart',this)">📈 分布グラフ</button>
+    <button class="tab-btn" onclick="switchTab('followup',this)">🔴 フォローアップ対象者</button>
+  </div>
+
+  <!-- Tab: KPI -->
+  <div id="tab-kpi" class="bg-white rounded-b-xl rounded-tr-xl shadow-sm border border-t-0 border-slate-200 p-5">
+    <!-- Hero: フレイル判定 -->
+    <div class="hero-card mb-6" id="hero-frail">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="text-3xl">🩺</span>
+        <div>
+          <div class="text-sm opacity-80">フレイル判定（簡易フレイルインデックス ≥3）</div>
+          <div class="text-3xl font-black" id="hero-pct">--%</div>
+        </div>
+        <div class="ml-auto text-right">
+          <div class="text-sm opacity-80">リスク該当者</div>
+          <div class="text-2xl font-bold" id="hero-n">-- / --名</div>
+        </div>
+      </div>
+      <div class="bg-white bg-opacity-20 rounded-xl px-4 py-2 text-xs">
+        根拠: 簡易フレイルインデックス（5項目合計）≥3でフレイル、1-2でプレフレイル
+      </div>
+    </div>
+
+    <!-- KPI Grid (9 remaining) -->
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" id="kpi-grid"></div>
+  </div>
+
+  <!-- Tab: Charts -->
+  <div id="tab-chart" class="hidden bg-white rounded-b-xl rounded-tr-xl shadow-sm border border-t-0 border-slate-200 p-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <h3 class="font-bold text-slate-700 mb-3">性別分布</h3>
+        <canvas id="chart-sex" height="220"></canvas>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-700 mb-3">年齢階級別分布</h3>
+        <canvas id="chart-age" height="220"></canvas>
+      </div>
+      <div class="md:col-span-2">
+        <h3 class="font-bold text-slate-700 mb-3">指標別リスク率比較</h3>
+        <canvas id="chart-indicators" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Follow-up -->
+  <div id="tab-followup" class="hidden bg-white rounded-b-xl rounded-tr-xl shadow-sm border border-t-0 border-slate-200 p-5">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="font-bold text-slate-700">フォローアップ対象者一覧</h3>
+        <div class="text-xs text-slate-500 mt-1">2つ以上のリスク指標に該当する対象者</div>
+      </div>
+      <button onclick="exportCSV()" class="text-xs bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700">CSVエクスポート</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm" id="followup-table">
+        <thead class="bg-slate-50 text-slate-600 text-xs">
+          <tr id="followup-header"></tr>
+        </thead>
+        <tbody id="followup-body" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+    <div id="followup-empty" class="hidden text-center text-slate-400 py-12">
+      <div class="text-3xl mb-2">✅</div>
+      複数リスク該当者はいません
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  定数
+// ══════════════════════════════════════════════════════════════
+const AGE_LABELS = ['65歳未満','65-69歳','70-74歳','75-79歳','80歳以上'];
+const AGE_BINS   = [0, 64, 69, 74, 79, Infinity];
+
+const INDICATORS = [
+  { key:'frail',     label:'フレイル判定',    icon:'🩺', color:'#B91C1C', col:'簡易フレイルスコア',        op:'>=', val:3,   basis:'簡易フレイルインデックス ≥3' },
+  { key:'muscle',    label:'下肢筋力低下',   icon:'🦵', color:'#EA580C', col:'5回立ち上がり_秒',           op:'>=', val:12,  basis:'SPPB準拠: 5回椅子立ち上がり ≥12秒' },
+  { key:'walk',      label:'歩行速度低下',   icon:'🚶', color:'#DC2626', col:'歩行速度_mps',               op:'<',  val:1.0, basis:'AWGS2019: 歩行速度 <1.0 m/s' },
+  { key:'balance',   label:'バランス能力低下', icon:'⚖️',  color:'#059669', col:'バランス_得点',              op:'<',  val:4,   basis:'SPPB バランス検査: <4点' },
+  { key:'sarco',     label:'サルコペニア疑い', icon:'💪', color:'#D97706', col:'SMI',                       op:'sex',val:[7.0,5.7],basis:'AWGS2019: SMI <7.0(男)/<5.7(女)kg/m²' },
+  { key:'oral',      label:'オーラルフレイル', icon:'👄', color:'#0891B2', col:'オーラルフレイル_判定_',      op:'>=', val:1,   basis:'口腔機能: 判定あり(1以上)' },
+  { key:'mci',       label:'MCI疑い',        icon:'🧠', color:'#7C3AED', col:'MoCA総得点',                 op:'<=', val:25,  basis:'Nasreddine 2005: MoCA ≤25点' },
+  { key:'swallow',   label:'嚥下機能低下リスク', icon:'🍽', color:'#0284C7', col:'EAT10総得点',              op:'>=', val:3,   basis:'Belafsky 2008: EAT-10 ≥3点' },
+  { key:'bone',      label:'骨密度低下',     icon:'🦴', color:'#CA8A04', col:'Tスコア_SD',                  op:'<=', val:-1.0,basis:'WHO基準: Tスコア ≤−1.0 SD' },
+  { key:'sarco_def', label:'サルコペニア確定', icon:'✊', color:'#9333EA', col:null,                         op:'compound', val:null, basis:'AWGS2019: 低SMI + 歩行/筋力低下' },
+];
+
+// 列名エイリアス（正規化マッピング）
+const COL_ALIASES = {
+  '性_別':'性別', '性 別':'性別', 'sex':'性別',
+  '年_齢':'年齢', '年 齢':'年齢', 'age':'年齢',
+  'ＳＭＩ':'SMI', 'ｓｍｉ':'SMI',
+  '5回立ち上がり（秒）':'5回立ち上がり_秒', '5回立ち上がり(秒)':'5回立ち上がり_秒',
+  '歩行速度（m/s）':'歩行速度_mps', '歩行速度(m/s)':'歩行速度_mps', '歩行速度':'歩行速度_mps',
+  'MoCA':'MoCA総得点', 'MoCA総点':'MoCA総得点',
+  'EAT-10':'EAT10総得点', 'EAT10':'EAT10総得点',
+  'T-スコア':'Tスコア_SD', 'Tスコア':'Tスコア_SD',
+  'バランス得点':'バランス_得点', 'バランス':'バランス_得点',
+  'オーラルフレイル判定':'オーラルフレイル_判定_', 'オーラルフレイル_判定':'オーラルフレイル_判定_',
+  'フレイルスコア':'簡易フレイルスコア', '簡易フレイル':'簡易フレイルスコア', 'J_CHS':'簡易フレイルスコア',
+};
+
+// フレイル計算用の列名候補
+const FRAIL_ITEM_COLS = {
+  '体重減少': ['6ヵ月体重減少_0_1','6ヶ月体重減少_0_1','6ヶ月の体重減少_0_1','体重低下_0_1'],
+  '疲れ':     ['訳もなく疲れたように感じる_0_1','疲れ_0_1_値','疲れ_0_1'],
+  '活動':     ['軽い運動plus定期的運動_0_1','活動量_0_1','低活動_0_1'],
+  '歩行':     ['4m歩行_1_0_値','歩行速度低下_flag'],
+};
+
+// ══════════════════════════════════════════════════════════════
+//  状態
+// ══════════════════════════════════════════════════════════════
+let allData = [];       // 全データ（フィルター前）
+let filteredData = [];  // フィルター後
+let loadedFiles = [];
+let charts = {};
+let selSex = [];
+let selAge = [];
+
+// ══════════════════════════════════════════════════════════════
+//  ファイル選択UI
+// ══════════════════════════════════════════════════════════════
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+let pendingFiles = [];
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  addFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
+
+function addFiles(files) {
+  files.filter(f => f.name.toLowerCase().endsWith('.csv')).forEach(f => {
+    if (!pendingFiles.find(p => p.name === f.name)) pendingFiles.push(f);
+  });
+  renderChips();
+  document.getElementById('load-btn').classList.toggle('hidden', pendingFiles.length === 0);
+}
+
+function renderChips() {
+  const c = document.getElementById('selected-files');
+  c.innerHTML = pendingFiles.map((f, i) =>
+    `<span class="file-chip">📄 ${f.name} <span class="cursor-pointer ml-1 opacity-60 hover:opacity-100" onclick="removeFile(${i})">×</span></span>`
+  ).join('');
+}
+
+function removeFile(i) {
+  pendingFiles.splice(i, 1);
+  renderChips();
+  document.getElementById('load-btn').classList.toggle('hidden', pendingFiles.length === 0);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CSV パース & マージ
+// ══════════════════════════════════════════════════════════════
+async function loadData() {
+  if (pendingFiles.length === 0) return;
+  document.getElementById('load-btn').disabled = true;
+  document.getElementById('load-btn').textContent = '読み込み中...';
+
+  try {
+    const rawDfs = [];
+    const infoLines = [];
+
+    for (const file of pendingFiles) {
+      const result = await parseCSV(file);
+      if (!result) { infoLines.push(`⚠️ ${file.name}: パースエラー`); continue; }
+      const norm = normalizeColumns(result);
+      const withId = findAndNormalizeId(norm);
+      if (!withId) { infoLines.push(`❌ ${file.name}: ID列が見つかりません`); continue; }
+      // 重複IDは先頭を保持
+      const deduped = deduplicateById(withId);
+      rawDfs.push({ name: file.name, data: deduped });
+      infoLines.push(`✅ ${file.name}: ${deduped.length}名 / ${Object.keys(deduped[0]||{}).length}列`);
+    }
+
+    if (rawDfs.length === 0) {
+      showError('有効なCSVファイルが読み込めませんでした。ID列（ID/id/○○_ID）が必要です。');
+      document.getElementById('load-btn').disabled = false;
+      document.getElementById('load-btn').textContent = 'ダッシュボードを表示 →';
+      return;
+    }
+
+    showInfo(infoLines);
+    loadedFiles = rawDfs.map(d => d.name);
+
+    // マスターを特定（最も行数が多く、性別・年齢を含むファイル）
+    rawDfs.sort((a, b) => masterScore(b) - masterScore(a));
+    let merged = rawDfs[0].data;
+    for (let i = 1; i < rawDfs.length; i++) {
+      merged = leftJoin(merged, rawDfs[i].data);
+    }
+
+    // 列エイリアス・型変換・派生列
+    merged = applyAliases(merged);
+    merged = deriveSexLabel(merged);
+    merged = deriveAgeGroup(merged);
+    merged = deriveNumericColumns(merged);
+    merged = deriveFreilScore(merged);
+    merged = deriveRiskFlags(merged);
+
+    allData = merged;
+    selSex = [];
+    selAge = [];
+    filteredData = [...allData];
+
+    document.getElementById('upload-section').classList.add('hidden');
+    document.getElementById('dashboard-section').classList.remove('hidden');
+    document.getElementById('dashboard-section').classList.add('fade-in');
+
+    buildFilters();
+    renderDashboard();
+
+  } catch (e) {
+    showError('エラーが発生しました: ' + e.message);
+    console.error(e);
+    document.getElementById('load-btn').disabled = false;
+    document.getElementById('load-btn').textContent = 'ダッシュボードを表示 →';
+  }
+}
+
+function masterScore(d) {
+  let s = d.data.length;
+  const cols = Object.keys(d.data[0] || {});
+  if (cols.some(c => c.includes('性別'))) s += 200;
+  if (cols.some(c => c.includes('年齢'))) s += 200;
+  if (d.name.includes('マスター') || d.name.includes('master')) s += 100000;
+  return s;
+}
+
+function parseCSV(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const text = e.target.result;
+        const result = Papa.parse(text, { header: true, skipEmptyLines: true, dynamicTyping: false });
+        resolve(result.data.length > 0 ? result.data : null);
+      } catch { resolve(null); }
+    };
+    reader.onerror = () => resolve(null);
+    // Try Shift-JIS first if BOM present, otherwise UTF-8
+    try { reader.readAsText(file, 'UTF-8'); } catch { reader.readAsText(file); }
+  });
+}
+
+function normalizeColumns(rows) {
+  if (rows.length === 0) return rows;
+  const colMap = {};
+  Object.keys(rows[0]).forEach(col => {
+    const trimmed = col.trim().replace(/\s+/g, '_');
+    colMap[col] = trimmed;
+  });
+  return rows.map(row => {
+    const newRow = {};
+    Object.keys(row).forEach(k => { newRow[colMap[k]] = row[k]; });
+    return newRow;
+  });
+}
+
+function applyAliases(rows) {
+  if (rows.length === 0) return rows;
+  const sample = rows[0];
+  const remap = {};
+  Object.keys(sample).forEach(col => {
+    if (COL_ALIASES[col]) remap[col] = COL_ALIASES[col];
+  });
+  if (Object.keys(remap).length === 0) return rows;
+  return rows.map(row => {
+    const newRow = {...row};
+    Object.keys(remap).forEach(old => {
+      if (!(remap[old] in newRow)) { newRow[remap[old]] = newRow[old]; delete newRow[old]; }
+    });
+    return newRow;
+  });
+}
+
+function findAndNormalizeId(rows) {
+  if (rows.length === 0) return null;
+  const cols = Object.keys(rows[0]);
+  let idCol = cols.find(c => /\bID\b/i.test(c) || c.toLowerCase() === 'id' || /^ID_|_ID$/i.test(c));
+  if (!idCol) idCol = cols.find(c => /\.\s*ID\s*$/i.test(c));
+  if (!idCol) return null;
+  return rows.map(r => {
+    const idRaw = String(r[idCol] || '').trim().replace(/^0+/, '');
+    const idNum = parseInt(idRaw, 10);
+    if (isNaN(idNum)) return null;
+    const newR = {...r, ID: idNum};
+    if (idCol !== 'ID') delete newR[idCol];
+    return newR;
+  }).filter(r => r !== null);
+}
+
+function deduplicateById(rows) {
+  const seen = new Set();
+  return rows.filter(r => { if (seen.has(r.ID)) return false; seen.add(r.ID); return true; });
+}
+
+function leftJoin(master, sub) {
+  const subMap = {};
+  sub.forEach(r => { subMap[r.ID] = r; });
+  return master.map(m => {
+    const s = subMap[m.ID] || {};
+    const merged = {...m};
+    Object.keys(s).forEach(k => { if (k !== 'ID' && !(k in merged)) merged[k] = s[k]; });
+    return merged;
+  });
+}
+
+function deriveNumericColumns(rows) {
+  const numCols = ['年齢','SMI','歩行速度_mps','5回立ち上がり_秒','Tスコア_SD',
+                   'MoCA総得点','EAT10総得点','バランス_得点','オーラルフレイル_判定_',
+                   '簡易フレイルスコア','J_CHS'];
+  return rows.map(r => {
+    const newR = {...r};
+    numCols.forEach(c => {
+      if (c in newR) {
+        const v = parseFloat(String(newR[c]).replace(/[^\d.\-]/g,''));
+        newR[c] = isNaN(v) ? null : v;
+      }
+    });
+    return newR;
+  });
+}
+
+function deriveSexLabel(rows) {
+  return rows.map(r => {
+    const s = r['性別'];
+    const SEX_MAP = {'1':'男性','2':'女性','0':'女性','男性':'男性','女性':'女性','男':'男性','女':'女性','M':'男性','F':'女性','m':'男性','f':'女性','1.0':'男性','2.0':'女性','0.0':'女性'};
+    r['性別_ラベル'] = SEX_MAP[String(s||'').trim()] || null;
+    return r;
+  });
+}
+
+function deriveAgeGroup(rows) {
+  return rows.map(r => {
+    const age = parseFloat(r['年齢']);
+    if (isNaN(age)) { r['年齢階級'] = null; return r; }
+    for (let i = 0; i < AGE_BINS.length - 1; i++) {
+      if (age > AGE_BINS[i] && age <= AGE_BINS[i+1]) { r['年齢階級'] = AGE_LABELS[i]; return r; }
+    }
+    r['年齢階級'] = null;
+    return r;
+  });
+}
+
+function deriveFreilScore(rows) {
+  // 簡易フレイルスコアが既にあれば何もしない
+  if (rows.length > 0 && '簡易フレイルスコア' in rows[0] && rows.some(r => r['簡易フレイルスコア'] !== null)) return rows;
+  // 個別項目から計算を試みる
+  const cols = Object.keys(rows[0] || {});
+  const itemCols = {};
+  Object.keys(FRAIL_ITEM_COLS).forEach(item => {
+    const found = FRAIL_ITEM_COLS[item].find(c => cols.includes(c));
+    if (found) itemCols[item] = found;
+  });
+  if (Object.keys(itemCols).length < 2) return rows; // 項目が少なすぎる場合はスキップ
+
+  return rows.map(r => {
+    let score = 0, counted = 0;
+    if (itemCols['体重減少']) {
+      const v = parseFloat(r[itemCols['体重減少']]);
+      if (!isNaN(v)) { score += v >= 1 ? 1 : 0; counted++; }
+    }
+    if (itemCols['疲れ']) {
+      const v = parseFloat(r[itemCols['疲れ']]);
+      if (!isNaN(v)) { score += v >= 1 ? 1 : 0; counted++; }
+    }
+    if (itemCols['活動']) {
+      const v = parseFloat(r[itemCols['活動']]);
+      if (!isNaN(v)) { score += v === 0 ? 1 : 0; counted++; } // 0=低活動=リスク
+    }
+    if (itemCols['歩行']) {
+      const v = parseFloat(r[itemCols['歩行']]);
+      if (!isNaN(v)) { score += v >= 1 ? 1 : 0; counted++; }
+    }
+    r['簡易フレイルスコア'] = counted >= 2 ? score : null;
+    return r;
+  });
+}
+
+function deriveRiskFlags(rows) {
+  return rows.map(r => {
+    // 個別フラグ
+    const w = toNum(r['歩行速度_mps']);
+    const m = toNum(r['5回立ち上がり_秒']);
+    const smi = toNum(r['SMI']);
+    const sex = r['性別_ラベル'];
+
+    r['_flag_walk']    = w !== null ? w < 1.0 : null;
+    r['_flag_muscle']  = m !== null ? m >= 12.0 : null;
+    r['_flag_sarco_sus'] = (smi !== null && sex)
+      ? (sex === '男性' ? smi < 7.0 : smi < 5.7)
+      : null;
+    r['_flag_sarco_def'] = (r['_flag_sarco_sus'] !== null && r['_flag_sarco_sus'])
+      ? (r['_flag_walk'] || r['_flag_muscle']) || false
+      : (r['_flag_sarco_sus'] === null ? null : false);
+
+    return r;
+  });
+}
+
+function toNum(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  フィルター
+// ══════════════════════════════════════════════════════════════
+function buildFilters() {
+  // 性別
+  const sexes = [...new Set(allData.map(r => r['性別_ラベル']).filter(Boolean))].sort();
+  const sexFilter = document.getElementById('sex-filter');
+  sexFilter.innerHTML = sexes.map(s =>
+    `<button class="filter-chip text-xs border rounded-full px-3 py-1 font-semibold transition-all" data-type="sex" data-val="${s}" onclick="toggleFilter('sex','${s}',this)" style="background:#f1f5f9;border-color:#cbd5e1;">${s}</button>`
+  ).join('');
+
+  // 年齢階級
+  const ageFilter = document.getElementById('age-filter');
+  ageFilter.innerHTML = AGE_LABELS.map(a =>
+    `<button class="filter-chip text-xs border rounded-full px-3 py-1 font-semibold transition-all" data-type="age" data-val="${a}" onclick="toggleFilter('age','${a}',this)" style="background:#f1f5f9;border-color:#cbd5e1;">${a}</button>`
+  ).join('');
+}
+
+function toggleFilter(type, val, btn) {
+  if (type === 'sex') {
+    const idx = selSex.indexOf(val);
+    if (idx >= 0) { selSex.splice(idx, 1); btn.style.background = '#f1f5f9'; btn.style.color = ''; btn.style.borderColor = '#cbd5e1'; }
+    else { selSex.push(val); btn.style.background = '#1A5FB4'; btn.style.color = 'white'; btn.style.borderColor = '#1A5FB4'; }
+  } else {
+    const idx = selAge.indexOf(val);
+    if (idx >= 0) { selAge.splice(idx, 1); btn.style.background = '#f1f5f9'; btn.style.color = ''; btn.style.borderColor = '#cbd5e1'; }
+    else { selAge.push(val); btn.style.background = '#1A5FB4'; btn.style.color = 'white'; btn.style.borderColor = '#1A5FB4'; }
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  filteredData = allData.filter(r => {
+    if (selSex.length > 0 && !selSex.includes(r['性別_ラベル'])) return false;
+    if (selAge.length > 0 && !selAge.includes(r['年齢階級'])) return false;
+    return true;
+  });
+  renderDashboard();
+}
+
+function resetFilters() {
+  selSex = []; selAge = [];
+  document.querySelectorAll('.filter-chip').forEach(b => {
+    b.style.background = '#f1f5f9'; b.style.color = ''; b.style.borderColor = '#cbd5e1';
+  });
+  filteredData = [...allData];
+  renderDashboard();
+}
+
+function resetData() {
+  document.getElementById('dashboard-section').classList.add('hidden');
+  document.getElementById('upload-section').classList.remove('hidden');
+  pendingFiles = [];
+  renderChips();
+  document.getElementById('load-btn').classList.add('hidden');
+  document.getElementById('load-btn').disabled = false;
+  document.getElementById('load-btn').textContent = 'ダッシュボードを表示 →';
+  document.getElementById('upload-info').classList.add('hidden');
+  document.getElementById('upload-error').classList.add('hidden');
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+  allData = []; filteredData = []; loadedFiles = [];
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ダッシュボード描画
+// ══════════════════════════════════════════════════════════════
+function renderDashboard() {
+  const df = filteredData;
+  const N = df.length;
+
+  // サマリーバー
+  document.getElementById('summ-n').textContent = N;
+  const ages = df.map(r => toNum(r['年齢'])).filter(v => v !== null);
+  document.getElementById('summ-age').textContent = ages.length > 0 ? (ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(1) : '--';
+  const males   = df.filter(r => r['性別_ラベル'] === '男性').length;
+  const females = df.filter(r => r['性別_ラベル'] === '女性').length;
+  document.getElementById('summ-male').textContent   = males;
+  document.getElementById('summ-female').textContent = females;
+  const filesEl = document.getElementById('summ-files');
+  filesEl.innerHTML = loadedFiles.map(f => `<span class="file-chip">📄${f}</span>`).join('');
+
+  // ── Hero: フレイル ──
+  const frailInd = INDICATORS[0]; // フレイル判定
+  const frailResult = calcIndicator(df, frailInd);
+  const heroPct = frailResult.measuredN > 0 ? (frailResult.riskN / frailResult.measuredN * 100).toFixed(1) : '--';
+  document.getElementById('hero-pct').textContent = heroPct + '%';
+  document.getElementById('hero-n').textContent   = frailResult.measuredN > 0
+    ? `${frailResult.riskN} / ${frailResult.measuredN}名`
+    : '-- (データなし)';
+
+  // ── KPI Grid ──
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = INDICATORS.slice(1).map(ind => {
+    const res = calcIndicator(df, ind);
+    const pct = res.measuredN > 0 ? (res.riskN / res.measuredN * 100).toFixed(1) : null;
+    return `
+      <div class="kpi-card">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xl">${ind.icon}</span>
+          <span class="font-bold text-xs text-slate-600">${ind.label}</span>
+        </div>
+        <div class="text-2xl font-black mb-1" style="color:${ind.color}">
+          ${pct !== null ? pct + '%' : '<span class="text-slate-300 text-base">データなし</span>'}
+        </div>
+        <div class="text-xs text-slate-500">
+          ${res.measuredN > 0 ? `${res.riskN}名 / 測定${res.measuredN}名` : '測定なし'}
+        </div>
+        <div class="mt-2 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+          <div style="width:${pct||0}%;background:${ind.color};height:100%;border-radius:9999px;"></div>
+        </div>
+        <div class="text-xs text-slate-400 mt-1.5 leading-tight">${ind.basis}</div>
+      </div>`;
+  }).join('');
+
+  // ── チャート ──
+  renderCharts(df);
+
+  // ── フォローアップ ──
+  renderFollowup(df);
+}
+
+function calcIndicator(df, ind) {
+  let riskN = 0, measuredN = 0;
+  df.forEach(r => {
+    let risk = null;
+    if (ind.op === 'compound') {
+      // サルコペニア確定
+      risk = r['_flag_sarco_def'];
+    } else if (ind.op === 'sex') {
+      risk = r['_flag_sarco_sus'];
+    } else {
+      const v = toNum(r[ind.col]);
+      if (v === null) return;
+      if (ind.op === '<')  risk = v < ind.val;
+      if (ind.op === '<=') risk = v <= ind.val;
+      if (ind.op === '>=') risk = v >= ind.val;
+      if (ind.op === '>')  risk = v > ind.val;
+    }
+    if (risk === null) return;
+    measuredN++;
+    if (risk) riskN++;
+  });
+  return { riskN, measuredN };
+}
+
+function renderCharts(df) {
+  // 性別分布
+  const maleCnt   = df.filter(r => r['性別_ラベル'] === '男性').length;
+  const femaleCnt = df.filter(r => r['性別_ラベル'] === '女性').length;
+  if (charts.sex) charts.sex.destroy();
+  charts.sex = new Chart(document.getElementById('chart-sex'), {
+    type: 'doughnut',
+    data: {
+      labels: ['男性', '女性', '不明'],
+      datasets: [{ data: [maleCnt, femaleCnt, df.length - maleCnt - femaleCnt],
+        backgroundColor: ['#1A5FB4','#EC4899','#e2e8f0'], borderWidth: 0 }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, maintainAspectRatio: false }
+  });
+
+  // 年齢階級別分布
+  const ageCounts = AGE_LABELS.map(l => df.filter(r => r['年齢階級'] === l).length);
+  if (charts.age) charts.age.destroy();
+  charts.age = new Chart(document.getElementById('chart-age'), {
+    type: 'bar',
+    data: {
+      labels: AGE_LABELS,
+      datasets: [{ label: '人数', data: ageCounts, backgroundColor: '#3B9FE8', borderRadius: 6 }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false }
+  });
+
+  // 指標別リスク率
+  const indResults = INDICATORS.map(ind => ({ label: ind.label, ...calcIndicator(df, ind), color: ind.color }));
+  const validInds = indResults.filter(r => r.measuredN > 0);
+  if (charts.ind) charts.ind.destroy();
+  charts.ind = new Chart(document.getElementById('chart-indicators'), {
+    type: 'bar',
+    data: {
+      labels: validInds.map(r => r.label),
+      datasets: [{
+        label: 'リスク率 (%)',
+        data: validInds.map(r => (r.riskN / r.measuredN * 100).toFixed(1)),
+        backgroundColor: validInds.map(r => r.color + 'cc'),
+        borderColor: validInds.map(r => r.color),
+        borderWidth: 1.5,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+      maintainAspectRatio: false
+    }
+  });
+}
+
+function renderFollowup(df) {
+  // 2つ以上のリスクフラグが立っている対象者
+  const riskPersons = df.map(r => {
+    const risks = [];
+    INDICATORS.forEach(ind => {
+      let risk = false;
+      if (ind.op === 'compound') risk = r['_flag_sarco_def'] === true;
+      else if (ind.op === 'sex') risk = r['_flag_sarco_sus'] === true;
+      else {
+        const v = toNum(r[ind.col]);
+        if (v !== null) {
+          if (ind.op === '<')  risk = v < ind.val;
+          if (ind.op === '<=') risk = v <= ind.val;
+          if (ind.op === '>=') risk = v >= ind.val;
+          if (ind.op === '>')  risk = v > ind.val;
+        }
+      }
+      if (risk) risks.push(ind.label);
+    });
+    return { ...r, _risks: risks };
+  }).filter(r => r._risks.length >= 2).sort((a,b) => b._risks.length - a._risks.length);
+
+  const empty = document.getElementById('followup-empty');
+  const thead = document.getElementById('followup-header');
+  const tbody = document.getElementById('followup-body');
+
+  if (riskPersons.length === 0) {
+    empty.classList.remove('hidden');
+    thead.innerHTML = ''; tbody.innerHTML = '';
+    return;
+  }
+  empty.classList.add('hidden');
+
+  thead.innerHTML = `<th class="px-3 py-2 text-left">ID</th><th class="px-3 py-2 text-left">性別</th><th class="px-3 py-2 text-left">年齢</th><th class="px-3 py-2 text-left">年齢階級</th><th class="px-3 py-2 text-left">リスク項目数</th><th class="px-3 py-2 text-left">該当リスク</th>`;
+
+  tbody.innerHTML = riskPersons.slice(0, 200).map(r => `
+    <tr class="hover:bg-slate-50">
+      <td class="px-3 py-2 font-mono text-xs">${r.ID}</td>
+      <td class="px-3 py-2">${r['性別_ラベル']||'--'}</td>
+      <td class="px-3 py-2">${r['年齢']||'--'}</td>
+      <td class="px-3 py-2 text-xs">${r['年齢階級']||'--'}</td>
+      <td class="px-3 py-2">
+        <span class="badge-risk" style="background:${r._risks.length>=3?'#fee2e2':'#fef3c7'};color:${r._risks.length>=3?'#b91c1c':'#92400e'};">
+          ${r._risks.length}項目
+        </span>
+      </td>
+      <td class="px-3 py-2 text-xs text-slate-600">${r._risks.join('、')}</td>
+    </tr>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  タブ切り替え
+// ══════════════════════════════════════════════════════════════
+function switchTab(tab, btn) {
+  ['kpi','chart','followup'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CSVエクスポート
+// ══════════════════════════════════════════════════════════════
+function exportCSV() {
+  const riskPersons = filteredData.map(r => {
+    const risks = [];
+    INDICATORS.forEach(ind => {
+      let risk = false;
+      if (ind.op === 'compound') risk = r['_flag_sarco_def'] === true;
+      else if (ind.op === 'sex') risk = r['_flag_sarco_sus'] === true;
+      else {
+        const v = toNum(r[ind.col]);
+        if (v !== null) {
+          if (ind.op === '<')  risk = v < ind.val;
+          if (ind.op === '<=') risk = v <= ind.val;
+          if (ind.op === '>=') risk = v >= ind.val;
+          if (ind.op === '>')  risk = v > ind.val;
+        }
+      }
+      if (risk) risks.push(ind.label);
+    });
+    return { ...r, リスク項目数: risks.length, 該当リスク: risks.join('|') };
+  }).filter(r => r.リスク項目数 >= 2);
+
+  if (riskPersons.length === 0) return;
+  const cols = ['ID','性別_ラベル','年齢','年齢階級','リスク項目数','該当リスク'];
+  const csv = [cols.join(','), ...riskPersons.map(r => cols.map(c => `"${r[c]||''}"`).join(','))].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `フォローアップリスト_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  UI helpers
+// ══════════════════════════════════════════════════════════════
+function showError(msg) {
+  const el = document.getElementById('upload-error');
+  el.textContent = msg; el.classList.remove('hidden');
+}
+function showInfo(lines) {
+  const el = document.getElementById('upload-info');
+  el.innerHTML = lines.map(l => `<div>${l}</div>`).join('');
+  el.classList.remove('hidden');
+}
+</script>
+</body>
+</html>
