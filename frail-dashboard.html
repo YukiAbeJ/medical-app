@@ -200,6 +200,7 @@ const COL_ALIASES = {
   'T-スコア':'Tスコア_SD','Tスコア':'Tスコア_SD','T_スコア_SD':'Tスコア_SD',
   'バランス得点':'バランス_得点','バランス':'バランス_得点','バランス_合計':'バランス_得点',
   'オーラルフレイル判定':'オーラルフレイル_判定_','オーラルフレイル_判定':'オーラルフレイル_判定_',
+  'オーラルフレイル_総合点':'オーラルフレイル_判定_',
   'フレイルスコア':'簡易フレイルスコア','簡易フレイル':'簡易フレイルスコア','J_CHS':'簡易フレイルスコア',
   'JCHS':'簡易フレイルスコア',
 };
@@ -210,6 +211,7 @@ const FRAIL_ITEM_COLS = {
   '疲れ':    ['訳もなく疲れたように感じる_0_1','疲れ_0_1_値','疲れ_0_1','疲労感_0_1'],
   '活動':    ['軽い運動plus定期的運動_0_1','活動量_0_1','低活動_0_1','身体活動_0_1'],
   '歩行':    ['4m歩行_1_0_値','歩行速度低下_flag','歩行_0_1'],
+  '握力':    ['握力_0_1_値','握力低下_0_1','grip_0_1'],
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -378,7 +380,8 @@ function deriveFreilScore(rows) {
     if (itemCols['疲れ'])    { const v = getItem(itemCols['疲れ']);    if (v !== null) { score += v >= 1 ? 1 : 0; counted++; } }
     if (itemCols['活動'])    { const v = getItem(itemCols['活動']);    if (v !== null) { score += v === 0 ? 1 : 0; counted++; } }
     if (itemCols['歩行'])    { const v = getItem(itemCols['歩行']);    if (v !== null) { score += v >= 1 ? 1 : 0; counted++; } }
-    r['簡易フレイルスコア'] = counted >= 2 ? score : null;
+    if (itemCols['握力'])    { const v = getItem(itemCols['握力']);    if (v !== null) { score += v >= 1 ? 1 : 0; counted++; } }
+    r['簡易フレイルスコア'] = counted >= 3 ? score : null;
     return r;
   });
 }
