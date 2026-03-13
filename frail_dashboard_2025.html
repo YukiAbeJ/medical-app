@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>村上市 高齢者総合検診 2025 フレイル分析ダッシュボード</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Hiragino Sans','Yu Gothic','Meiryo',sans-serif;background:#F1F5F9;color:#1E293B;font-size:14px}
@@ -159,6 +160,24 @@ tbody td.risk-flag-no{color:#94A3B8}
     </div>
   </div>
 
+  <!-- 2指標 相関散布図 -->
+  <div class="sec-head" style="border-left-color:#7C3AED;color:#4C1D95">🔬 2指標 相関散布図</div>
+  <div class="chart-card" style="margin-bottom:18px">
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#1E3A5F;background:#EFF6FF;border-left:4px solid #3B82F6;border-radius:6px;padding:4px 10px;margin-bottom:6px">← X軸 指標</div>
+        <select id="sc-x" onchange="renderScatter()" style="font-size:12px;padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:8px;background:#fff;color:#1E293B;cursor:pointer;min-width:180px"></select>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#1E3A5F;background:#F0FDF4;border-left:4px solid #22C55E;border-radius:6px;padding:4px 10px;margin-bottom:6px">↑ Y軸 指標</div>
+        <select id="sc-y" onchange="renderScatter()" style="font-size:12px;padding:6px 10px;border:1.5px solid #CBD5E1;border-radius:8px;background:#fff;color:#1E293B;cursor:pointer;min-width:180px"></select>
+      </div>
+      <div id="scatter-info" style="font-size:11px;color:#64748B;align-self:flex-end;padding-bottom:8px"></div>
+    </div>
+    <div style="position:relative;height:380px"><canvas id="scatterChart"></canvas></div>
+    <div id="scatter-quads" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px"></div>
+  </div>
+
   <!-- 高リスクリスト -->
   <div class="sec-head red">🚨 高リスク個人リスト（フォローアップ優先度順）</div>
   <div class="alert-box">
@@ -241,7 +260,121 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-let radarChart, barChart, ageChart, riskDistChart;
+let radarChart, barChart, ageChart, riskDistChart, scatterChart;
+
+// ── 散布図 指標設定 ──
+const SCATTER_OPTS = [
+  {key:'w1',   flagKey:'fw',    label:'歩行速度 (m/s)',       color:'#DC2626', thresh:1.0,  threshDir:'lt'},
+  {key:'sts',  flagKey:'fs',    label:'STS5回 (秒)',           color:'#EA580C', thresh:12,   threshDir:'gte'},
+  {key:'smi',  flagKey:'fa',    label:'SMI (kg/m²)',           color:'#D97706', thresh:null, threshDir:null},
+  {key:'ts',   flagKey:'fb',    label:'T-スコア (SD)',         color:'#CA8A04', thresh:-1.0, threshDir:'lte'},
+  {key:'moca', flagKey:'fm',    label:'MoCA得点',              color:'#7C3AED', thresh:25,   threshDir:'lte'},
+  {key:'eat',  flagKey:'fe',    label:'EAT-10',                color:'#0284C7', thresh:3,    threshDir:'gte'},
+  {key:'bal',  flagKey:'fbal',  label:'バランス得点',          color:'#0891B2', thresh:4,    threshDir:'lt'},
+  {key:'oral', flagKey:'foral', label:'口腔フレイル総合点',    color:'#059669', thresh:1,    threshDir:'gte'},
+  {key:'jchs', flagKey:'ffrail',label:'簡易フレイルスコア',   color:'#9333EA', thresh:3,    threshDir:'gte'},
+];
+
+// セレクトボックスを初期化
+(function initScatterSelects() {
+  const sx = document.getElementById('sc-x');
+  const sy = document.getElementById('sc-y');
+  SCATTER_OPTS.forEach((o,i)=>{
+    sx.add(new Option(o.label, o.key, i===0, i===0));
+    sy.add(new Option(o.label, o.key, i===1, i===1));
+  });
+})();
+
+function renderScatter() {
+  const xKey = document.getElementById('sc-x').value;
+  const yKey = document.getElementById('sc-y').value;
+  const xCfg = SCATTER_OPTS.find(o=>o.key===xKey);
+  const yCfg = SCATTER_OPTS.find(o=>o.key===yKey);
+
+  // 4グループに分類
+  const grps = [
+    {label:'正常（両方）',               color:'#94A3B8', pts:[]},
+    {label:xCfg.label+'のみリスク',      color:xCfg.color, pts:[]},
+    {label:yCfg.label+'のみリスク',      color:yCfg.color, pts:[]},
+    {label:'両方リスク',                 color:'#DC2626', pts:[]},
+  ];
+  filtered.forEach(r=>{
+    const xv = r[xKey]; const yv = r[yKey];
+    if(xv===null||xv===undefined||yv===null||yv===undefined) return;
+    const xf = r[xCfg.flagKey]===1;
+    const yf = r[yCfg.flagKey]===1;
+    const pt = {x:xv, y:yv, id:r.id};
+    if(!xf&&!yf) grps[0].pts.push(pt);
+    else if(xf&&!yf) grps[1].pts.push(pt);
+    else if(!xf&&yf) grps[2].pts.push(pt);
+    else grps[3].pts.push(pt);
+  });
+  const total = grps.reduce((s,g)=>s+g.pts.length,0);
+
+  // 閾値ライン annotations
+  const annotations = {};
+  if(xCfg.thresh!==null) annotations.xLine = {
+    type:'line', xMin:xCfg.thresh, xMax:xCfg.thresh,
+    borderColor:xCfg.color+'CC', borderWidth:1.8, borderDash:[6,4],
+    label:{content:'X: '+xCfg.thresh, display:true, position:'start',
+            backgroundColor:'rgba(255,255,255,0.85)', color:xCfg.color,
+            font:{size:10,weight:'bold'}, padding:3}
+  };
+  if(yCfg.thresh!==null) annotations.yLine = {
+    type:'line', yMin:yCfg.thresh, yMax:yCfg.thresh,
+    borderColor:yCfg.color+'CC', borderWidth:1.8, borderDash:[6,4],
+    label:{content:'Y: '+yCfg.thresh, display:true, position:'end',
+            backgroundColor:'rgba(255,255,255,0.85)', color:yCfg.color,
+            font:{size:10,weight:'bold'}, padding:3}
+  };
+
+  const ctx = document.getElementById('scatterChart').getContext('2d');
+  if(scatterChart) scatterChart.destroy();
+  scatterChart = new Chart(ctx, {
+    type:'scatter',
+    data:{datasets:grps.filter(g=>g.pts.length>0).map(g=>{
+      const rgba = hexToRgba(g.color, 0.72);
+      return {
+        label:g.label+'（'+g.pts.length+'名）',
+        data:g.pts,
+        backgroundColor:rgba,
+        pointRadius:5,
+        pointHoverRadius:7,
+        pointBorderColor:'rgba(255,255,255,0.7)',
+        pointBorderWidth:0.8,
+      };
+    })},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top', labels:{font:{size:11},boxWidth:12,padding:14}},
+        annotation:{annotations},
+        tooltip:{callbacks:{label:ctx=>
+          'ID '+ctx.raw.id+' — '+xCfg.label+': '+ctx.parsed.x+'  /  '+yCfg.label+': '+ctx.parsed.y
+        }}
+      },
+      scales:{
+        x:{title:{display:true,text:xCfg.label,font:{size:11,weight:'bold'},color:'#1E3A5F'},
+            grid:{color:'#E2E8F0'},ticks:{font:{size:10}}},
+        y:{title:{display:true,text:yCfg.label,font:{size:11,weight:'bold'},color:'#1E3A5F'},
+            grid:{color:'#E2E8F0'},ticks:{font:{size:10}}}
+      }
+    }
+  });
+
+  // 情報テキスト
+  document.getElementById('scatter-info').textContent =
+    'プロット: '+total+'名（欠損除外）';
+
+  // 象限サマリーカード
+  document.getElementById('scatter-quads').innerHTML = grps.map(g=>
+    `<div style="background:#F8FAFC;border-radius:10px;padding:10px 12px;border-left:4px solid ${g.color};text-align:center">
+      <div style="font-size:24px;font-weight:800;color:${g.color}">${g.pts.length}</div>
+      <div style="font-size:10px;color:#475569;font-weight:600;line-height:1.4;margin-top:2px">${g.label}</div>
+      <div style="font-size:11px;color:#64748B;margin-top:4px">${total>0?(g.pts.length/total*100).toFixed(1):'0.0'}%</div>
+    </div>`
+  ).join('');
+}
 
 function kpiCardHtml(cfg, s) {
   const bar = Math.min(s.pct,100).toFixed(1);
@@ -457,6 +590,7 @@ function renderAll() {
   renderBar();
   renderAge();
   renderRiskDist();
+  renderScatter();
   renderHighRisk();
 }
 
