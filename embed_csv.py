@@ -168,45 +168,36 @@ def main():
     file_list = json.dumps([os.path.basename(p) for p in paths], ensure_ascii=False)
     build_ts   = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
 
-    # 最後の </script> タグの直前に全JSを一括注入（改行コード差異に依存しない）
+    # 最後の </script> タグの直前に注入（rfind で位置を特定 → 改行コード差異に依存しない）
+    # NOTE: スクリプトはbody末尾にあるため DOMContentLoaded は既に発火済み。
+    #       直接呼び出し方式で確実に実行する。
     INJECT = f"""
-// ══ 埋め込みデータ自動ロード ══
+// ══ 埋め込みデータ ══
 (function() {{
-  const EMBEDDED_DATA = {data_json};
-  const EMBEDDED_FILES = {file_list};
-  const EMBEDDED_TS = "{build_ts}";
-  window.__EMBEDDED__ = {{ data: EMBEDDED_DATA, files: EMBEDDED_FILES, ts: EMBEDDED_TS }};
+  window.__EMBEDDED__ = {{
+    data:  {data_json},
+    files: {file_list},
+    ts:    "{build_ts}"
+  }};
 }})();
 
-// ══ 埋め込みデータ自動ロード実行 ══
-window.addEventListener('DOMContentLoaded', function() {{
-  if (!window.__EMBEDDED__) return;
-  const e = window.__EMBEDDED__;
-  const banner = document.createElement('div');
-  banner.style.cssText = 'background:#065f46;color:white;text-align:center;padding:6px 12px;font-size:12px;font-weight:600;letter-spacing:.03em;';
+// ══ 埋め込みデータ自動ロード（DOM構築済みのため直接実行）══
+(function runEmbedded() {{
+  var e = window.__EMBEDDED__;
+  if (!e) return;
+
+  // バナー表示
+  var banner = document.createElement('div');
+  banner.style.cssText = 'background:#065f46;color:white;text-align:center;padding:6px 12px;font-size:12px;font-weight:600;letter-spacing:.03em;position:relative;z-index:100;';
   banner.textContent = '\U0001F4E6 \u57cb\u3081\u8FBC\u307f\u30C7\u30FC\u30BF\u30E2\u30FC\u30C9 \u2014 ' + e.files.join(', ') + '  (' + e.ts + ' \u751F\u6210)';
   document.body.insertBefore(banner, document.body.firstChild);
 
+  // 処理パイプライン（frail-dashboard.htmlのprocessRows()を使用）
   loadedFiles = e.files;
-  let rows = e.data;
-  rows = applyAliases(rows);
-  rows = deriveSexLabel(rows);
-  rows = deriveAgeGroup(rows);
-  rows = deriveNumericColumns(rows);
-  rows = deriveFreilScore(rows);
-  rows = deriveRiskFlags(rows);
-  allData = rows;
-  selSex = []; selAge = [];
-  filteredData = [...allData];
-
-  document.getElementById('upload-section').classList.add('hidden');
-  document.getElementById('dashboard-section').classList.remove('hidden');
-  document.getElementById('dashboard-section').classList.add('fade-in');
-  buildFilters();
-  renderDashboard();
-}});
+  var processed = processRows(e.data);
+  initDashboard(processed);
+}})();
 """
-    # 最後の </script> の直前に挿入（rfind で位置を特定 → 改行コード問題を回避）
     last_script_close = html.rfind('</script>')
     if last_script_close == -1:
         raise ValueError('</script> タグが見つかりません')
