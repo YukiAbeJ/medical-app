@@ -145,56 +145,59 @@ for f in sorted(glob.glob(os.path.join(DOWNLOADS, '*.csv'))):
 if not oral_found:
     print("警告: オーラルフレイル CSVが見つかりません")
 
-# ── J-CHSフレイル判定 ──
+# ── 簡易フレイルインデックス（山田・荒井）──
+# 4項目: 体重減少(Likert≥1)・疲れ(Likert≥1)・活動不足(1-v, NaN→0)・歩行低下(1-v)
+# 握力は全て#REF!のため除外。≥3点でフレイル、1-2点でプレフレイル
 FRAIL_ITEM_COLS = [
-    ('activity', '軽い運動plus定期的運動_0_1'),
-    ('weight',   '6ヵ月体重減少_0_1'),
-    ('fatigue',  '訳もなく疲れたように感じる_0_1'),
-    ('walk',     '4m歩行_1_0_値'),
-    ('grip',     '握力_0_1_値'),
+    ('weight',   '6ヵ月体重減少_0_1',            'gte1'),   # Likert 0-4, >=1=frail
+    ('fatigue',  '訳もなく疲れたように感じる_0_1', 'gte1'),   # Likert 0-3, >=1=frail
+    ('activity', '軽い運動plus定期的運動_0_1',     'inv_nan0'), # 1=active=safe; NaN→0(safe)
+    ('walk',     '4m歩行_1_0_値',                 'inv'),    # 0=slow=frail, 1=pass=safe
 ]
-jchs_path = find_csv(['フレイル判定'], exclude=['オーラル'])
-if jchs_path:
-    print(f"J-CHS: {os.path.basename(jchs_path)}")
-    df_jchs = read_csv_smart(jchs_path)
-    df_jchs2 = normalize_id_col(df_jchs) if df_jchs is not None else None
-    if df_jchs2 is not None:
-        avail_cols = [col for _, col in FRAIL_ITEM_COLS if col in df_jchs2.columns]
+frail_path = find_csv(['フレイル判定'], exclude=['オーラル'])
+if frail_path:
+    print(f"フレイル判定CSV: {os.path.basename(frail_path)}")
+    df_frail = read_csv_smart(frail_path)
+    df_frail2 = normalize_id_col(df_frail) if df_frail is not None else None
+    if df_frail2 is not None:
+        avail_cols = [col for _, col, _ in FRAIL_ITEM_COLS if col in df_frail2.columns]
         keep = ['ID'] + avail_cols
-        tmp = df_jchs2[keep].drop_duplicates(subset=['ID'], keep='first')
+        tmp = df_frail2[keep].drop_duplicates(subset=['ID'], keep='first')
         df = df.merge(tmp, on='ID', how='left')
-        print(f"  J-CHS項目検出: {avail_cols}")
+        print(f"  項目検出: {avail_cols}")
     else:
         print("  警告: ID列の正規化に失敗")
-        avail_cols = []
 else:
     print("警告: フレイル判定 CSVが見つかりません")
-    avail_cols = []
 
-# J-CHSスコア計算（5項目合計、活動列は0=低活動=フレイル点）
-act_col = '軽い運動plus定期的運動_0_1'
-avail_jchs = [col for _, col in FRAIL_ITEM_COLS if col in df.columns]
-if len(avail_jchs) >= 3:
-    scores  = pd.Series(0.0, index=df.index)
-    counted = pd.Series(0,   index=df.index)
-    for col in avail_jchs:
-        v = pd.to_numeric(df[col], errors='coerce')
-        has_val = v.notna()
-        counted += has_val.astype(int)
-        if col == act_col:
-            scores += (v == 0).astype(float).where(has_val, 0.0)
-        else:
-            scores += (v >= 1).astype(float).where(has_val, 0.0)
-    valid_mask     = counted >= 3
-    df['jchs_score'] = scores.where(valid_mask)
-    df['ffrail']     = (df['jchs_score'] >= 3).fillna(False).astype(bool)
+# 簡易フレイルスコア計算（app.py準拠）
+_frail_series = {}
+for label, col, coding in FRAIL_ITEM_COLS:
+    if col not in df.columns:
+        continue
+    v = pd.to_numeric(df[col], errors='coerce')
+    if coding == 'gte1':
+        _frail_series[label] = (v >= 1).where(v.notna()).astype(float)
+    elif coding == 'inv':
+        _frail_series[label] = (1 - v).clip(0, 1)
+    elif coding == 'inv_nan0':
+        _frail_series[label] = (1 - v).clip(0, 1).fillna(0)
+
+if _frail_series:
+    item_df  = pd.DataFrame(_frail_series, index=df.index)
+    has_any  = item_df.notna().any(axis=1)
+    score    = item_df.fillna(0).sum(axis=1)
+    score[~has_any] = np.nan
+    df['jchs_score'] = score
+    df['ffrail'] = (score >= 3).where(has_any, False).fillna(False).astype(bool)
     n_valid = int(df['jchs_score'].notna().sum())
     n_frail = int(df['ffrail'].sum())
-    print(f"J-CHSフレイル({len(avail_jchs)}/5項目使用): {n_frail}/{n_valid}名 = {n_frail/max(n_valid,1)*100:.1f}%")
+    n_pre   = int(((score >= 1) & (score < 3)).sum())
+    print(f"簡易フレイルインデックス({len(_frail_series)}/4項目): フレイル={n_frail}/{n_valid}名({n_frail/max(n_valid,1)*100:.1f}%), プレフレイル={n_pre}名({n_pre/max(n_valid,1)*100:.1f}%)")
 else:
     df['jchs_score'] = np.nan
     df['ffrail']     = pd.Series(False, index=df.index)
-    print(f"警告: J-CHS項目不足 ({len(avail_jchs)}/5)")
+    print("警告: 簡易フレイル項目が見つかりません")
 
 # 追加指標フラグ
 df['fbal']  = fl('バランス_得点', '<', 4)
@@ -414,7 +417,7 @@ tbody td.risk-flag-no{{color:#94A3B8}}
   <div style="font-size:32px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))">🏥</div>
   <div style="flex:1">
     <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:.01em">村上市 高齢者総合検診 2025年度 — フレイル分析ダッシュボード</div>
-    <div style="font-size:11px;color:rgba(255,255,255,.78);margin-top:3px">AWGS2019・J-CHS・WHO基準準拠 ／ 9指標総合評価 ／ 高齢者支援課・保健師・行政幹部向け</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.78);margin-top:3px">AWGS2019・簡易フレイルインデックス（山田・荒井）・WHO基準準拠 ／ 9指標総合評価 ／ 高齢者支援課・保健師・行政幹部向け</div>
   </div>
   <div style="background:rgba(255,255,255,.14);border-radius:10px;padding:10px 18px;text-align:right;flex-shrink:0">
     <div style="color:#fff;font-size:26px;font-weight:800;line-height:1" id="hdr-n">{N}</div>
@@ -504,9 +507,9 @@ tbody td.risk-flag-no{{color:#94A3B8}}
         <tr>
           <th>ID</th><th>性別</th><th>年齢</th><th>重複数</th>
           <th>歩行↓</th><th>筋力↓</th><th>サルコ</th><th>骨密度↓</th><th>MCI</th><th>嚥下↓</th>
-          <th>バランス↓</th><th>口腔FRL</th><th>J-CHS</th>
+          <th>バランス↓</th><th>口腔FRL</th><th>簡易FRL</th>
           <th>歩行速度<br>(m/s)</th><th>STS<br>(秒)</th><th>MoCA</th><th>SMI</th><th>T-score</th><th>EAT-10</th>
-          <th>バランス<br>得点</th><th>口腔<br>総合点</th><th>J-CHS<br>スコア</th>
+          <th>バランス<br>得点</th><th>口腔<br>総合点</th><th>簡易FRL<br>スコア</th>
         </tr>
       </thead>
       <tbody id="risk-tbody"></tbody>
@@ -554,7 +557,7 @@ const KPI_CFG = [
 const KPI_CFG2 = [
   {{key:'fbal',  base:'bal',  label:'バランス能力低下',  icon:'⚖️', color:'#0891B2', basis:'SPPB: バランス得点 < 4点（満点4）'}},
   {{key:'foral', base:'oral', label:'オーラルフレイル', icon:'👄', color:'#059669', basis:'口腔フレイル総合点 ≥ 1点'}},
-  {{key:'ffrail',base:'jchs', label:'J-CHSフレイル',    icon:'🏃', color:'#9333EA', basis:'J-CHS ≥ 3項目（低活動・体重減少・疲労・歩行・握力）'}},
+  {{key:'ffrail',base:'jchs', label:'簡易フレイル（山田・荒井）', icon:'🏃', color:'#9333EA', basis:'簡易フレイルインデックス ≥ 3点（体重減少・疲れ・活動不足・歩行低下）'}},
 ];
 
 const BIN_CFG = [
