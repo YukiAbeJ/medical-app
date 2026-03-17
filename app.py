@@ -51,7 +51,7 @@ CUTOFFS: Dict = {
     '下肢筋力低下':      {'col': '5回立ち上がり_秒',   'op': '>=',  'val': 12.0,
                          'icon': '🦵', 'color': '#EA580C',
                          'basis': 'SPPB準拠: 5回椅子立ち上がり ≥ 12秒'},
-    'サルコペニア疑い':   {'col': 'SMI',              'op': 'sex', 'val': (7.0, 5.7),
+    '骨格筋量減少':   {'col': 'SMI',              'op': 'sex', 'val': (7.0, 5.7),
                          'icon': '💪', 'color': '#D97706',
                          'basis': 'AWGS2019: SMI < 7.0（男）/ < 5.7（女）kg/m²'},
     '骨密度低下':        {'col': 'Tスコア_SD',         'op': '<=',  'val': -1.0,
@@ -67,10 +67,10 @@ CUTOFFS: Dict = {
 
 FUTURE_INDICATORS: Dict = {
     'フレイル判定':    {'col': '簡易フレイルスコア',       'icon': '🩺', 'color': '#B91C1C',
-                       'basis': '簡易フレイルインデックス(5項目合計): ≥3でフレイル, 1-2でプレフレイル',
+                       'basis': '山田ら（2013）簡易フレイルインデックス: 体重減少・疲れ・活動不足・歩行低下・物忘れ 5項目合計 ≥3でフレイル, 1-2でプレフレイル',
                        'val': 3, 'op': '>='},
     'オーラルフレイル': {'col': 'オーラルフレイル_判定_',  'icon': '👄', 'color': '#0891B2',
-                       'basis': '口腔機能質問紙（咀嚼・ディアドコ等）: 判定あり（1以上）で該当',
+                       'basis': '村上市オーラルフレイル複合評価（口腔機能質問紙・咀嚼・舌圧・ディアドコ等）: 総合判定スコア ≥1 で該当',
                        'val': 1, 'op': '>='},
     'バランス能力低下': {'col': 'バランス_得点',           'icon': '⚖️',  'color': '#059669',
                        'basis': 'SPPB バランス検査: 4点未満',
@@ -83,7 +83,7 @@ FUTURE_INDICATORS: Dict = {
 # KPIカード表示順序（ユーザー指定）
 DISPLAY_ORDER = [
     'フレイル判定', '下肢筋力低下', '歩行速度低下', 'バランス能力低下',
-    'サルコペニア疑い', 'オーラルフレイル', 'MCI疑い', '嚥下機能低下リスク',
+    '骨格筋量減少', 'オーラルフレイル', 'MCI疑い', '嚥下機能低下リスク',
     '骨密度低下', 'サルコペニア確定',
 ]
 
@@ -377,6 +377,28 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
         merged['年齢階級'] = pd.cut(
             _age, bins=AGE_BINS, labels=AGE_LABELS, right=True
         )
+    # ── 身長・体重 列名正規化（「身長(cm)」「体重_kg」等 → 統一列名）──
+    _ht_cand = next(
+        (c for c in merged.columns
+         if re.search(r'^身長$|^身長[_（(]', str(c)) and
+         not re.search(r'低下|標準|差', str(c))),
+        None
+    )
+    _wt_cand = next(
+        (c for c in merged.columns
+         if re.search(r'^体重$|^体重[_（(]', str(c)) and
+         not re.search(r'減少|低下|変化', str(c))),
+        None
+    )
+    if _ht_cand and _ht_cand != '身長':
+        merged['身長'] = pd.to_numeric(merged[_ht_cand], errors='coerce')
+    elif _ht_cand == '身長':
+        merged['身長'] = pd.to_numeric(merged['身長'], errors='coerce')
+    if _wt_cand and _wt_cand != '体重':
+        merged['体重'] = pd.to_numeric(merged[_wt_cand], errors='coerce')
+    elif _wt_cand == '体重':
+        merged['体重'] = pd.to_numeric(merged['体重'], errors='coerce')
+
     if '性別' in merged.columns and _sex_orig is not None:
         _sex = merged['性別']  # pd.to_numeric 済み（文字列→NaN）
         _uniq = set(_sex.dropna().astype(float).unique())
@@ -423,20 +445,20 @@ def load_merged(uploaded_files: Optional[tuple] = None) -> Tuple[pd.DataFrame, L
     merged['flag_MCI疑い']           = _fl('MoCA総得点', '<=', 25)
     merged['flag_嚥下機能低下リスク'] = _fl('EAT10総得点', '>=', 3)
 
-    # SMI numeric変換を1回だけ行い、サルコペニア疑い・確定の両方で再利用
+    # SMI numeric変換を1回だけ行い、骨格筋量減少・確定の両方で再利用
     _smi = pd.to_numeric(merged['SMI'], errors='coerce') if 'SMI' in merged.columns else None
     if _smi is not None and '性別_ラベル' in merged.columns:
-        merged['flag_サルコペニア疑い'] = (
+        merged['flag_骨格筋量減少'] = (
             ((merged['性別_ラベル'] == '男性') & (_smi < 7.0)) |
             ((merged['性別_ラベル'] == '女性') & (_smi < 5.7))
         ).where(_smi.notna())  # SMI未測定はNaN（測定なし）として区別
     else:
-        merged['flag_サルコペニア疑い'] = pd.Series(np.nan, index=merged.index)
+        merged['flag_骨格筋量減少'] = pd.Series(np.nan, index=merged.index)
 
     # 仮のAWGS2019（歩行速度 or 椅子立ち上がりのみ）→ 握力が揃ったら後で上書き
     # fillna(False) でNaN（測定なし）を除外してboolean演算を安全化
     merged['flag_AWGS2019サルコペニア'] = (
-        merged['flag_サルコペニア疑い'].fillna(False) &
+        merged['flag_骨格筋量減少'].fillna(False) &
         (merged['flag_歩行速度低下'].fillna(False) | merged['flag_下肢筋力低下'].fillna(False))
     )
 
@@ -914,58 +936,7 @@ if df_all.empty and _STATS is None:
         st.error('ファイルの読み込みに失敗しました。診断パネルを確認してください。')
         st.stop()
 
-# ── ローカル自動読み込み時の診断パネル（アップロード不要パス）──
-if not df_all.empty:
-    with st.expander('📋 データ読み込み診断', expanded=True):
-        st.caption(f"統合後: {len(df_all)}名 ／ {len(df_all.columns)}列")
-        if _files:
-            st.caption(f"📌 マスターファイル: {_files[0]}")
-        # ファイル別ID突合結果
-        for _w in _load_warn:
-            if 'join_matched' in _w:
-                _jm, _jt = _w['join_matched'], _w['join_total']
-                _pct = f"{_jm}/{_jt}"
-                if _jm < _jt * 0.9:
-                    st.caption(f"⚠️ {_w['file']}: {_pct}件マッチ")
-                    if 'master_ids' in _w:
-                        st.caption(f"　マスターID例: {_w['master_ids']}")
-                        st.caption(f"　このファイルID例: {_w['file_ids']}")
-                else:
-                    st.caption(f"✅ {_w['file']}: {_pct}件マッチ")
-        if '性別_ラベル' in df_all.columns:
-            _sv2 = df_all['性別_ラベル'].value_counts()
-            _nm2, _nf2 = _sv2.get('男性', 0), _sv2.get('女性', 0)
-            if _nm2 == 0 and _nf2 == 0:
-                _raw2 = df_all['性別'].dropna().unique().tolist()[:8] if '性別' in df_all.columns else []
-                st.caption(f"❌ 性別列の値が未対応: {_raw2}")
-                _sc2 = [c for c in df_all.columns if '性別' in str(c)]
-                st.caption(f"　性別関連列: {_sc2[:10]}")
-            else:
-                st.caption(f"✅ 性別認識: 男性 {_nm2}名 ／ 女性 {_nf2}名")
-        else:
-            st.caption("❌ 性別列が見つかりません")
-        # フレイル判定の有効人数診断
-        if '簡易フレイルスコア' in df_all.columns:
-            _frail_n = int(df_all['簡易フレイルスコア'].notna().sum())
-            st.caption(f"フレイル判定有効: {_frail_n}名 ／ {len(df_all)}名")
-            # どのフレイル項目列が存在するか
-            _fi_check = {
-                '体重減少': ['6ヵ月体重減少_0_1','6ヶ月体重減少_0_1','6ヶ月の体重減少_0_1','体重低下_0_1'],
-                '疲れ':     ['訳もなく疲れたように感じる_0_1','疲れ_0_1_値','疲れ_0_1'],
-                '活動不足': ['軽い運動plus定期的運動_0_1','規則的な運動_0_1'],
-                '歩行低下': ['4m歩行_1_0_値'],
-            }
-            for _fi_name, _fi_cols in _fi_check.items():
-                _found = [c for c in _fi_cols if c in df_all.columns]
-                if _found:
-                    _n = int(df_all[_found[0]].notna().sum())
-                    st.caption(f"  ✅ {_fi_name}: `{_found[0]}` ({_n}名に値あり)")
-                else:
-                    _kw = {'体重減少': ['体重'], '疲れ': ['疲れ','疲労'], '活動不足': ['運動','活動'], '歩行低下': ['歩行','4m']}
-                    _similar = [c for c in df_all.columns if any(k in str(c) for k in _kw.get(_fi_name, [_fi_name]))][:5]
-                    st.caption(f"  ❌ {_fi_name}: 列なし　実際の列名: {_similar}")
-        else:
-            st.caption("❌ フレイル判定列が計算されていません（項目列が見つからない）")
+# ── データ読み込み診断はサイドバーに移動 ──
 
 # stats.json がある場合は CSV なしで統計モード起動
 if df_all.empty and _STATS is not None:
@@ -1129,6 +1100,57 @@ if df_all.empty and _STATS is not None:
 
 # ─── 6. サイドバー ────────────────────────────────────────────────────────────
 with st.sidebar:
+    # ── データ読み込み診断（コンパクト）──
+    with st.expander('📋 データ読み込み診断', expanded=False):
+        st.caption(f"統合後: {len(df_all)}名 ／ {len(df_all.columns)}列")
+        if _files:
+            st.caption(f"📌 {_files[0]}")
+        for _w in _load_warn:
+            if 'join_matched' in _w:
+                _jm2, _jt2 = _w['join_matched'], _w['join_total']
+                _icon2 = '⚠️' if _jm2 < _jt2 * 0.9 else '✅'
+                st.caption(f"{_icon2} {_w['file']}: {_jm2}/{_jt2}件")
+                if _jm2 < _jt2 * 0.9 and 'master_ids' in _w:
+                    st.caption(f"　マスターID例: {_w['master_ids']}")
+                    st.caption(f"　ファイルID例: {_w['file_ids']}")
+            else:
+                _icon2 = {'ok': '✅', 'skip': '⚠️', 'no_id': '❌', 'error': '❌'}.get(_w['status'], '❓')
+                st.caption(f"{_icon2} {_w['file']}")
+        if '性別_ラベル' in df_all.columns:
+            _sv2 = df_all['性別_ラベル'].value_counts()
+            _nm2, _nf2 = _sv2.get('男性', 0), _sv2.get('女性', 0)
+            if _nm2 == 0 and _nf2 == 0:
+                _raw2 = df_all['性別'].dropna().unique().tolist()[:5] if '性別' in df_all.columns else []
+                st.caption(f"❌ 性別未認識: {_raw2}")
+            else:
+                st.caption(f"✅ 男性 {_nm2}名 ／ 女性 {_nf2}名")
+        else:
+            st.caption("❌ 性別列なし")
+        if '簡易フレイルスコア' in df_all.columns:
+            _frail_n2 = int(df_all['簡易フレイルスコア'].notna().sum())
+            st.caption(f"フレイル判定有効: {_frail_n2}名")
+            _fi_check2 = {
+                '体重減少': ['6ヵ月体重減少_0_1','6ヶ月体重減少_0_1','6ヶ月の体重減少_0_1','体重低下_0_1'],
+                '疲れ':     ['訳もなく疲れたように感じる_0_1','疲れ_0_1_値','疲れ_0_1'],
+                '活動不足': ['軽い運動plus定期的運動_0_1','規則的な運動_0_1'],
+                '歩行低下': ['4m歩行_1_0_値'],
+            }
+            _ok2 = [n for n, cs in _fi_check2.items() if any(c in df_all.columns for c in cs)]
+            _ng2 = [n for n, cs in _fi_check2.items() if not any(c in df_all.columns for c in cs)]
+            if _ok2:
+                st.caption(f"✅ 項目: {', '.join(_ok2)}")
+            if _ng2:
+                st.caption(f"❌ 欠損: {', '.join(_ng2)}")
+        else:
+            st.caption("❌ フレイル判定列なし")
+        _all_inds = {**CUTOFFS, **FUTURE_INDICATORS}
+        _present2 = [n for n, c in _all_inds.items() if c.get('col') and c['col'] in df_all.columns]
+        _missing2 = [n for n, c in _all_inds.items() if c.get('col') and c['col'] not in df_all.columns]
+        if _present2:
+            st.caption(f"✅ {len(_present2)}指標 利用可能")
+        if _missing2:
+            st.caption(f"⚠️ データ不足: {', '.join(_missing2)}")
+
     st.markdown(
         f'<div style="font-size:13px;font-weight:800;color:{P["navy"]};'
         f'border-bottom:2px solid {P["blue"]};padding-bottom:5px;margin-bottom:12px;">'
@@ -1535,6 +1557,145 @@ body {{
 </html>"""
 
 
+# ─── 7d. 基礎統計サマリー（タブ外・常時表示）────────────────────────────────
+_bsc_age_mean = df['年齢'].mean()   if '年齢' in df.columns and df['年齢'].notna().any() else None
+_bsc_age_sd   = df['年齢'].std()    if '年齢' in df.columns and df['年齢'].notna().any() else None
+_bsc_age_med  = df['年齢'].median() if '年齢' in df.columns and df['年齢'].notna().any() else None
+_bsc_age_min  = int(df['年齢'].min()) if '年齢' in df.columns and df['年齢'].notna().any() else None
+_bsc_age_max  = int(df['年齢'].max()) if '年齢' in df.columns and df['年齢'].notna().any() else None
+_bsc_nm   = int((df['性別_ラベル'] == '男性').sum()) if '性別_ラベル' in df.columns else 0
+_bsc_nf   = int((df['性別_ラベル'] == '女性').sum()) if '性別_ラベル' in df.columns else 0
+_bsc_nsex = _bsc_nm + _bsc_nf
+_bsc_pctm = _bsc_nm / _bsc_nsex * 100 if _bsc_nsex > 0 else 0
+_bsc_pctf = _bsc_nf / _bsc_nsex * 100 if _bsc_nsex > 0 else 0
+
+_bsc_age_grp = {}
+if '年齢階級' in df.columns:
+    _ag_vc = df['年齢階級'].value_counts()
+    for _al in AGE_LABELS:
+        _bsc_age_grp[_al] = int(_ag_vc.get(_al, 0))
+_bsc_ag_max = max(_bsc_age_grp.values()) if _bsc_age_grp else 1
+
+_bsc_extras = []
+for _bcol, _blbl, _bunit, _bfmt in [
+    ('身長',              '身長',          'cm',    '.1f'),
+    ('体重',              '体重',          'kg',    '.1f'),
+    ('BMI',              'BMI',            'kg/m²', '.1f'),
+    ('SMI',              'SMI',            'kg/m²', '.2f'),
+    ('MoCA総得点',        'MoCA',           '点',    '.1f'),
+    ('歩行速度_mps',      '歩行速度',       'm/s',   '.2f'),
+    ('5回立ち上がり_秒',  'STS5回',         '秒',    '.1f'),
+    ('Tスコア_SD',        'T-スコア',       'SD',    '.2f'),
+    ('EAT10総得点',       'EAT-10',         '点',    '.1f'),
+    ('簡易フレイルスコア','フレイルスコア', '点',    '.1f'),
+]:
+    if _bcol in df.columns and df[_bcol].notna().any():
+        _bm = float(df[_bcol].mean())
+        _bs = float(df[_bcol].std())
+        _bn = int(df[_bcol].notna().sum())
+        _bsc_extras.append((_blbl, _bm, _bs, _bunit, _bfmt, _bn))
+
+st.markdown(
+    f'<div style="font-size:14px;font-weight:800;color:{P["navy"]};'
+    f'border-left:4px solid {P["accent"]};padding-left:10px;margin:4px 0 12px;">'
+    f'📋 解析対象者 基礎統計（N={N:,}名）</div>',
+    unsafe_allow_html=True
+)
+
+_bcol_a, _bcol_s, _bcol_d = st.columns([1.1, 1.1, 1.4])
+with _bcol_a:
+    if _bsc_age_mean is not None:
+        st.markdown(f'''<div style="background:#EFF6FF;border-radius:12px;padding:14px 16px;
+  border:1px solid #BFDBFE;height:100%;">
+  <div style="font-size:10px;font-weight:700;color:{P['blue']};margin-bottom:6px;">📅 年齢</div>
+  <div style="font-size:26px;font-weight:800;color:{P['navy']};line-height:1.1;">
+    {_bsc_age_mean:.1f}<span style="font-size:13px;font-weight:500;color:#64748B;"> ± {_bsc_age_sd:.1f}</span>
+    <span style="font-size:11px;color:#94A3B8;">歳</span>
+  </div>
+  <div style="font-size:11px;color:#64748B;margin-top:5px;line-height:1.7;">
+    中央値 <b>{_bsc_age_med:.0f}</b>歳<br>範囲 {_bsc_age_min}–{_bsc_age_max}歳
+  </div>
+</div>''', unsafe_allow_html=True)
+    else:
+        st.markdown('<div style="background:#F1F5F9;border-radius:12px;padding:14px;">'
+                    '<span style="font-size:11px;color:#94A3B8;">年齢データなし</span></div>',
+                    unsafe_allow_html=True)
+
+with _bcol_s:
+    if _bsc_nsex > 0:
+        st.markdown(f'''<div style="background:#F0FDF4;border-radius:12px;padding:14px 16px;
+  border:1px solid #BBF7D0;height:100%;">
+  <div style="font-size:10px;font-weight:700;color:{P['green']};margin-bottom:8px;">👤 性別構成</div>
+  <div style="font-size:13px;font-weight:700;color:{P['navy']};margin-bottom:3px;">
+    男性 {_bsc_nm}名
+    <span style="font-size:10.5px;color:#64748B;font-weight:500;">（{_bsc_pctm:.1f}%）</span>
+  </div>
+  <div style="background:#E2E8F0;border-radius:4px;height:10px;margin-bottom:8px;">
+    <div style="background:{P['blue']};height:10px;border-radius:4px;width:{_bsc_pctm:.1f}%;"></div>
+  </div>
+  <div style="font-size:13px;font-weight:700;color:{P['navy']};margin-bottom:3px;">
+    女性 {_bsc_nf}名
+    <span style="font-size:10.5px;color:#64748B;font-weight:500;">（{_bsc_pctf:.1f}%）</span>
+  </div>
+  <div style="background:#E2E8F0;border-radius:4px;height:10px;">
+    <div style="background:#EC4899;height:10px;border-radius:4px;width:{_bsc_pctf:.1f}%;"></div>
+  </div>
+</div>''', unsafe_allow_html=True)
+    else:
+        st.markdown('<div style="background:#F1F5F9;border-radius:12px;padding:14px;">'
+                    '<span style="font-size:11px;color:#94A3B8;">性別データなし</span></div>',
+                    unsafe_allow_html=True)
+
+with _bcol_d:
+    _ag_bars = ''
+    for _al in AGE_LABELS:
+        _n_ag   = _bsc_age_grp.get(_al, 0)
+        _pct_ag = _n_ag / N * 100 if N > 0 else 0
+        _bar_ag = _n_ag / _bsc_ag_max * 100 if _bsc_ag_max > 0 else 0
+        _ag_bars += (
+            f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+            f'<div style="font-size:9.5px;color:#374151;width:66px;flex-shrink:0;">{_al}</div>'
+            f'<div style="flex:1;background:#E2E8F0;border-radius:3px;height:11px;">'
+            f'<div style="background:{P["blue"]};height:11px;border-radius:3px;width:{_bar_ag:.0f}%;"></div>'
+            f'</div>'
+            f'<div style="font-size:9.5px;color:#374151;width:74px;text-align:right;flex-shrink:0;">'
+            f'{_n_ag}名 ({_pct_ag:.0f}%)</div></div>'
+        )
+    if _ag_bars:
+        st.markdown(f'''<div style="background:#FFFBEB;border-radius:12px;padding:14px 16px;
+  border:1px solid #FDE68A;height:100%;">
+  <div style="font-size:10px;font-weight:700;color:{P['amber']};margin-bottom:8px;">📊 年齢階級別分布</div>
+  {_ag_bars}
+</div>''', unsafe_allow_html=True)
+
+if _bsc_extras:
+    st.markdown(
+        f'<div style="font-size:11px;font-weight:700;color:{P["navy"]};margin:12px 0 8px;'
+        f'padding-left:8px;border-left:3px solid {P["sky"]};">'
+        f'📐 身体計測・機能指標（平均 ± 標準偏差）</div>',
+        unsafe_allow_html=True
+    )
+    _n_ext = len(_bsc_extras)
+    _n_ecols = min(_n_ext, 4)
+    _ext_cols = st.columns(_n_ecols)
+    for _ei, (_el, _em, _es, _eu, _ef, _en) in enumerate(_bsc_extras):
+        with _ext_cols[_ei % _n_ecols]:
+            st.markdown(
+                f'<div style="background:rgba(240,245,255,0.9);border-radius:10px;'
+                f'padding:10px 12px;border:1px solid rgba(180,200,240,.4);margin-bottom:8px;">'
+                f'<div style="font-size:9px;font-weight:700;color:#64748B;letter-spacing:.04em;">{_el}</div>'
+                f'<div style="font-size:15px;font-weight:800;color:{P["navy"]};margin-top:3px;line-height:1.2;">'
+                f'{format(_em, _ef)}'
+                f'<span style="font-size:9.5px;font-weight:500;color:#94A3B8;"> ± {format(_es, _ef)}</span>'
+                f'<span style="font-size:9px;color:#CBD5E1;"> {_eu}</span></div>'
+                f'<div style="font-size:9px;color:#94A3B8;margin-top:2px;">n={_en}名</div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+st.markdown('<div style="height:8px;"></div>', unsafe_allow_html=True)
+
+
 # ─── 8. タブ ─────────────────────────────────────────────────────────────────
 tab1, tab2, tab3 = st.tabs([
     '📊  サマリー（全体リスク可視化）',
@@ -1663,12 +1824,14 @@ with tab1:
     st.markdown('<div style="height:8px;"></div>', unsafe_allow_html=True)
 
     # ── レーダーチャート（全幅）──────────────────────────────────────────────
-    rl = [f'{CUTOFFS[n]["icon"]} {n}' for n in avail_names]
-    rv = [kpi_data[n]['pct'] for n in avail_names]
+    # CUTOFFS + FUTURE_INDICATORS の全指標（フレイル判定も含む）
+    _radar_items = [(n, c, s) for n, c, s in unified_kpi]
+    rl = [f'{c["icon"]} {n}' for n, c, s in _radar_items]
+    rv = [s['pct'] for n, c, s in _radar_items]
 
     fig_r = go.Figure()
     fig_r.add_trace(go.Scatterpolar(
-        r=[100]*len(avail_names) + [100], theta=rl + [rl[0]],
+        r=[100]*len(_radar_items) + [100], theta=rl + [rl[0]],
         fill='toself', fillcolor='rgba(210,225,245,.35)',
         line=dict(color='rgba(180,200,220,0.7)', width=1),
         showlegend=False, hoverinfo='skip',
@@ -1710,16 +1873,17 @@ with tab1:
         '<div class="sec" style="margin-top:8px;">📊 指標別リスク該当率（昇順）</div>',
         unsafe_allow_html=True
     )
-    s_order = sorted(avail_names, key=lambda n: kpi_data[n]['pct'])
-    yl  = [f'{CUTOFFS[n]["icon"]} {n}' for n in s_order]
-    xv  = [kpi_data[n]['pct']    for n in s_order]
-    nr  = [kpi_data[n]['n_risk']  for n in s_order]
-    nt  = [kpi_data[n]['n_valid'] for n in s_order]
-    bc  = [CUTOFFS[n]['color']   for n in s_order]
+    _bar_items  = [(n, c, s) for n, c, s in unified_kpi]
+    _bar_sorted = sorted(_bar_items, key=lambda x: x[2]['pct'])
+    yl  = [f'{c["icon"]} {n}' for n, c, s in _bar_sorted]
+    xv  = [s['pct']     for n, c, s in _bar_sorted]
+    nr  = [s['n_risk']  for n, c, s in _bar_sorted]
+    nt  = [s['n_valid'] for n, c, s in _bar_sorted]
+    bc  = [c['color']   for n, c, s in _bar_sorted]
 
     fig_hb = go.Figure()
     fig_hb.add_trace(go.Bar(
-        y=yl, x=[100]*len(s_order), orientation='h',
+        y=yl, x=[100]*len(yl), orientation='h',
         marker_color='rgba(226,232,240,0.55)', marker_line_width=0,
         showlegend=False, hoverinfo='skip',
     ))
@@ -1743,7 +1907,7 @@ with tab1:
         font=dict(color=P['text']),
         showlegend=False,
         margin=dict(t=20, b=10, l=0, r=120),
-        height=max(260, len(s_order) * 38 + 50),
+        height=max(260, len(yl) * 38 + 50),
     )
     st.plotly_chart(fig_hb, use_container_width=True, config={'displayModeBar': False})
 
@@ -2410,7 +2574,7 @@ with tab3:
         # 全指標（unified_kpi）のフラグ列を表示名にマッピング
         _short_names = {
             'フレイル判定': 'フレイル', '下肢筋力低下': '筋力↓', '歩行速度低下': '歩行↓',
-            'バランス能力低下': 'バランス↓', 'サルコペニア疑い': 'サルコ?',
+            'バランス能力低下': 'バランス↓', '骨格筋量減少': 'サルコ?',
             'オーラルフレイル': '口腔FL', 'MCI疑い': 'MCI', '嚥下機能低下リスク': '嚥下↓',
             '骨密度低下': '骨密度↓', 'サルコペニア確定': 'AWGS確定',
         }
@@ -2506,13 +2670,13 @@ with st.expander('📐 判定基準・エビデンスソース一覧', expanded=
 |---|---|---|
 | 歩行速度低下 | < 1.0 m/s | AWGS 2019 |
 | 下肢筋力低下 | 5回STS ≥ 12秒 | SPPB準拠 |
-| サルコペニア疑い | SMI < 7.0（男）/ < 5.7（女）kg/m² | AWGS2019 |
+| 骨格筋量減少 | SMI < 7.0（男）/ < 5.7（女）kg/m² | AWGS2019 |
 | サルコペニア確定 | 低SMI ＋ 低歩行速度または低STS | AWGS2019 複合診断 |
 | 骨密度低下 | Tスコア ≤ −1.0 SD | WHO 1994 / 日本骨粗鬆症学会 |
 | MCI疑い | MoCA ≤ 25点 | Nasreddine et al., JAGS 2005 |
 | 嚥下機能低下リスク | EAT-10 ≥ 3点 | Belafsky et al., Ann Otol 2008 |
-| フレイル判定 | 簡易フレイルインデックス ≥3点（5項目合計） | 田中友規ら / 飯島勝矢ら 簡易フレイルインデックス |
-| オーラルフレイル | 口腔機能質問紙 ≥1点（咀嚼・ディアドコ等） | 飯島勝矢ら 2014 |
+| フレイル判定 | 簡易フレイルインデックス ≥3点（5項目合計） | 山田ら 簡易フレイルインデックス |
+| オーラルフレイル | 口腔機能質問紙 ≥1点（咀嚼・ディアドコ等） | 村上市オーラルフレイル複合評価基準 |
 | バランス能力低下 | SPPB バランス < 4点 | Guralnik et al. 1994 |
 
 > **免責**: 本ダッシュボードはスクリーニング目的です。臨床診断を代替するものではありません。簡易フレイルインデックスの各項目の方向性（高値=リスク）について、データ収集時の入力定義に合わせて確認してください。
