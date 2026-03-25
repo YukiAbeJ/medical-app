@@ -31,6 +31,31 @@ import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 
+# ─── 1.5 パスワード認証 ──────────────────────────────────────────────────────
+def _auth_gate():
+    """セッション開始時にパスワードを要求する"""
+    if st.session_state.get('_authenticated'):
+        return
+    st.set_page_config(page_title='ログイン — 村上市フレイル分析', layout='centered')
+    st.markdown("""
+        <style>
+        #MainMenu,header,footer{visibility:hidden}
+        .block-container{max-width:420px;padding-top:6rem}
+        </style>
+    """, unsafe_allow_html=True)
+    st.markdown("### 🔒 村上市フレイル分析ダッシュボード")
+    st.markdown("閲覧にはパスワードが必要です。")
+    pw = st.text_input("パスワード", type="password", placeholder="Password")
+    if st.button("ログイン", use_container_width=True):
+        if pw == "HALLAB2026V1":
+            st.session_state['_authenticated'] = True
+            st.rerun()
+        else:
+            st.error("パスワードが正しくありません")
+    st.stop()
+
+_auth_gate()
+
 # ─── 2. 定数 ────────────────────────────────────────────────────────────────
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SEARCH_DIRS = [
