@@ -779,26 +779,26 @@ st.markdown(f"""
     transform:translateY(-2px);
     box-shadow:0 4px 12px rgba(15,32,68,0.09),0 14px 32px rgba(15,32,68,0.08);
 }}
-.kpi-icon {{ font-size:22px; margin-bottom:4px; }}
+.kpi-icon {{ font-size:24px; margin-bottom:5px; }}
 .kpi-name {{
-    font-size:11px; font-weight:700; color:{P['muted']};
-    letter-spacing:.07em; text-transform:uppercase; margin-bottom:6px;
+    font-size:13px; font-weight:700; color:{P['muted']};
+    letter-spacing:.05em; text-transform:uppercase; margin-bottom:7px;
 }}
-.kpi-pct  {{ font-size:34px; font-weight:800; line-height:1; color:var(--c); }}
-.kpi-unit {{ font-size:14px; font-weight:500; color:{P['muted']}; }}
-.kpi-det  {{ font-size:11.5px; color:{P['muted']}; margin-top:5px; font-weight:600; }}
-.kpi-bar-bg   {{ background:rgba(200,214,229,0.45); border-radius:4px; height:5px; margin-top:10px; overflow:hidden; }}
-.kpi-bar-fill {{ height:5px; border-radius:4px; background:var(--c); }}
+.kpi-pct  {{ font-size:36px; font-weight:800; line-height:1; color:var(--c); }}
+.kpi-unit {{ font-size:15px; font-weight:500; color:{P['muted']}; }}
+.kpi-det  {{ font-size:13px; color:{P['muted']}; margin-top:6px; font-weight:600; }}
+.kpi-bar-bg   {{ background:rgba(200,214,229,0.45); border-radius:4px; height:6px; margin-top:11px; overflow:hidden; }}
+.kpi-bar-fill {{ height:6px; border-radius:4px; background:var(--c); }}
 .kpi-basis {{
-    font-size:10px; color:{P['muted']}; margin-top:6px; line-height:1.45;
-    background:rgba(235,241,248,0.7); border-radius:6px; padding:4px 6px;
+    font-size:12px; color:{P['muted']}; margin-top:7px; line-height:1.5;
+    background:rgba(235,241,248,0.7); border-radius:6px; padding:5px 7px;
 }}
 
 /* ══ セクション見出し ════════════════════════════════════════════════════════ */
 .sec {{
-    font-size:14px; font-weight:800; color:{P['navy']};
+    font-size:16px; font-weight:800; color:{P['navy']};
     border-left:4px solid {P['accent']};
-    padding:2px 0 2px 12px; margin:24px 0 14px;
+    padding:3px 0 3px 13px; margin:26px 0 16px;
 }}
 .sec.red {{ border-color:{P['red']}; color:#8B1220; }}
 
@@ -811,9 +811,9 @@ st.markdown(f"""
     border-radius:12px; padding:14px 18px; margin-bottom:14px;
     box-shadow:0 2px 8px rgba(197,41,59,0.08);
 }}
-.alert-n   {{ font-size:26px; font-weight:800; color:#991B1B; }}
-.alert-sub {{ font-size:13px; color:#7F1D1D; font-weight:500; margin-left:8px; }}
-.alert-tip {{ font-size:11px; color:#B91C1C; margin-top:3px; }}
+.alert-n   {{ font-size:28px; font-weight:800; color:#991B1B; }}
+.alert-sub {{ font-size:15px; color:#7F1D1D; font-weight:500; margin-left:8px; }}
+.alert-tip {{ font-size:13px; color:#B91C1C; margin-top:3px; }}
 
 /* ══ テキスト・ラベル ════════════════════════════════════════════════════════ */
 [data-testid="stWidgetLabel"] p,[data-testid="stWidgetLabel"],
@@ -839,17 +839,27 @@ st.markdown(f"""
 
 /* ══ タブ ════════════════════════════════════════════════════════════════════ */
 [data-testid="stTabs"] [role="tab"] {{
-    font-weight:700; font-size:13px; color:{P['muted']};
-    border-radius:8px 8px 0 0;
+    font-weight:700; font-size:15px; color:{P['muted']};
+    border-radius:10px 10px 0 0;
+    padding:10px 22px !important;
+    letter-spacing:.02em;
+    transition:background .15s,color .15s;
+}}
+[data-testid="stTabs"] [role="tab"]:hover {{
+    color:{P['navy']}; background:rgba(255,255,255,0.55);
 }}
 [data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
-    color:{P['navy']}; background:rgba(255,255,255,0.7);
+    color:#fff !important;
+    background:linear-gradient(135deg,{P['navy']},{P['accent']}) !important;
+    box-shadow:0 3px 12px rgba(15,32,68,0.18);
 }}
 [data-testid="stTabs"] [data-baseweb="tab-list"] {{
-    background:rgba(232,239,247,0.6);
-    backdrop-filter:blur(8px);
-    border-radius:10px 10px 0 0;
-    padding:4px 4px 0;
+    background:rgba(218,228,242,0.75);
+    backdrop-filter:blur(10px);
+    border-radius:12px 12px 0 0;
+    padding:6px 6px 0;
+    gap:4px;
+    border-bottom:2px solid rgba(200,214,229,0.5);
 }}
 
 /* ══ ダウンロードボタン ══════════════════════════════════════════════════════ */
@@ -1079,13 +1089,13 @@ if df_all.empty and _STATS is not None:
                 name='男性', y=_sbd['age_labels'], x=[-p for p in _sbd['m_pcts']],
                 orientation='h', marker_color=_M_CLR,
                 text=[f"{p:.1f}%" for p in _sbd['m_pcts']], textposition='inside',
-                insidetextanchor='middle', textfont=dict(color='#fff', size=11),
+                insidetextanchor='middle', textfont=dict(color='#fff', size=13),
             ))
             _sfig2.add_trace(go.Bar(
                 name='女性', y=_sbd['age_labels'], x=_sbd['f_pcts'],
                 orientation='h', marker_color=_F_CLR,
                 text=[f"{p:.1f}%" for p in _sbd['f_pcts']], textposition='inside',
-                insidetextanchor='middle', textfont=dict(color='#fff', size=11),
+                insidetextanchor='middle', textfont=dict(color='#fff', size=13),
             ))
             _sfig2.update_layout(
                 barmode='overlay',
@@ -1203,11 +1213,17 @@ with st.sidebar:
     st.caption('個人データを含まない集計統計を出力します。')
     if st.button('統計データを出力（stats.json）', use_container_width=True):
         import json as _ejson
-        _estats = build_stats(df)
-        _ejson_str = _ejson.dumps(_estats, ensure_ascii=False, indent=2)
+        _df_export = df_all.copy()
+        if sel_sex and '性別_ラベル' in _df_export.columns:
+            _df_export = _df_export[_df_export['性別_ラベル'].isin(sel_sex)]
+        if sel_age and '年齢階級' in _df_export.columns:
+            _df_export = _df_export[_df_export['年齢階級'].isin(sel_age)]
+        _estats = build_stats(_df_export)
+        st.session_state['_export_json'] = _ejson.dumps(_estats, ensure_ascii=False, indent=2)
+    if st.session_state.get('_export_json'):
         st.download_button(
             label='⬇️ stats.json をダウンロード',
-            data=_ejson_str.encode('utf-8'),
+            data=st.session_state['_export_json'].encode('utf-8'),
             file_name='stats.json',
             mime='application/json',
             use_container_width=True,
@@ -1409,48 +1425,50 @@ def _make_report_html(title: str, subtitle: str, kpi_rows_html: str,
 /* ── 印刷基本設定 ────────────────────────────── */
 @page {{
   size: A4 portrait;
-  margin: 10mm 12mm;
+  margin: 12mm 14mm;
 }}
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 html {{
-  font-size: 10.5px;
+  font-size: 11px;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }}
 body {{
-  font-family: 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif;
+  font-family: 'Yu Gothic', 'Meiryo', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
   color: #1E2D40;
   background: #fff;
-  width: 186mm;
-  max-width: 186mm;
-  line-height: 1.45;
+  width: 182mm;
+  max-width: 182mm;
+  line-height: 1.5;
 }}
 /* ── ヘッダー ───────────────────────────────── */
 .rpt-header {{
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-bottom: 2.5px solid #F97316;
-  padding-bottom: 8px;
-  margin-bottom: 11px;
+  gap: 14px;
+  border-top: 4px solid #0F2044;
+  border-bottom: 2px solid #0F2044;
+  padding: 8px 0;
+  margin-bottom: 12px;
 }}
 .rpt-logo-box {{
   background: #F5F8FC;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 5px 9px;
   flex-shrink: 0;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #C8D8EA;
 }}
 .rpt-header-text h1 {{
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 900;
   color: #0F2044;
-  line-height: 1.25;
+  line-height: 1.3;
+  letter-spacing: .02em;
 }}
 .rpt-header-text p {{
-  font-size: 8.5px;
+  font-size: 9.5px;
   color: #526070;
-  margin-top: 2px;
+  margin-top: 3px;
   font-weight: 500;
 }}
 .rpt-badge {{
@@ -1458,21 +1476,23 @@ body {{
   flex-shrink: 0;
   background: #0F2044;
   color: #fff;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
-  padding: 4px 9px;
-  border-radius: 5px;
-  letter-spacing: .04em;
+  padding: 5px 11px;
+  border-radius: 4px;
+  letter-spacing: .05em;
+  white-space: nowrap;
 }}
 /* ── セクション見出し ─────────────────────────── */
 .sec-title {{
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   color: #0F2044;
-  border-left: 3.5px solid #F97316;
-  padding-left: 7px;
-  margin: 10px 0 6px;
-  line-height: 1.3;
+  border-left: 4px solid #F97316;
+  padding-left: 8px;
+  margin: 12px 0 7px;
+  line-height: 1.35;
+  letter-spacing: .02em;
 }}
 /* ── フレイル判定バー ─────────────────────────── */
 .hero-bar {{
@@ -1481,81 +1501,82 @@ body {{
   gap: 0;
   background: linear-gradient(135deg, #4A1428 0%, #7A2340 55%, #9B3054 100%);
   border-radius: 10px;
-  padding: 12px 16px;
-  margin-bottom: 9px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
   color: #fff;
 }}
 .hero-main {{
   flex: 1;
-  padding-right: 14px;
+  padding-right: 16px;
   border-right: 1px solid rgba(255,255,255,.2);
-  margin-right: 14px;
+  margin-right: 16px;
 }}
-.hero-main .label {{ font-size: 8px; font-weight: 700; opacity: .75; letter-spacing: .06em; }}
-.hero-main .pct {{ font-size: 34px; font-weight: 800; line-height: 1; margin: 3px 0; }}
-.hero-main .sub {{ font-size: 9px; opacity: .8; }}
-.hero-sub {{ display: flex; gap: 10px; align-items: center; }}
+.hero-main .label {{ font-size: 9px; font-weight: 700; opacity: .78; letter-spacing: .06em; }}
+.hero-main .pct {{ font-size: 36px; font-weight: 800; line-height: 1; margin: 4px 0; }}
+.hero-main .sub {{ font-size: 10px; opacity: .8; }}
+.hero-sub {{ display: flex; gap: 11px; align-items: center; }}
 .hero-sub-item {{
   background: rgba(255,255,255,.10);
   border: 1px solid rgba(255,255,255,.18);
-  border-radius: 6px;
-  padding: 8px 10px;
-  min-width: 80px;
+  border-radius: 7px;
+  padding: 9px 11px;
+  min-width: 85px;
   text-align: center;
 }}
-.hero-sub-item .label {{ font-size: 7.5px; font-weight: 700; opacity: .72; margin-bottom: 3px; }}
-.hero-sub-item .pct {{ font-size: 18px; font-weight: 800; color: #FFD8E4; line-height: 1.1; }}
+.hero-sub-item .label {{ font-size: 8.5px; font-weight: 700; opacity: .75; margin-bottom: 3px; }}
+.hero-sub-item .pct {{ font-size: 20px; font-weight: 800; color: #FFD8E4; line-height: 1.1; }}
 .hero-sub-item.green .pct {{ color: #C8F5E0; }}
-.hero-sub-item .n {{ font-size: 8px; opacity: .70; margin-top: 2px; }}
+.hero-sub-item .n {{ font-size: 9px; opacity: .72; margin-top: 2px; }}
 /* ── KPIグリッド ─────────────────────────────── */
 .kpi-grid {{
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 5px;
-  margin-bottom: 9px;
+  margin-bottom: 10px;
 }}
 .kpi-card {{
   background: #F5F8FC;
   border-radius: 7px;
-  padding: 7px 6px;
-  border-top: 2.5px solid var(--c);
+  padding: 8px 6px;
+  border-top: 3px solid var(--c);
   text-align: center;
 }}
-.kpi-card .icon {{ font-size: 13px; }}
+.kpi-card .icon {{ font-size: 14px; }}
 .kpi-card .name {{
-  font-size: 7.5px; font-weight: 700; color: #526070;
-  letter-spacing: .04em; margin: 2px 0;
+  font-size: 8.5px; font-weight: 700; color: #526070;
+  letter-spacing: .03em; margin: 2px 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }}
-.kpi-card .pct {{ font-size: 18px; font-weight: 800; color: var(--c); line-height: 1.15; }}
-.kpi-card .det {{ font-size: 7px; color: #526070; margin-top: 2px; }}
+.kpi-card .pct {{ font-size: 20px; font-weight: 800; color: var(--c); line-height: 1.15; }}
+.kpi-card .det {{ font-size: 8px; color: #526070; margin-top: 2px; }}
 /* ── チャートコンテナ ─────────────────────────── */
 .chart-wrap {{
-  margin: 4px 0;
+  margin: 5px 0;
   page-break-inside: avoid;
   width: 100%;
   overflow: hidden;
 }}
 /* Plotlyチャートを幅に収める */
 .js-plotly-plot, .plotly {{
-  max-width: 186mm !important;
+  max-width: 182mm !important;
   overflow: hidden !important;
 }}
 .modebar {{ display: none !important; }}
 /* ── フッター ────────────────────────────────── */
 .rpt-footer {{
-  margin-top: 10px;
-  padding-top: 7px;
-  border-top: 1px solid #E2E8F0;
-  font-size: 7.5px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1.5px solid #CBD5E0;
+  font-size: 8.5px;
   color: #8A9BB0;
   text-align: center;
-  line-height: 1.5;
+  line-height: 1.6;
 }}
 /* ── 印刷用メディアクエリ ──────────────────────── */
 @media print {{
-  body {{ width: 186mm; }}
+  body {{ width: 182mm; }}
   .chart-wrap {{ page-break-inside: avoid; }}
+  .sec-title {{ page-break-after: avoid; }}
 }}
 </style>
 </head>
@@ -1874,13 +1895,13 @@ with tab1:
             bgcolor='rgba(255,255,255,0.65)',
             radialaxis=dict(
                 visible=True, range=[0, 100], ticksuffix='%',
-                tickfont=dict(size=11, color=P['muted']),
+                tickfont=dict(size=13, color=P['muted']),
                 gridcolor='rgba(200,214,229,0.6)',
                 linecolor='rgba(200,214,229,0.5)',
                 tickvals=[25, 50, 75, 100],
             ),
             angularaxis=dict(
-                tickfont=dict(size=13, color=P['navy']),
+                tickfont=dict(size=15, color=P['navy']),
                 gridcolor='rgba(200,214,229,0.5)',
                 linecolor='rgba(200,214,229,0.4)',
             ),
@@ -1918,15 +1939,15 @@ with tab1:
         text=[f'<b>{v:.1f}%</b>  {n}/{t}名'
               for v, n, t in zip(xv, nr, nt)],
         textposition='outside',
-        textfont=dict(size=12, color=P['navy']),
+        textfont=dict(size=14, color=P['navy']),
         hovertemplate='%{y}: %{x:.1f}%<extra></extra>',
     ))
     fig_hb.update_layout(
         barmode='overlay',
-        xaxis=dict(range=[0, 155], ticksuffix='%',
+        xaxis=dict(range=[0, 160], ticksuffix='%',
                    gridcolor='rgba(226,232,240,0.6)',
-                   tickfont=dict(size=11, color=P['text'])),
-        yaxis=dict(tickfont=dict(size=13, color=P['text']), title=None),
+                   tickfont=dict(size=13, color=P['text'])),
+        yaxis=dict(tickfont=dict(size=14, color=P['text']), title=None),
         paper_bgcolor='rgba(255,255,255,0.88)',
         plot_bgcolor='rgba(248,250,252,0.6)',
         font=dict(color=P['text']),
@@ -1955,19 +1976,21 @@ with tab1:
                 x=xr, y=yr, marker_color=bc2, marker_line_width=0,
                 text=[f'<b>{p:.1f}%</b><br>{int(n)}名' for p, n in zip(pr, yr)],
                 textposition='outside',
-                textfont=dict(size=11, color=P['text']),
+                textfont=dict(size=13, color=P['text']),
                 hovertemplate='%{x}: %{y:.0f}名<extra></extra>',
             ))
+            _yr_max = float(max(yr)) if len(yr) > 0 else 1.0
             fig_rd.update_layout(
                 xaxis=dict(title='リスク重複項目数',
-                           tickfont=dict(size=12, color=P['text']),
-                           title_font=dict(color=P['text'])),
+                           tickfont=dict(size=13, color=P['text']),
+                           title_font=dict(color=P['text'], size=13)),
                 yaxis=dict(title='人数（名）', gridcolor='#E2E8F0',
-                           tickfont=dict(size=10, color=P['text']),
-                           title_font=dict(color=P['text'])),
+                           tickfont=dict(size=12, color=P['text']),
+                           title_font=dict(color=P['text'], size=13),
+                           range=[0, _yr_max * 1.38]),
                 paper_bgcolor='rgba(255,255,255,0.88)', plot_bgcolor='rgba(255,255,255,0.7)',
                 font=dict(color=P['text']),
-                showlegend=False, margin=dict(t=40, b=10, l=0, r=0), height=280,
+                showlegend=False, margin=dict(t=50, b=15, l=10, r=10), height=320,
             )
             st.plotly_chart(fig_rd, use_container_width=True, config={'displayModeBar': False})
 
@@ -2078,7 +2101,7 @@ with tab1:
         figs_html=_t1_figs,
         logo_b64=_HAL_LOGO_B64,
     )
-    _dl_col1, _ = st.columns([1, 3])
+    _dl_col1, _dl_col2, _ = st.columns([1, 1, 2])
     with _dl_col1:
         st.download_button(
             label='📥 サマリーレポートをダウンロード（印刷用HTML）',
@@ -2086,6 +2109,98 @@ with tab1:
             file_name='村上市フレイル分析_サマリー.html',
             mime='text/html',
             key='dl_tab1',
+        )
+    with _dl_col2:
+        # ── 総合レポート（全指標統合・複数ページ対応） ───────────────────────
+        _CFG_PRINT_ALL = {'responsive': False, 'displayModeBar': False}
+        # 各チャートを A4 幅固定で生成
+        _fig_r_all = go.Figure(fig_r)
+        _fig_r_all.update_layout(width=680, height=295,
+                                  margin=dict(t=45, b=45, l=90, r=90))
+        _fig_hb_all = go.Figure(fig_hb)
+        _fig_hb_all.update_layout(width=680, height=255,
+                                   margin=dict(t=20, b=10, l=0, r=100))
+        # リスク重複数チャート（データがある場合）
+        _fig_rd_html_all = ''
+        if 'リスク重複数' in df.columns:
+            _rc_all  = df['リスク重複数'].value_counts().sort_index()
+            _xr_all  = [f'{int(k)} 項目' for k in _rc_all.index]
+            _yr_all  = _rc_all.values.astype(float)
+            _tot_all = _yr_all.sum()
+            _pr_all  = _yr_all / _tot_all * 100 if _tot_all > 0 else _yr_all * 0
+            _RISK_CLR2 = {0: '#52B788', 1: '#E9C46A', 2: '#E89060', 3: '#CF6080'}
+            _bc_all = [_RISK_CLR2.get(min(int(k), 3), '#CF6080') for k in _rc_all.index]
+            _fig_rd_all = go.Figure(go.Bar(
+                x=_xr_all, y=_yr_all, marker_color=_bc_all, marker_line_width=0,
+                text=[f'<b>{p:.1f}%</b><br>{int(n)}名' for p, n in zip(_pr_all, _yr_all)],
+                textposition='outside', textfont=dict(size=13, color='#1E2D40'),
+            ))
+            _yr_max_all = float(max(_yr_all)) if len(_yr_all) > 0 else 1.0
+            _fig_rd_all.update_layout(
+                xaxis=dict(title='リスク重複項目数', tickfont=dict(size=13)),
+                yaxis=dict(title='人数（名）', gridcolor='#E2E8F0',
+                           tickfont=dict(size=12), range=[0, _yr_max_all * 1.4]),
+                paper_bgcolor='rgba(255,255,255,0.88)', plot_bgcolor='rgba(255,255,255,0.7)',
+                showlegend=False, margin=dict(t=40, b=15, l=10, r=10), height=300,
+                width=680,
+            )
+            _fig_rd_html_all = (
+                '<div class="sec-title">🔢 フレイルリスク重複数の分布</div>'
+                + '<div class="chart-wrap">'
+                + _fig_rd_all.to_html(full_html=False, include_plotlyjs=False,
+                                      config=_CFG_PRINT_ALL)
+                + '</div>'
+            )
+        # 基礎統計テーブルHTML
+        _stat_rows = ''
+        for _blbl, _bm, _bs, _bunit, _bfmt, _bn in _bsc_extras:
+            _stat_rows += (
+                f'<tr>'
+                f'<td style="font-weight:600;color:#0F2044;padding:4px 8px;">{_blbl}</td>'
+                f'<td style="text-align:right;padding:4px 8px;">'
+                f'{format(_bm, _bfmt)} ± {format(_bs, _bfmt)} {_bunit}</td>'
+                f'<td style="text-align:right;padding:4px 8px;color:#526070;">N={_bn}</td>'
+                f'</tr>'
+            )
+        _stat_tbl_html = (
+            '<div class="sec-title" style="page-break-before:always;">📋 基礎統計（平均±SD）</div>'
+            '<table style="width:100%;border-collapse:collapse;font-size:10.5px;">'
+            '<thead><tr style="background:#0F2044;color:#fff;">'
+            '<th style="padding:5px 8px;text-align:left;">指標</th>'
+            '<th style="padding:5px 8px;text-align:right;">平均 ± SD</th>'
+            '<th style="padding:5px 8px;text-align:right;">有効N</th>'
+            '</tr></thead>'
+            f'<tbody>{_stat_rows}</tbody></table>'
+        ) if _stat_rows else ''
+        # 総合レポートHTML組み立て
+        _all_figs = (
+            '<div class="chart-wrap sec-title">📡 フレイル関連指標 リスクマップ</div>'
+            + '<div class="chart-wrap">'
+            + _fig_r_all.to_html(full_html=False, include_plotlyjs='cdn',
+                                  config=_CFG_PRINT_ALL)
+            + '</div>'
+            + '<div class="chart-wrap sec-title">📊 指標別リスク該当率（昇順）</div>'
+            + '<div class="chart-wrap">'
+            + _fig_hb_all.to_html(full_html=False, include_plotlyjs=False,
+                                   config=_CFG_PRINT_ALL)
+            + '</div>'
+            + _fig_rd_html_all
+            + _stat_tbl_html
+        )
+        _t_all_html = _make_report_html(
+            title='村上市 総合フレイル分析レポート',
+            subtitle=(f'AWGS2019・WHO基準準拠 ／ フィルター適用後 N={N:,}名 ／'
+                      ' 高齢者支援課向け総合版'),
+            kpi_rows_html=_hero_sec,
+            figs_html=_all_figs,
+            logo_b64=_HAL_LOGO_B64,
+        )
+        st.download_button(
+            label='📋 総合レポートをダウンロード（印刷用HTML・複数ページ）',
+            data=_t_all_html.encode('utf-8'),
+            file_name='村上市フレイル分析_総合レポート.html',
+            mime='text/html',
+            key='dl_tab_all',
         )
 
 
@@ -2182,7 +2297,7 @@ with tab2:
                 text=[f'{p:.1f}%' for p in _m_pcts],
                 textposition='inside',
                 insidetextanchor='middle',
-                textfont=dict(size=11, color='#fff', family='Arial Black, sans-serif'),
+                textfont=dict(size=13, color='#fff', family='Arial Black, sans-serif'),
                 customdata=list(zip(_m_pcts, _m_ns)),
                 hovertemplate='<b>男性</b> %{y}<br>リスク率: %{customdata[0]:.1f}%<br>N=%{customdata[1]}名<extra></extra>',
                 cliponaxis=True,
@@ -2198,7 +2313,7 @@ with tab2:
                 text=[f'{p:.1f}%' for p in _f_pcts],
                 textposition='inside',
                 insidetextanchor='middle',
-                textfont=dict(size=11, color='#fff', family='Arial Black, sans-serif'),
+                textfont=dict(size=13, color='#fff', family='Arial Black, sans-serif'),
                 customdata=list(zip(_f_pcts, _f_ns)),
                 hovertemplate='<b>女性</b> %{y}<br>リスク率: %{customdata[0]:.1f}%<br>N=%{customdata[1]}名<extra></extra>',
                 cliponaxis=True,
@@ -2213,7 +2328,7 @@ with tab2:
                                 line=dict(color='#fff', width=1.5)),
                     text=[f'{p:.0f}%' for p in _t_pcts],
                     textposition='middle right',
-                    textfont=dict(size=10, color='#B45309'),
+                    textfont=dict(size=12, color='#B45309'),
                     hovertemplate='全体 %{y}: %{x:.1f}%<extra></extra>',
                 ))
             # 中心線
@@ -2226,10 +2341,10 @@ with tab2:
                                round(_axis_max/3), round(_axis_max*2/3)],
                     ticktext=[f'{round(_axis_max*2/3)}%', f'{round(_axis_max/3)}%', '0%',
                                f'{round(_axis_max/3)}%', f'{round(_axis_max*2/3)}%'],
-                    tickfont=dict(size=11, color=P['text']),
+                    tickfont=dict(size=13, color=P['text']),
                     gridcolor='#E2E8F0',
                     title=dict(text='← 男性    リスク該当率 (%)    女性 →',
-                               font=dict(size=12, color=P['text'])),
+                               font=dict(size=13, color=P['text'])),
                     zeroline=True, zerolinecolor='#94A3B8', zerolinewidth=1.5,
                 ),
                 yaxis=dict(
@@ -2310,19 +2425,19 @@ with tab2:
                 name='男性', x=i_labels, y=m_vals,
                 marker_color='#5B95C8', marker_line_width=0,
                 text=[f'{v:.1f}%' for v in m_vals], textposition='outside',
-                textfont=dict(size=10, color=P['text']),
+                textfont=dict(size=13, color=P['text']),
             ))
             fig_cmp.add_trace(go.Bar(
                 name='女性', x=i_labels, y=f_vals,
                 marker_color='#C97B9D', marker_line_width=0,
                 text=[f'{v:.1f}%' for v in f_vals], textposition='outside',
-                textfont=dict(size=10, color=P['text']),
+                textfont=dict(size=13, color=P['text']),
             ))
             fig_cmp.update_layout(
                 barmode='group',
                 yaxis=dict(range=[0, 130], ticksuffix='%',
-                           gridcolor='#E2E8F0', tickfont=dict(size=10, color=P['text'])),
-                xaxis=dict(tickfont=dict(size=10, color=P['text'])),
+                           gridcolor='#E2E8F0', tickfont=dict(size=13, color=P['text'])),
+                xaxis=dict(tickfont=dict(size=12, color=P['text'])),
                 paper_bgcolor='rgba(255,255,255,0.88)', plot_bgcolor='rgba(255,255,255,0.7)',
                 font=dict(color=P['text']),
                 legend=dict(orientation='h', yanchor='bottom', y=1.02,
