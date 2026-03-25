@@ -113,22 +113,22 @@ DISPLAY_ORDER = [
 ]
 
 P = {
-    'navy':   '#0F2044',           # ディープネイビー（HAL Lab ブランド）
-    'blue':   '#1A5FB4',           # コーポレートブルー
-    'sky':    '#3B9FE8',           # スカイブルー
-    'accent': '#F97316',           # HAL Lab オレンジ（ブランドアクセント）
-    'red':    '#B83658',           # リスク赤（ダスティローズレッド）
-    'orange': '#EA580C',           # 警告オレンジ
-    'green':  '#16A34A',           # 安全グリーン
-    'amber':  '#B45309',           # アンバー
-    'violet': '#6D28D9',           # バイオレット
-    'cyan':   '#0369A1',           # シアン
-    'text':   '#1E2D40',           # ボディテキスト
-    'muted':  '#526070',           # ミュートテキスト
-    'border': 'rgba(180,200,220,.55)',  # ガラス境界線
-    'bg':     '#E8EFF7',           # ページ背景（ソフトブルーグレー）
-    'card':   'rgba(255,255,255,0.88)', # ガラスカード
-    'glass':  'rgba(255,255,255,0.72)', # より透明なガラス
+    'navy':   '#1B3A6B',           # 官庁ネイビー（透明感ある深藍）
+    'blue':   '#1E6FC8',           # 行政コーポレートブルー
+    'sky':    '#4AAAE0',           # スカイブルー
+    'accent': '#E8720C',           # HAL Lab オレンジ（アクセント、指標用）
+    'red':    '#C0392B',           # リスク赤（鮮明）
+    'orange': '#D4640A',           # 警告オレンジ
+    'green':  '#1A9248',           # 安全グリーン
+    'amber':  '#A0620A',           # アンバー
+    'violet': '#6525C8',           # バイオレット
+    'cyan':   '#0277BD',           # シアン
+    'text':   '#243040',           # ボディテキスト（温かみのあるダーク）
+    'muted':  '#5A7080',           # ミュートテキスト（ブルーグレー）
+    'border': 'rgba(160,190,220,.40)',  # 境界線（クリア）
+    'bg':     '#F2F6FC',           # ページ背景（クリーンホワイトブルー）
+    'card':   'rgba(255,255,255,0.97)', # カード（ほぼ純白）
+    'glass':  'rgba(255,255,255,0.82)', # ガラスカード
 }
 
 
@@ -740,149 +740,156 @@ st.set_page_config(
 
 st.markdown(f"""
 <style>
-/* ══ ページ背景 ═════════════════════════════════════════════════════════════ */
+/* ══ ページ背景（官庁ホワイト基調） ════════════════════════════════════════ */
 [data-testid="stAppViewContainer"] {{
-    background:linear-gradient(160deg,#E4EBF6 0%,#EDF2FA 40%,#E8EFF7 100%);
-    min-height:100vh;
+    background: linear-gradient(170deg, #F4F8FD 0%, #FAFCFF 45%, #EEF4FB 100%);
+    min-height: 100vh;
 }}
-[data-testid="stHeader"]  {{ background:transparent; box-shadow:none; }}
-[data-testid="stToolbar"] {{ display:none; }}
+[data-testid="stHeader"]  {{ background: transparent; box-shadow: none; }}
+[data-testid="stToolbar"] {{ display: none; }}
 .block-container {{
-    padding-top:1rem !important;
-    padding-bottom:2.5rem !important;
-    max-width:1280px;
+    padding-top: 1rem !important;
+    padding-bottom: 2.5rem !important;
+    max-width: 1280px;
 }}
 
 /* ══ サイドバー ══════════════════════════════════════════════════════════════ */
 [data-testid="stSidebar"] {{
-    background:rgba(255,255,255,0.82) !important;
-    backdrop-filter:blur(18px);
-    -webkit-backdrop-filter:blur(18px);
-    border-right:1px solid rgba(180,200,220,0.45) !important;
-    box-shadow:3px 0 24px rgba(15,32,68,0.07);
+    background: rgba(255,255,255,0.96) !important;
+    border-right: 1px solid rgba(160,190,220,0.35) !important;
+    box-shadow: 2px 0 16px rgba(27,58,107,0.06);
 }}
 
-/* ══ KPIカード（グラスモーフィズム） ═══════════════════════════════════════ */
+/* ══ KPIカード ═══════════════════════════════════════════════════════════════ */
 .kpi {{
-    background:rgba(255,255,255,0.86);
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-    border-radius:16px;
-    padding:18px 16px 14px;
-    box-shadow:0 2px 6px rgba(15,32,68,0.06),0 8px 24px rgba(15,32,68,0.05);
-    border:1px solid rgba(200,214,229,0.5);
-    border-top:4px solid var(--c);
-    height:100%;
-    transition:transform .18s ease,box-shadow .18s ease;
+    background: #FFFFFF;
+    border-radius: 12px;
+    padding: 18px 16px 14px;
+    box-shadow: 0 1px 4px rgba(27,58,107,0.07), 0 6px 18px rgba(27,58,107,0.05);
+    border: 1px solid rgba(190,210,235,0.55);
+    border-top: 4px solid var(--c);
+    height: 100%;
+    transition: transform .18s ease, box-shadow .18s ease;
 }}
 .kpi:hover {{
-    transform:translateY(-2px);
-    box-shadow:0 4px 12px rgba(15,32,68,0.09),0 14px 32px rgba(15,32,68,0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(27,58,107,0.10), 0 12px 28px rgba(27,58,107,0.07);
 }}
-.kpi-icon {{ font-size:24px; margin-bottom:5px; }}
+.kpi-icon {{ font-size: 24px; margin-bottom: 5px; }}
 .kpi-name {{
-    font-size:13px; font-weight:700; color:{P['muted']};
-    letter-spacing:.05em; text-transform:uppercase; margin-bottom:7px;
+    font-size: 13px; font-weight: 700; color: {P['muted']};
+    letter-spacing: .04em; margin-bottom: 7px;
 }}
-.kpi-pct  {{ font-size:36px; font-weight:800; line-height:1; color:var(--c); }}
-.kpi-unit {{ font-size:15px; font-weight:500; color:{P['muted']}; }}
-.kpi-det  {{ font-size:13px; color:{P['muted']}; margin-top:6px; font-weight:600; }}
-.kpi-bar-bg   {{ background:rgba(200,214,229,0.45); border-radius:4px; height:6px; margin-top:11px; overflow:hidden; }}
-.kpi-bar-fill {{ height:6px; border-radius:4px; background:var(--c); }}
+.kpi-pct  {{ font-size: 36px; font-weight: 800; line-height: 1; color: var(--c); }}
+.kpi-unit {{ font-size: 15px; font-weight: 500; color: {P['muted']}; }}
+.kpi-det  {{ font-size: 13px; color: {P['muted']}; margin-top: 6px; font-weight: 600; }}
+.kpi-bar-bg   {{ background: rgba(190,210,235,0.40); border-radius: 4px; height: 5px; margin-top: 10px; overflow: hidden; }}
+.kpi-bar-fill {{ height: 5px; border-radius: 4px; background: var(--c); }}
 .kpi-basis {{
-    font-size:12px; color:{P['muted']}; margin-top:7px; line-height:1.5;
-    background:rgba(235,241,248,0.7); border-radius:6px; padding:5px 7px;
+    font-size: 12px; color: {P['muted']}; margin-top: 7px; line-height: 1.5;
+    background: #F4F7FC; border-radius: 6px; padding: 5px 8px;
+    border-left: 2px solid rgba(30,111,200,0.25);
 }}
 
 /* ══ セクション見出し ════════════════════════════════════════════════════════ */
 .sec {{
-    font-size:16px; font-weight:800; color:{P['navy']};
-    border-left:4px solid {P['accent']};
-    padding:3px 0 3px 13px; margin:26px 0 16px;
+    font-size: 16px; font-weight: 800; color: {P['navy']};
+    border-left: 4px solid {P['blue']};
+    padding: 3px 0 3px 12px; margin: 26px 0 16px;
+    letter-spacing: .01em;
 }}
-.sec.red {{ border-color:{P['red']}; color:#8B1220; }}
+.sec.red {{ border-color: {P['red']}; color: #9A1515; }}
 
 /* ══ アラートカード ══════════════════════════════════════════════════════════ */
 .alert {{
-    background:rgba(254,242,242,0.9);
-    backdrop-filter:blur(8px);
-    border:1px solid rgba(252,200,200,0.8);
-    border-left:4px solid {P['red']};
-    border-radius:12px; padding:14px 18px; margin-bottom:14px;
-    box-shadow:0 2px 8px rgba(197,41,59,0.08);
+    background: #FEF5F5;
+    border: 1px solid rgba(220,80,80,0.20);
+    border-left: 4px solid {P['red']};
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(192,57,43,0.07);
 }}
-.alert-n   {{ font-size:28px; font-weight:800; color:#991B1B; }}
-.alert-sub {{ font-size:15px; color:#7F1D1D; font-weight:500; margin-left:8px; }}
-.alert-tip {{ font-size:13px; color:#B91C1C; margin-top:3px; }}
+.alert-n   {{ font-size: 28px; font-weight: 800; color: #991B1B; }}
+.alert-sub {{ font-size: 15px; color: #7F1D1D; font-weight: 500; margin-left: 8px; }}
+.alert-tip {{ font-size: 13px; color: #B91C1C; margin-top: 3px; }}
 
 /* ══ テキスト・ラベル ════════════════════════════════════════════════════════ */
-[data-testid="stWidgetLabel"] p,[data-testid="stWidgetLabel"],
-.stSelectbox>label p,.stMultiSelect>label p,.stSlider>label p,
-.stRadio>label p,.stCheckbox>label p,
-[role="radiogroup"] p,[role="radiogroup"] label p,
-[data-testid="stExpander"] summary p,[data-testid="stExpander"] summary span,
-[data-testid="stMarkdownContainer"] p,[data-testid="stMarkdownContainer"] td,
+[data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"],
+.stSelectbox>label p, .stMultiSelect>label p, .stSlider>label p,
+.stRadio>label p, .stCheckbox>label p,
+[role="radiogroup"] p, [role="radiogroup"] label p,
+[data-testid="stExpander"] summary p, [data-testid="stExpander"] summary span,
+[data-testid="stMarkdownContainer"] p, [data-testid="stMarkdownContainer"] td,
 [data-testid="stMarkdownContainer"] th,
-[data-testid="stSidebar"] label,[data-testid="stSidebar"] p {{
-    color:{P['text']} !important; font-weight:600 !important;
+[data-testid="stSidebar"] label, [data-testid="stSidebar"] p {{
+    color: {P['text']} !important; font-weight: 600 !important;
 }}
 [data-testid="stExpander"] summary p {{
-    font-weight:700 !important; color:{P['navy']} !important;
+    font-weight: 700 !important; color: {P['navy']} !important;
 }}
 [data-testid="stCaptionContainer"] p {{
-    color:{P['muted']} !important; font-weight:500 !important;
+    color: {P['muted']} !important; font-weight: 500 !important;
 }}
 [data-testid="stMarkdownContainer"] table th {{
-    background:rgba(235,241,248,0.8) !important;
-    color:{P['navy']} !important; font-weight:700 !important;
+    background: #EBF2FA !important;
+    color: {P['navy']} !important; font-weight: 700 !important;
 }}
 
-/* ══ タブ ════════════════════════════════════════════════════════════════════ */
+/* ══ タブ（下ボーダー型・官庁スタイル） ═════════════════════════════════════ */
+[data-testid="stTabs"] [data-baseweb="tab-list"] {{
+    background: #FFFFFF;
+    border-bottom: 2px solid #D6E3F0;
+    border-radius: 0;
+    padding: 0 4px;
+    gap: 2px;
+    box-shadow: 0 2px 8px rgba(27,58,107,0.05);
+}}
 [data-testid="stTabs"] [role="tab"] {{
-    font-weight:700; font-size:15px; color:{P['muted']};
-    border-radius:10px 10px 0 0;
-    padding:10px 22px !important;
-    letter-spacing:.02em;
-    transition:background .15s,color .15s;
+    font-weight: 700;
+    font-size: 15px;
+    color: #607080;
+    border-radius: 0;
+    padding: 12px 26px !important;
+    letter-spacing: .02em;
+    border-bottom: 3px solid transparent;
+    transition: all .18s ease;
+    background: transparent;
+    margin-bottom: -2px;
 }}
 [data-testid="stTabs"] [role="tab"]:hover {{
-    color:{P['navy']}; background:rgba(255,255,255,0.55);
+    color: {P['blue']};
+    background: rgba(30,111,200,0.04);
+    border-bottom: 3px solid rgba(30,111,200,0.30);
 }}
 [data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
-    color:#fff !important;
-    background:linear-gradient(135deg,{P['navy']},{P['accent']}) !important;
-    box-shadow:0 3px 12px rgba(15,32,68,0.18);
-}}
-[data-testid="stTabs"] [data-baseweb="tab-list"] {{
-    background:rgba(218,228,242,0.75);
-    backdrop-filter:blur(10px);
-    border-radius:12px 12px 0 0;
-    padding:6px 6px 0;
-    gap:4px;
-    border-bottom:2px solid rgba(200,214,229,0.5);
+    color: {P['blue']} !important;
+    background: transparent !important;
+    border-bottom: 3px solid {P['blue']} !important;
+    font-weight: 800 !important;
+    box-shadow: none !important;
 }}
 
 /* ══ ダウンロードボタン ══════════════════════════════════════════════════════ */
 [data-testid="stDownloadButton"]>button {{
-    background:linear-gradient(135deg,#1E6391,#2F8BBF) !important;
-    color:#fff !important; border:none !important;
-    border-radius:10px !important; font-weight:700 !important;
-    padding:9px 24px !important; font-size:13px !important;
-    width:100%; margin-top:8px;
-    box-shadow:0 3px 10px rgba(30,99,145,0.20);
-    transition:opacity .15s ease,transform .15s ease;
+    background: {P['blue']} !important;
+    color: #fff !important; border: none !important;
+    border-radius: 8px !important; font-weight: 700 !important;
+    padding: 9px 22px !important; font-size: 13px !important;
+    width: 100%; margin-top: 8px;
+    box-shadow: 0 2px 8px rgba(30,111,200,0.22);
+    transition: opacity .15s ease, transform .15s ease;
+    letter-spacing: .02em;
 }}
 [data-testid="stDownloadButton"]>button:hover {{
-    opacity:0.88 !important;
-    transform:translateY(-1px) !important;
+    opacity: 0.88 !important;
+    transform: translateY(-1px) !important;
 }}
 
 /* ══ エクスパンダー ══════════════════════════════════════════════════════════ */
 [data-testid="stExpander"] {{
-    background:rgba(255,255,255,0.72) !important;
-    backdrop-filter:blur(10px);
-    border:1px solid rgba(200,214,229,0.5) !important;
-    border-radius:12px !important;
+    background: #FFFFFF !important;
+    border: 1px solid rgba(190,210,235,0.55) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 4px rgba(27,58,107,0.05);
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -1406,14 +1413,17 @@ all_tab_cfg   = {n: c for n, c in all_tab_indicators}
 # ─── 7b. 印刷用HTMLジェネレーター ───────────────────────────────────────────
 def _make_report_html(title: str, subtitle: str, kpi_rows_html: str,
                       figs_html: str, logo_b64: str) -> str:
-    """A4縦シンデレラフィット対応の自己完結型HTMLレポートを生成する。
-    印刷時: @page A4 portrait, margin 10mm 12mm → 有効領域 186mm × 277mm ≈ 703px × 1047px
+    """行政公文書スタイル A4縦対応 HTML レポートを生成する。
+    印刷時: @page A4 portrait, margin 15mm 15mm → 有効領域 180mm × 267mm
     """
+    from datetime import date as _d
+    _today = _d.today().strftime('%Y年%m月%d日')
     _logo_tag = (
         f'<img src="data:image/png;base64,{logo_b64}" '
-        'style="height:40px;width:auto;vertical-align:middle;">'
+        'style="height:38px;width:auto;vertical-align:middle;">'
         if logo_b64 else
-        '<span style="font-size:16px;font-weight:900;color:#F97316;">HAL Lab.</span>'
+        '<span style="font-size:14px;font-weight:900;color:#1B3A6B;'
+        'letter-spacing:.06em;">HAL Lab.</span>'
     )
     return f"""<!DOCTYPE html>
 <html lang="ja">
@@ -1425,7 +1435,7 @@ def _make_report_html(title: str, subtitle: str, kpi_rows_html: str,
 /* ── 印刷基本設定 ────────────────────────────── */
 @page {{
   size: A4 portrait;
-  margin: 12mm 14mm;
+  margin: 15mm 15mm;
 }}
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 html {{
@@ -1434,170 +1444,216 @@ html {{
   print-color-adjust: exact;
 }}
 body {{
-  font-family: 'Yu Gothic', 'Meiryo', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
-  color: #1E2D40;
-  background: #fff;
-  width: 182mm;
-  max-width: 182mm;
-  line-height: 1.5;
+  font-family: 'Yu Gothic UI', 'Yu Gothic', 'Meiryo UI', 'Meiryo',
+               'Hiragino Sans', 'MS PGothic', sans-serif;
+  color: #1A2535;
+  background: #ffffff;
+  width: 180mm;
+  max-width: 180mm;
+  line-height: 1.55;
 }}
-/* ── ヘッダー ───────────────────────────────── */
+/* ── 文書ヘッダー（行政公文書スタイル） ─────── */
 .rpt-header {{
+  border-top: 3px solid #1B3A6B;
+  border-bottom: 1px solid #1B3A6B;
+  padding: 9px 0 8px;
+  margin-bottom: 13px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 14px;
-  border-top: 4px solid #0F2044;
-  border-bottom: 2px solid #0F2044;
-  padding: 8px 0;
-  margin-bottom: 12px;
 }}
 .rpt-logo-box {{
-  background: #F5F8FC;
-  border-radius: 6px;
-  padding: 5px 9px;
   flex-shrink: 0;
   border: 1px solid #C8D8EA;
+  border-radius: 5px;
+  padding: 4px 8px;
+  background: #F8FAFE;
 }}
+.rpt-header-text {{ flex: 1; }}
 .rpt-header-text h1 {{
-  font-size: 15px;
+  font-size: 15.5px;
   font-weight: 900;
-  color: #0F2044;
-  line-height: 1.3;
-  letter-spacing: .02em;
+  color: #1B3A6B;
+  line-height: 1.25;
+  letter-spacing: .03em;
 }}
 .rpt-header-text p {{
-  font-size: 9.5px;
-  color: #526070;
+  font-size: 9px;
+  color: #5A7080;
   margin-top: 3px;
   font-weight: 500;
+  letter-spacing: .01em;
 }}
-.rpt-badge {{
-  margin-left: auto;
+.rpt-header-meta {{
   flex-shrink: 0;
-  background: #0F2044;
-  color: #fff;
+  text-align: right;
   font-size: 9px;
-  font-weight: 700;
-  padding: 5px 11px;
-  border-radius: 4px;
-  letter-spacing: .05em;
-  white-space: nowrap;
+  color: #3A5070;
+  line-height: 1.7;
+  font-weight: 500;
 }}
-/* ── セクション見出し ─────────────────────────── */
+.rpt-header-meta strong {{
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  color: #1B3A6B;
+  letter-spacing: .04em;
+}}
+/* ── セクション見出し（行政書類スタイル） ──── */
 .sec-title {{
   font-size: 12px;
   font-weight: 800;
-  color: #0F2044;
-  border-left: 4px solid #F97316;
-  padding-left: 8px;
-  margin: 12px 0 7px;
-  line-height: 1.35;
-  letter-spacing: .02em;
+  color: #1B3A6B;
+  background: #EBF2FA;
+  border-left: 5px solid #1E6FC8;
+  padding: 5px 10px;
+  margin: 13px 0 8px;
+  letter-spacing: .03em;
 }}
-/* ── フレイル判定バー ─────────────────────────── */
+/* ── フレイル判定サマリーパネル ────────────── */
 .hero-bar {{
   display: flex;
   align-items: stretch;
-  gap: 0;
-  background: linear-gradient(135deg, #4A1428 0%, #7A2340 55%, #9B3054 100%);
-  border-radius: 10px;
-  padding: 14px 18px;
+  border: 1.5px solid #B0C8E8;
+  border-radius: 6px;
+  overflow: hidden;
   margin-bottom: 10px;
-  color: #fff;
+  background: #ffffff;
 }}
 .hero-main {{
   flex: 1;
-  padding-right: 16px;
-  border-right: 1px solid rgba(255,255,255,.2);
-  margin-right: 16px;
+  padding: 12px 16px;
+  background: #F0F6FD;
+  border-right: 1px solid #B0C8E8;
 }}
-.hero-main .label {{ font-size: 9px; font-weight: 700; opacity: .78; letter-spacing: .06em; }}
-.hero-main .pct {{ font-size: 36px; font-weight: 800; line-height: 1; margin: 4px 0; }}
-.hero-main .sub {{ font-size: 10px; opacity: .8; }}
-.hero-sub {{ display: flex; gap: 11px; align-items: center; }}
+.hero-main .label {{
+  font-size: 9px; font-weight: 700; color: #3A5070;
+  letter-spacing: .06em; text-transform: uppercase;
+}}
+.hero-main .pct {{
+  font-size: 38px; font-weight: 900; line-height: 1;
+  color: #1B3A6B; margin: 4px 0;
+}}
+.hero-main .pct span {{ font-size: 16px; font-weight: 600; color: #5A7080; }}
+.hero-main .sub {{ font-size: 10px; color: #3A5070; margin-top: 2px; }}
+.hero-sub {{ display: flex; gap: 0; align-items: stretch; }}
 .hero-sub-item {{
-  background: rgba(255,255,255,.10);
-  border: 1px solid rgba(255,255,255,.18);
-  border-radius: 7px;
-  padding: 9px 11px;
-  min-width: 85px;
+  padding: 12px 16px;
+  border-right: 1px solid #B0C8E8;
+  min-width: 82px;
   text-align: center;
+  background: #FAFCFF;
 }}
-.hero-sub-item .label {{ font-size: 8.5px; font-weight: 700; opacity: .75; margin-bottom: 3px; }}
-.hero-sub-item .pct {{ font-size: 20px; font-weight: 800; color: #FFD8E4; line-height: 1.1; }}
-.hero-sub-item.green .pct {{ color: #C8F5E0; }}
-.hero-sub-item .n {{ font-size: 9px; opacity: .72; margin-top: 2px; }}
+.hero-sub-item:last-child {{ border-right: none; }}
+.hero-sub-item .label {{
+  font-size: 8.5px; font-weight: 700; color: #5A7080;
+  margin-bottom: 4px; letter-spacing: .03em;
+}}
+.hero-sub-item .pct {{ font-size: 22px; font-weight: 900; line-height: 1.1; color: #1B3A6B; }}
+.hero-sub-item.risk .pct {{ color: #C0392B; }}
+.hero-sub-item.warn .pct {{ color: #C07000; }}
+.hero-sub-item.safe .pct {{ color: #1A7040; }}
+.hero-sub-item .n {{ font-size: 8.5px; color: #5A7080; margin-top: 2px; }}
 /* ── KPIグリッド ─────────────────────────────── */
 .kpi-grid {{
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 5px;
+  gap: 4px;
   margin-bottom: 10px;
 }}
 .kpi-card {{
-  background: #F5F8FC;
-  border-radius: 7px;
-  padding: 8px 6px;
+  background: #FAFCFF;
+  border: 1px solid #C8D8EA;
   border-top: 3px solid var(--c);
+  border-radius: 4px;
+  padding: 7px 5px;
   text-align: center;
 }}
-.kpi-card .icon {{ font-size: 14px; }}
+.kpi-card .icon {{ font-size: 13px; }}
 .kpi-card .name {{
-  font-size: 8.5px; font-weight: 700; color: #526070;
-  letter-spacing: .03em; margin: 2px 0;
+  font-size: 8px; font-weight: 700; color: #5A7080;
+  letter-spacing: .02em; margin: 2px 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }}
-.kpi-card .pct {{ font-size: 20px; font-weight: 800; color: var(--c); line-height: 1.15; }}
-.kpi-card .det {{ font-size: 8px; color: #526070; margin-top: 2px; }}
+.kpi-card .pct {{ font-size: 21px; font-weight: 900; color: var(--c); line-height: 1.1; }}
+.kpi-card .det {{ font-size: 7.5px; color: #7090A0; margin-top: 2px; }}
 /* ── チャートコンテナ ─────────────────────────── */
 .chart-wrap {{
-  margin: 5px 0;
+  margin: 6px 0;
   page-break-inside: avoid;
   width: 100%;
   overflow: hidden;
 }}
-/* Plotlyチャートを幅に収める */
 .js-plotly-plot, .plotly {{
-  max-width: 182mm !important;
+  max-width: 180mm !important;
   overflow: hidden !important;
 }}
 .modebar {{ display: none !important; }}
-/* ── フッター ────────────────────────────────── */
-.rpt-footer {{
-  margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1.5px solid #CBD5E0;
+/* ── 注記・免責 ──────────────────────────────── */
+.rpt-note {{
   font-size: 8.5px;
-  color: #8A9BB0;
-  text-align: center;
+  color: #7090A0;
+  background: #F4F8FC;
+  border: 1px solid #D0DFF0;
+  border-radius: 4px;
+  padding: 6px 10px;
+  margin: 10px 0 6px;
   line-height: 1.6;
 }}
-/* ── 印刷用メディアクエリ ──────────────────────── */
+/* ── フッター ────────────────────────────────── */
+.rpt-footer {{
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 1px solid #B0C8E8;
+  font-size: 8px;
+  color: #7090A0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  line-height: 1.5;
+}}
+.rpt-footer .left {{ text-align: left; }}
+.rpt-footer .right {{ text-align: right; }}
+/* ── 印刷メディアクエリ ──────────────────────── */
 @media print {{
-  body {{ width: 182mm; }}
+  body {{ width: 180mm; }}
   .chart-wrap {{ page-break-inside: avoid; }}
   .sec-title {{ page-break-after: avoid; }}
+  .hero-bar {{ page-break-inside: avoid; }}
 }}
 </style>
 </head>
 <body>
-<!-- ヘッダー -->
+<!-- 文書ヘッダー -->
 <div class="rpt-header">
   <div class="rpt-logo-box">{_logo_tag}</div>
   <div class="rpt-header-text">
     <h1>{title}</h1>
     <p>{subtitle}</p>
   </div>
-  <div class="rpt-badge">村上市 高齢者支援課</div>
+  <div class="rpt-header-meta">
+    <strong>村上市 高齢者支援課</strong>
+    作成日：{_today}<br>
+    作成：一般社団法人 HAL Lab.<br>
+    <span style="font-size:8px;color:#7090A0;">※本資料は庁内利用限り</span>
+  </div>
 </div>
 <!-- コンテンツ -->
 {kpi_rows_html}
 <!-- チャート -->
 {figs_html}
+<!-- 注記 -->
+<div class="rpt-note">
+  【判定基準】AWGS2019（歩行速度・筋力・SMI）／WHO 1994（骨密度）／Nasreddine et al. 2005（MoCA）／
+  Belafsky et al. 2008（EAT-10）／J-CHS 2020（フレイル）準拠。
+  本資料はスクリーニング目的であり、臨床診断を代替するものではありません。
+</div>
 <!-- フッター -->
 <div class="rpt-footer">
-  AWGS2019 / WHO 1994 / Nasreddine 2005 / Belafsky 2008 / J-CHS 2020 準拠 ｜
-  村上市高齢者総合検診フレイル分析ダッシュボード ｜ HAL Lab. ヘルシーエイジング・長寿研究所
+  <div class="left">
+    村上市 総合フレイル分析ダッシュボード｜一般社団法人 HAL Lab.（ヘルシーエイジング・長寿研究所）
+  </div>
+  <div class="right">作成日：{_today}</div>
 </div>
 </body>
 </html>"""
@@ -2048,31 +2104,36 @@ with tab1:
     _kpi_grid_html += '</div>'
     # フレイル判定バー + KPIグリッド
     _hero_sec = f"""
-<div class="sec-title">🩺 フレイル判定（簡易フレイルインデックス）</div>
+<div class="sec-title">第１章　フレイル判定結果（簡易フレイルインデックス）</div>
 <div class="hero-bar">
   <div class="hero-main">
     <div class="label">フレイル該当率（3点以上）</div>
-    <div class="pct">{_hero_pct_frail:.1f}<span style="font-size:16px">%</span></div>
-    <div class="sub">{_hero_frail}名 フレイル ／ 判定N={_hero_valid}名</div>
-    <div style="background:rgba(255,255,255,.15);border-radius:3px;height:4px;margin-top:8px;">
-      <div style="height:4px;border-radius:3px;background:rgba(255,255,255,0.8);
+    <div class="pct">{_hero_pct_frail:.1f}<span>%</span></div>
+    <div class="sub">{_hero_frail}名 フレイル該当 ／ 判定有効 N={_hero_valid}名</div>
+    <div style="background:#D0DCF0;border-radius:3px;height:5px;margin-top:10px;">
+      <div style="height:5px;border-radius:3px;background:#1B3A6B;
                   width:{min(_hero_pct_frail,100):.1f}%;"></div>
     </div>
   </div>
   <div class="hero-sub">
-    <div class="hero-sub-item">
-      <div class="label">🟡 プレフレイル</div>
+    <div class="hero-sub-item risk">
+      <div class="label">フレイル</div>
+      <div class="pct">{_hero_pct_frail:.1f}%</div>
+      <div class="n">{_hero_frail}名</div>
+    </div>
+    <div class="hero-sub-item warn">
+      <div class="label">プレフレイル</div>
       <div class="pct">{_hero_pct_pre:.1f}%</div>
       <div class="n">{_hero_pre}名</div>
     </div>
-    <div class="hero-sub-item green">
-      <div class="label">🟢 健常</div>
+    <div class="hero-sub-item safe">
+      <div class="label">健常</div>
       <div class="pct">{_hero_pct_normal:.1f}%</div>
       <div class="n">{max(_hero_valid-_hero_frail-_hero_pre,0)}名</div>
     </div>
   </div>
 </div>
-<div class="sec-title">📊 各指標リスク率サマリー (N={N:,}名)</div>
+<div class="sec-title">第２章　各指標リスク率サマリー（解析対象 N={N:,}名）</div>
 {_kpi_grid_html}"""
     # A4専用フィギュア生成（width=680px固定, responsive=False）
     _CFG_PRINT = {'responsive': False, 'displayModeBar': False}
@@ -2460,9 +2521,10 @@ with tab2:
         )
         _t2_kpi_sec = (
             f'<div class="sec-title">'
-            f'{_sel_cfg["icon"]} {sel_flag} ─ 性別×年齢階級別 クロス集計分析</div>'
-            f'<p style="font-size:8.5px;color:#526070;margin-bottom:6px;">'
-            f'フィルター適用後 N={N:,}名 ／ 簡易フレイルインデックス準拠</p>'
+            f'第１章　{sel_flag} ─ 性別×年齢階級別 クロス集計分析</div>'
+            f'<p style="font-size:9px;color:#5A7080;margin-bottom:8px;'
+            f'border-bottom:1px solid #D0DFF0;padding-bottom:5px;">'
+            f'解析対象：フィルター適用後 N={N:,}名 ／ AWGS2019・WHO基準準拠</p>'
         )
         _CFG2_PRINT = {'responsive': False, 'displayModeBar': False}
         _t2_figs = ''
