@@ -618,7 +618,16 @@ def risk_stats(df: pd.DataFrame, flag_col: str, base_col: str) -> dict:
 def build_stats(df: pd.DataFrame) -> dict:
     """個人データを含まない集計統計を生成する（公開共有用）。"""
     import json as _json
+    import numpy as _np
     from datetime import date as _date
+
+    def _to_py(v):
+        """numpy scalar → Python primitive に変換（JSON安全化）。"""
+        if isinstance(v, _np.integer): return int(v)
+        if isinstance(v, _np.floating): return float(v)
+        if isinstance(v, _np.bool_): return bool(v)
+        if isinstance(v, _np.ndarray): return v.tolist()
+        return v
     N = len(df)
 
     def _flag_sum(col):
@@ -674,9 +683,9 @@ def build_stats(df: pd.DataFrame) -> dict:
                 fr = int(fs[fc].fillna(False).astype(bool).sum())
                 tr = int(ts[fc].fillna(False).astype(bool).sum())
                 ages.append(ag)
-                m_p.append(safe_pct(mr, len(ms))); m_n.append(len(ms))
-                f_p.append(safe_pct(fr, len(fs))); f_n.append(len(fs))
-                t_p.append(safe_pct(tr, len(ts)))
+                m_p.append(_to_py(safe_pct(mr, len(ms)))); m_n.append(len(ms))
+                f_p.append(_to_py(safe_pct(fr, len(fs)))); f_n.append(len(fs))
+                t_p.append(_to_py(safe_pct(tr, len(ts))))
             if ages:
                 butterfly[name] = {'age_labels': ages,
                                    'm_pcts': m_p, 'f_pcts': f_p, 't_pcts': t_p,
@@ -695,8 +704,8 @@ def build_stats(df: pd.DataFrame) -> dict:
             fr = int(f_df[fc].fillna(False).astype(bool).sum())
             sex_cmp['labels'].append(f'{cfg["icon"]} {name}')
             sex_cmp['icons'].append(cfg['icon'])
-            sex_cmp['m_vals'].append(safe_pct(mr, len(m_df)))
-            sex_cmp['f_vals'].append(safe_pct(fr, len(f_df)))
+            sex_cmp['m_vals'].append(_to_py(safe_pct(mr, len(m_df))))
+            sex_cmp['f_vals'].append(_to_py(safe_pct(fr, len(f_df))))
 
     return {
         'meta': {
@@ -834,38 +843,35 @@ st.markdown(f"""
     color: {P['navy']} !important; font-weight: 700 !important;
 }}
 
-/* ══ タブ（下ボーダー型・官庁スタイル） ═════════════════════════════════════ */
+/* ══ タブ（ピル型・視認性重視） ═════════════════════════════════════════════ */
 [data-testid="stTabs"] [data-baseweb="tab-list"] {{
-    background: #FFFFFF;
-    border-bottom: 2px solid #D6E3F0;
-    border-radius: 0;
-    padding: 0 4px;
-    gap: 2px;
-    box-shadow: 0 2px 8px rgba(27,58,107,0.05);
+    background: #E8F0FB;
+    border-radius: 14px;
+    padding: 5px 6px;
+    gap: 4px;
+    border: 1px solid #C8D8F0;
+    box-shadow: inset 0 1px 3px rgba(27,58,107,0.08);
 }}
 [data-testid="stTabs"] [role="tab"] {{
     font-weight: 700;
-    font-size: 15px;
-    color: #607080;
-    border-radius: 0;
-    padding: 12px 26px !important;
+    font-size: 14px;
+    color: #506070;
+    border-radius: 10px;
+    padding: 9px 22px !important;
     letter-spacing: .02em;
-    border-bottom: 3px solid transparent;
+    border: none;
     transition: all .18s ease;
     background: transparent;
-    margin-bottom: -2px;
 }}
 [data-testid="stTabs"] [role="tab"]:hover {{
     color: {P['blue']};
-    background: rgba(30,111,200,0.04);
-    border-bottom: 3px solid rgba(30,111,200,0.30);
+    background: rgba(255,255,255,0.70);
 }}
 [data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
-    color: {P['blue']} !important;
-    background: transparent !important;
-    border-bottom: 3px solid {P['blue']} !important;
+    color: #ffffff !important;
+    background: {P['blue']} !important;
     font-weight: 800 !important;
-    box-shadow: none !important;
+    box-shadow: 0 2px 8px rgba(30,111,200,0.30) !important;
 }}
 
 /* ══ ダウンロードボタン ══════════════════════════════════════════════════════ */
@@ -1220,13 +1226,21 @@ with st.sidebar:
     st.caption('個人データを含まない集計統計を出力します。')
     if st.button('統計データを出力（stats.json）', use_container_width=True):
         import json as _ejson
+        import numpy as _np
+        class _SafeEncoder(_ejson.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, _np.integer): return int(obj)
+                if isinstance(obj, _np.floating): return float(obj)
+                if isinstance(obj, _np.ndarray): return obj.tolist()
+                if hasattr(obj, 'item'): return obj.item()
+                return super().default(obj)
         _df_export = df_all.copy()
         if sel_sex and '性別_ラベル' in _df_export.columns:
             _df_export = _df_export[_df_export['性別_ラベル'].isin(sel_sex)]
         if sel_age and '年齢階級' in _df_export.columns:
             _df_export = _df_export[_df_export['年齢階級'].isin(sel_age)]
         _estats = build_stats(_df_export)
-        st.session_state['_export_json'] = _ejson.dumps(_estats, ensure_ascii=False, indent=2)
+        st.session_state['_export_json'] = _ejson.dumps(_estats, ensure_ascii=False, indent=2, cls=_SafeEncoder)
     if st.session_state.get('_export_json'):
         st.download_button(
             label='⬇️ stats.json をダウンロード',
@@ -1818,53 +1832,52 @@ with tab1:
     # ── フレイル判定 ヒーローカード ──────────────────────────────────────────
     if _hero_valid > 0:
         st.markdown(f"""
-<div style="background:linear-gradient(135deg,#4A1428 0%,#7A2340 55%,#9B3054 100%);
-            border-radius:18px;padding:20px 26px;margin-bottom:18px;
+<div style="background:linear-gradient(135deg,#0D4A8A 0%,#1462B5 55%,#2478CC 100%);
+            border-radius:16px;padding:20px 26px;margin-bottom:18px;
             display:flex;align-items:center;gap:24px;flex-wrap:wrap;
-            box-shadow:0 4px 20px rgba(74,20,40,0.18),0 1px 5px rgba(74,20,40,0.12);
-            border:1px solid rgba(255,255,255,0.10);position:relative;overflow:hidden;">
-  <div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;
-              border-radius:50%;background:rgba(255,255,255,0.04);pointer-events:none;"></div>
+            box-shadow:0 4px 20px rgba(13,74,138,0.22),0 1px 5px rgba(13,74,138,0.12);
+            border:1px solid rgba(255,255,255,0.14);position:relative;overflow:hidden;">
+  <div style="position:absolute;right:-20px;top:-20px;width:140px;height:140px;
+              border-radius:50%;background:rgba(255,255,255,0.05);pointer-events:none;"></div>
   <div style="flex:0 0 auto;text-align:center;">
-    <div style="font-size:40px;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.3));">🩺</div>
-    <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,.80);
+    <div style="font-size:40px;line-height:1;">🩺</div>
+    <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,.82);
                 text-transform:uppercase;letter-spacing:.08em;margin-top:5px;">フレイル判定</div>
   </div>
   <div style="flex:1;min-width:140px;border-right:1px solid rgba(255,255,255,.22);
               padding-right:24px;margin-right:4px;">
-    <div style="font-size:11px;color:rgba(255,255,255,.72);font-weight:600;margin-bottom:4px;">
+    <div style="font-size:11px;color:rgba(255,255,255,.75);font-weight:600;margin-bottom:4px;">
       フレイル該当率（3点以上）</div>
-    <div style="font-size:50px;font-weight:800;color:#fff;line-height:1;
-                text-shadow:0 1px 6px rgba(0,0,0,0.2);">{_hero_pct_frail:.1f}<span style="font-size:20px;">%</span></div>
-    <div style="font-size:12px;color:rgba(255,255,255,.78);margin-top:5px;font-weight:500;">
+    <div style="font-size:50px;font-weight:800;color:#fff;line-height:1;">
+      {_hero_pct_frail:.1f}<span style="font-size:20px;font-weight:600;">%</span></div>
+    <div style="font-size:12px;color:rgba(255,255,255,.80);margin-top:5px;font-weight:500;">
       {_hero_frail}名 フレイル ／ 判定N={_hero_valid}名
     </div>
-    <div style="background:rgba(255,255,255,.15);border-radius:4px;height:5px;margin-top:10px;">
-      <div style="height:5px;border-radius:4px;background:rgba(255,255,255,0.85);
+    <div style="background:rgba(255,255,255,.18);border-radius:4px;height:5px;margin-top:10px;">
+      <div style="height:5px;border-radius:4px;background:rgba(255,255,255,0.90);
                   width:{min(_hero_pct_frail,100):.1f}%;"></div>
     </div>
   </div>
-  <div style="flex:1;min-width:180px;display:flex;gap:14px;align-items:center;">
-    <div style="flex:1;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);
+  <div style="flex:1;min-width:180px;display:flex;gap:12px;align-items:stretch;">
+    <div style="flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
                 border-radius:10px;padding:12px 14px;">
-      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.72);margin-bottom:4px;">
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.75);margin-bottom:4px;">
         🟡 プレフレイル（1-2点）</div>
-      <div style="font-size:26px;font-weight:800;color:#FFD8E4;line-height:1.15;">{_hero_pct_pre:.1f}%</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.68);margin-top:3px;">{_hero_pre}名</div>
+      <div style="font-size:26px;font-weight:800;color:#FFF0A0;line-height:1.15;">{_hero_pct_pre:.1f}%</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.70);margin-top:3px;">{_hero_pre}名</div>
     </div>
-    <div style="flex:1;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);
+    <div style="flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
                 border-radius:10px;padding:12px 14px;">
-      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.72);margin-bottom:4px;">
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.75);margin-bottom:4px;">
         🟢 健常（0点）</div>
-      <div style="font-size:26px;font-weight:800;color:#C8F5E0;line-height:1.15;">{_hero_pct_normal:.1f}%</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.68);margin-top:3px;">
+      <div style="font-size:26px;font-weight:800;color:#B8F5D8;line-height:1.15;">{_hero_pct_normal:.1f}%</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.70);margin-top:3px;">
         {max(_hero_valid-_hero_frail-_hero_pre,0)}名</div>
     </div>
   </div>
-  <div style="width:100%;padding-top:8px;margin-top:0;border-top:1px solid rgba(255,255,255,.14);
-              font-size:10px;color:rgba(255,255,255,.60);">
-    📐 簡易フレイルインデックス（体重減少・疲れ・活動不足・歩行低下・物忘れ）
-    5項目合計スコア ≥3 でフレイル、1-2 でプレフレイル
+  <div style="width:100%;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);
+              font-size:10px;color:rgba(255,255,255,.62);">
+    📐 簡易フレイルインデックス（体重減少・疲れ・活動不足・歩行低下・物忘れ）5項目 ─ スコア≥3：フレイル、1-2：プレフレイル
   </div>
 </div>""", unsafe_allow_html=True)
 
