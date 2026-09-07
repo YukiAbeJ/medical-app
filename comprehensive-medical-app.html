@@ -4,22 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>高齢者包括的検査・測定アプリケーション</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS v3.4.17 をビルドして同梱（オフライン会場でも表示崩れしないように。CDN 不要）-->
+    <style>*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.container{width:100%}@media (min-width:640px){.container{max-width:640px}}@media (min-width:768px){.container{max-width:768px}}@media (min-width:1024px){.container{max-width:1024px}}@media (min-width:1280px){.container{max-width:1280px}}@media (min-width:1536px){.container{max-width:1536px}}.pointer-events-none{pointer-events:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.right-0{right:0}.right-2{right:.5rem}.top-0{top:0}.top-1\/2{top:50%}.col-span-3{grid-column:span 3/span 3}.col-span-full{grid-column:1/-1}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.ml-1{margin-left:.25rem}.ml-2{margin-left:.5rem}.ml-5{margin-left:1.25rem}.ml-auto{margin-left:auto}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.block{display:block}.flex{display:flex}.table{display:table}.grid{display:grid}.hidden{display:none}.aspect-video{aspect-ratio:16/9}.h-16{height:4rem}.h-24{height:6rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-full{height:100%}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-12{width:3rem}.w-16{width:4rem}.w-20{width:5rem}.w-24{width:6rem}.w-32{width:8rem}.w-5{width:1.25rem}.w-6{width:1.5rem}.w-full{width:100%}.min-w-0{min-width:0}.min-w-\[100px\]{min-width:100px}.min-w-\[200px\]{min-width:200px}.min-w-\[90px\]{min-width:90px}.max-w-7xl{max-width:80rem}.flex-1{flex:1 1 0%}.flex-shrink{flex-shrink:1}.-translate-y-1\/2{--tw-translate-y:-50%}.-translate-y-1\/2,.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.list-disc{list-style-type:disc}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.75rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.75rem*var(--tw-space-y-reverse))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.whitespace-nowrap{white-space:nowrap}.break-all{word-break:break-all}.rounded{border-radius:.25rem}.rounded-2xl{border-radius:1rem}.rounded-lg{border-radius:.5rem}.rounded-xl{border-radius:.75rem}.rounded-bl{border-bottom-left-radius:.25rem}.border{border-width:1px}.border-2{border-width:2px}.border-b-4{border-bottom-width:4px}.border-blue-200{--tw-border-opacity:1;border-color:rgb(191 219 254/var(--tw-border-opacity,1))}.border-blue-500{--tw-border-opacity:1;border-color:rgb(59 130 246/var(--tw-border-opacity,1))}.border-gray-200{--tw-border-opacity:1;border-color:rgb(229 231 235/var(--tw-border-opacity,1))}.border-gray-300{--tw-border-opacity:1;border-color:rgb(209 213 219/var(--tw-border-opacity,1))}.border-green-300{--tw-border-opacity:1;border-color:rgb(134 239 172/var(--tw-border-opacity,1))}.border-green-500{--tw-border-opacity:1;border-color:rgb(34 197 94/var(--tw-border-opacity,1))}.border-indigo-500{--tw-border-opacity:1;border-color:rgb(99 102 241/var(--tw-border-opacity,1))}.border-purple-500{--tw-border-opacity:1;border-color:rgb(168 85 247/var(--tw-border-opacity,1))}.border-red-300{--tw-border-opacity:1;border-color:rgb(252 165 165/var(--tw-border-opacity,1))}.border-yellow-500{--tw-border-opacity:1;border-color:rgb(234 179 8/var(--tw-border-opacity,1))}.bg-amber-300{--tw-bg-opacity:1;background-color:rgb(252 211 77/var(--tw-bg-opacity,1))}.bg-blue-200{--tw-bg-opacity:1;background-color:rgb(191 219 254/var(--tw-bg-opacity,1))}.bg-blue-50{--tw-bg-opacity:1;background-color:rgb(239 246 255/var(--tw-bg-opacity,1))}.bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246/var(--tw-bg-opacity,1))}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235/var(--tw-bg-opacity,1))}.bg-emerald-300{--tw-bg-opacity:1;background-color:rgb(110 231 183/var(--tw-bg-opacity,1))}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.bg-gray-100{--tw-bg-opacity:1;background-color:rgb(243 244 246/var(--tw-bg-opacity,1))}.bg-gray-200{--tw-bg-opacity:1;background-color:rgb(229 231 235/var(--tw-bg-opacity,1))}.bg-gray-300{--tw-bg-opacity:1;background-color:rgb(209 213 219/var(--tw-bg-opacity,1))}.bg-gray-50{--tw-bg-opacity:1;background-color:rgb(249 250 251/var(--tw-bg-opacity,1))}.bg-gray-700{--tw-bg-opacity:1;background-color:rgb(55 65 81/var(--tw-bg-opacity,1))}.bg-green-100{--tw-bg-opacity:1;background-color:rgb(220 252 231/var(--tw-bg-opacity,1))}.bg-green-50{--tw-bg-opacity:1;background-color:rgb(240 253 244/var(--tw-bg-opacity,1))}.bg-green-500{--tw-bg-opacity:1;background-color:rgb(34 197 94/var(--tw-bg-opacity,1))}.bg-green-600{--tw-bg-opacity:1;background-color:rgb(22 163 74/var(--tw-bg-opacity,1))}.bg-indigo-100{--tw-bg-opacity:1;background-color:rgb(224 231 255/var(--tw-bg-opacity,1))}.bg-indigo-600{--tw-bg-opacity:1;background-color:rgb(79 70 229/var(--tw-bg-opacity,1))}.bg-purple-50{--tw-bg-opacity:1;background-color:rgb(250 245 255/var(--tw-bg-opacity,1))}.bg-purple-600{--tw-bg-opacity:1;background-color:rgb(147 51 234/var(--tw-bg-opacity,1))}.bg-red-300{--tw-bg-opacity:1;background-color:rgb(252 165 165/var(--tw-bg-opacity,1))}.bg-red-50{--tw-bg-opacity:1;background-color:rgb(254 242 242/var(--tw-bg-opacity,1))}.bg-red-500{--tw-bg-opacity:1;background-color:rgb(239 68 68/var(--tw-bg-opacity,1))}.bg-red-600{--tw-bg-opacity:1;background-color:rgb(220 38 38/var(--tw-bg-opacity,1))}.bg-sky-600{--tw-bg-opacity:1;background-color:rgb(2 132 199/var(--tw-bg-opacity,1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1))}.bg-white\/20{background-color:hsla(0,0%,100%,.2)}.bg-yellow-400{--tw-bg-opacity:1;background-color:rgb(250 204 21/var(--tw-bg-opacity,1))}.bg-gradient-to-br{background-image:linear-gradient(to bottom right,var(--tw-gradient-stops))}.bg-gradient-to-r{background-image:linear-gradient(to right,var(--tw-gradient-stops))}.from-blue-50{--tw-gradient-from:#eff6ff var(--tw-gradient-from-position);--tw-gradient-to:rgba(239,246,255,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.from-blue-600{--tw-gradient-from:#2563eb var(--tw-gradient-from-position);--tw-gradient-to:rgba(37,99,235,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.via-green-50{--tw-gradient-to:rgba(240,253,244,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),#f0fdf4 var(--tw-gradient-via-position),var(--tw-gradient-to)}.to-blue-700{--tw-gradient-to:#1d4ed8 var(--tw-gradient-to-position)}.to-purple-50{--tw-gradient-to:#faf5ff var(--tw-gradient-to-position)}.object-cover{-o-object-fit:cover;object-fit:cover}.p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-10{padding-top:2.5rem;padding-bottom:2.5rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-2{padding-bottom:.5rem}.pr-6{padding-right:1.5rem}.pr-7{padding-right:1.75rem}.pr-8{padding-right:2rem}.text-left{text-align:left}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-normal{font-weight:400}.font-semibold{font-weight:600}.tracking-wide{letter-spacing:.025em}.tracking-wider{letter-spacing:.05em}.text-amber-600{--tw-text-opacity:1;color:rgb(217 119 6/var(--tw-text-opacity,1))}.text-amber-900{--tw-text-opacity:1;color:rgb(120 53 15/var(--tw-text-opacity,1))}.text-blue-700{--tw-text-opacity:1;color:rgb(29 78 216/var(--tw-text-opacity,1))}.text-blue-900{--tw-text-opacity:1;color:rgb(30 58 138/var(--tw-text-opacity,1))}.text-emerald-600{--tw-text-opacity:1;color:rgb(5 150 105/var(--tw-text-opacity,1))}.text-emerald-900{--tw-text-opacity:1;color:rgb(6 78 59/var(--tw-text-opacity,1))}.text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175/var(--tw-text-opacity,1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128/var(--tw-text-opacity,1))}.text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99/var(--tw-text-opacity,1))}.text-gray-700{--tw-text-opacity:1;color:rgb(55 65 81/var(--tw-text-opacity,1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55/var(--tw-text-opacity,1))}.text-gray-900{--tw-text-opacity:1;color:rgb(17 24 39/var(--tw-text-opacity,1))}.text-indigo-600{--tw-text-opacity:1;color:rgb(79 70 229/var(--tw-text-opacity,1))}.text-indigo-700{--tw-text-opacity:1;color:rgb(67 56 202/var(--tw-text-opacity,1))}.text-purple-700{--tw-text-opacity:1;color:rgb(126 34 206/var(--tw-text-opacity,1))}.text-red-600{--tw-text-opacity:1;color:rgb(220 38 38/var(--tw-text-opacity,1))}.text-red-900{--tw-text-opacity:1;color:rgb(127 29 29/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.shadow{--tw-shadow:0 1px 3px 0 rgba(0,0,0,.1),0 1px 2px -1px rgba(0,0,0,.1);--tw-shadow-colored:0 1px 3px 0 var(--tw-shadow-color),0 1px 2px -1px var(--tw-shadow-color)}.shadow,.shadow-lg{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color),0 4px 6px -4px var(--tw-shadow-color)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color)}.shadow-sm,.shadow-xl{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color),0 8px 10px -6px var(--tw-shadow-color)}.outline{outline-style:solid}.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur{--tw-backdrop-blur:blur(8px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.ease-in-out{transition-timing-function:cubic-bezier(.4,0,.2,1)}.hover\:bg-blue-50:hover{--tw-bg-opacity:1;background-color:rgb(239 246 255/var(--tw-bg-opacity,1))}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216/var(--tw-bg-opacity,1))}.hover\:bg-emerald-700:hover{--tw-bg-opacity:1;background-color:rgb(4 120 87/var(--tw-bg-opacity,1))}.hover\:bg-gray-200:hover{--tw-bg-opacity:1;background-color:rgb(229 231 235/var(--tw-bg-opacity,1))}.hover\:bg-gray-800:hover{--tw-bg-opacity:1;background-color:rgb(31 41 55/var(--tw-bg-opacity,1))}.hover\:bg-green-50:hover{--tw-bg-opacity:1;background-color:rgb(240 253 244/var(--tw-bg-opacity,1))}.hover\:bg-green-700:hover{--tw-bg-opacity:1;background-color:rgb(21 128 61/var(--tw-bg-opacity,1))}.hover\:bg-indigo-700:hover{--tw-bg-opacity:1;background-color:rgb(67 56 202/var(--tw-bg-opacity,1))}.hover\:bg-purple-50:hover{--tw-bg-opacity:1;background-color:rgb(250 245 255/var(--tw-bg-opacity,1))}.hover\:bg-purple-700:hover{--tw-bg-opacity:1;background-color:rgb(126 34 206/var(--tw-bg-opacity,1))}.hover\:bg-red-700:hover{--tw-bg-opacity:1;background-color:rgb(185 28 28/var(--tw-bg-opacity,1))}.hover\:bg-sky-700:hover{--tw-bg-opacity:1;background-color:rgb(3 105 161/var(--tw-bg-opacity,1))}.hover\:bg-white\/30:hover{background-color:hsla(0,0%,100%,.3)}.hover\:bg-yellow-300:hover{--tw-bg-opacity:1;background-color:rgb(253 224 71/var(--tw-bg-opacity,1))}.hover\:text-gray-800:hover{--tw-text-opacity:1;color:rgb(31 41 55/var(--tw-text-opacity,1))}.hover\:text-red-800:hover{--tw-text-opacity:1;color:rgb(153 27 27/var(--tw-text-opacity,1))}.focus\:border-blue-500:focus{--tw-border-opacity:1;border-color:rgb(59 130 246/var(--tw-border-opacity,1))}.focus\:border-green-500:focus{--tw-border-opacity:1;border-color:rgb(34 197 94/var(--tw-border-opacity,1))}.focus\:border-purple-500:focus{--tw-border-opacity:1;border-color:rgb(168 85 247/var(--tw-border-opacity,1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}@media (min-width:768px){.md\:w-auto{width:auto}.md\:flex-1{flex:1 1 0%}.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.md\:flex-row{flex-direction:row}.md\:text-base{font-size:1rem;line-height:1.5rem}.md\:text-xl{font-size:1.25rem;line-height:1.75rem}}</style>
     <style>
         @keyframes pulse-recording {
             0%, 100% { transform: scale(1); background-color: rgb(239, 68, 68); }
             50% { transform: scale(1.15); background-color: rgb(220, 38, 38); }
         }
         .recording { animation: pulse-recording 0.8s ease-in-out infinite; }
-        @keyframes wave {
-            0%, 100% { height: 20%; }
-            50% { height: 100%; }
-        }
-        .wave-bar { animation: wave 0.5s ease-in-out infinite; }
-        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
-        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
-        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
-        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
         .tab-active {
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
@@ -163,17 +155,6 @@
             table .voice-btn { width: 30px !important; height: 30px !important; font-size: 0.9rem !important; min-width: 30px !important; }
             table th, table td { padding: 5px 3px !important; font-size: 0.85rem; }
 
-            /* ディアドコキネシス測定ボタン */
-            #oralStartBtn { padding: 14px 10px !important; font-size: 1.05rem !important; min-height: 52px; }
-
-            /* 波形モニター */
-            .bg-gray-900 { height: 100px !important; padding: 10px !important; }
-            .wave-bar { width: 20px !important; }
-
-            /* 結果表示 */
-            #oralCount, #oralRate { font-size: 2rem !important; }
-            #oralTimer { font-size: 2.2rem !important; }
-
             /* SPPB合計 */
             .sppb-total { font-size: 1.8rem !important; }
 
@@ -238,6 +219,8 @@
         <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 flex items-center justify-between">
             <h1 class="text-lg md:text-xl font-bold text-white tracking-wide">高齢者包括的検査・測定</h1>
             <div class="flex gap-2">
+                <button onclick="openSyncModal()" id="syncBtn" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-3 rounded-lg text-sm backdrop-blur transition flex items-center gap-1" title="スプレッドシート同期の設定・状態"><span>☁</span><span id="syncBadge" class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-300 text-gray-800">未設定</span></button>
+                <button onclick="resetForm()" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-3 rounded-lg text-sm backdrop-blur transition" title="次の受検者のために入力をクリア">🆕 新規</button>
                 <button onclick="openCameraModal()" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-3 rounded-lg text-sm backdrop-blur transition">📷 カメラ</button>
                 <button onclick="saveSession()" class="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold py-2 px-3 rounded-lg text-sm shadow transition">💾 保存</button>
             </div>
@@ -250,7 +233,8 @@
                     <label class="block text-xs font-bold text-gray-500 mb-1 tracking-wider">利用者ID</label>
                     <div class="flex gap-1">
                         <input type="text" id="userId" class="header-input flex-1 min-w-0" placeholder="U12345">
-                        <button onclick="loadSessionById()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 rounded-lg text-xs whitespace-nowrap shadow-sm transition flex items-center gap-1" title="途中記録を読み込み">📂 読込</button>
+                        <button onclick="loadSessionById()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 rounded-lg text-xs whitespace-nowrap shadow-sm transition flex items-center gap-1" title="この端末の途中記録・保存済み記録を読み込み">📂 読込</button>
+                        <button onclick="pullRemoteById()" id="pullBtn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 rounded-lg text-xs whitespace-nowrap shadow-sm transition flex items-center gap-1 hidden" title="他のブースがスプレッドシートに送った記録を取り込み（空欄のみ埋める）">☁ 取込</button>
                     </div>
                 </div>
                 <div>
@@ -333,19 +317,19 @@
             <div class="space-y-4">
                 <!-- バランス -->
                 <div class="p-4 bg-blue-50 rounded-lg">
-                    <label class="block font-semibold text-gray-700 mb-2">バランス（最大パフォーマンス）</label>
+                    <label class="block font-semibold text-gray-700 mb-2">バランス（到達した最も難しい姿勢と、その保持秒数）</label>
                     <div class="flex items-center gap-3 flex-wrap">
                         <select id="sppb_balance_test" onchange="calcSPPBBalance()" class="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
                             <option value="">テスト選択</option>
                             <option value="side">閉脚立位</option>
                             <option value="semi">セミタンデム</option>
                             <option value="tandem">タンデム</option>
-                            <option value="single">片脚立位</option>
+                            <option value="unable">実施不可</option>
                         </select>
                         <div class="flex items-center gap-1">
                             <input type="number" id="sppb_balance_sec" step="0.1" placeholder="秒" onchange="calcSPPBBalance()" class="w-20 px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
                             <span class="text-gray-600 text-sm">秒</span>
-                            <button type="button" class="voice-btn" onclick="startVoiceInput('sppb_balance_sec')">🎤</button>
+                            <button type="button" class="voice-btn" onclick="startVoiceInput(this, 'sppb_balance_sec')">🎤</button>
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="text-sm font-semibold text-gray-600">得点:</span>
@@ -361,8 +345,9 @@
                         <div class="flex items-center gap-1">
                             <input type="number" id="sppb_gait_sec" step="0.01" placeholder="秒" onchange="calcSPPBGait()" class="w-24 px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
                             <span class="text-gray-600 text-sm">秒</span>
-                            <button type="button" class="voice-btn" onclick="startVoiceInput('sppb_gait_sec')">🎤</button>
+                            <button type="button" class="voice-btn" onclick="startVoiceInput(this, 'sppb_gait_sec')">🎤</button>
                         </div>
+                        <label class="flex items-center gap-1 text-sm"><input type="checkbox" id="sppb_gait_unable" onchange="calcSPPBGait()"> 実施不可</label>
                         <div class="flex items-center gap-1">
                             <span class="text-sm font-semibold text-gray-600">得点:</span>
                             <input type="text" id="sppb_gait_score" readonly class="w-16 px-2 py-2 border-2 rounded-lg auto-field text-center" value="—">
@@ -370,20 +355,20 @@
                     </div>
                     <!-- 5m歩行速度 -->
                     <div class="mt-3 p-3 bg-white rounded-lg border border-blue-200">
-                        <p class="text-sm font-bold text-gray-600 mb-2">5m歩行速度（SPPB採点対象外）</p>
+                        <p class="text-sm font-bold text-gray-600 mb-2">5m歩行速度（SPPB採点対象外・速い方の試行で m/s を自動計算）</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <p class="text-xs font-semibold text-gray-500 mb-1">自然歩行速度</p>
+                                <p class="text-xs font-semibold text-gray-500 mb-1">自然歩行速度 <span class="ml-2 font-bold text-blue-700" id="walk5m_nat_speed">— m/s</span></p>
                                 <div class="flex gap-2">
-                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_nat_1" step="0.01" placeholder="1回目" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('walk5m_nat_1')">🎤</button></div>
-                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_nat_2" step="0.01" placeholder="2回目" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('walk5m_nat_2')">🎤</button></div>
+                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_nat_1" step="0.01" placeholder="1回目" onchange="calcWalkSpeed(); updateJudgment()" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'walk5m_nat_1')">🎤</button></div>
+                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_nat_2" step="0.01" placeholder="2回目" onchange="calcWalkSpeed(); updateJudgment()" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'walk5m_nat_2')">🎤</button></div>
                                 </div>
                             </div>
                             <div>
-                                <p class="text-xs font-semibold text-gray-500 mb-1">最大歩行速度</p>
+                                <p class="text-xs font-semibold text-gray-500 mb-1">最大歩行速度 <span class="ml-2 font-bold text-blue-700" id="walk5m_max_speed">— m/s</span></p>
                                 <div class="flex gap-2">
-                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_max_1" step="0.01" placeholder="1回目" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('walk5m_max_1')">🎤</button></div>
-                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_max_2" step="0.01" placeholder="2回目" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('walk5m_max_2')">🎤</button></div>
+                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_max_1" step="0.01" placeholder="1回目" onchange="calcWalkSpeed(); updateJudgment()" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'walk5m_max_1')">🎤</button></div>
+                                    <div class="flex items-center gap-1"><input type="number" id="walk5m_max_2" step="0.01" placeholder="2回目" onchange="calcWalkSpeed(); updateJudgment()" class="w-20 px-2 py-1 text-sm border rounded focus:border-blue-500 focus:outline-none"><span class="text-xs">秒</span><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'walk5m_max_2')">🎤</button></div>
                                 </div>
                             </div>
                         </div>
@@ -397,7 +382,7 @@
                         <div class="flex items-center gap-1">
                             <input type="number" id="sppb_chair_sec" step="0.01" placeholder="秒" onchange="calcSPPBChair()" class="w-24 px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
                             <span class="text-gray-600 text-sm">秒</span>
-                            <button type="button" class="voice-btn" onclick="startVoiceInput('sppb_chair_sec')">🎤</button>
+                            <button type="button" class="voice-btn" onclick="startVoiceInput(this, 'sppb_chair_sec')">🎤</button>
                         </div>
                         <label class="flex items-center gap-1 text-sm"><input type="checkbox" id="sppb_chair_unable" onchange="calcSPPBChair()"> 実施不可</label>
                         <div class="flex items-center gap-1">
@@ -417,22 +402,22 @@
 
         <!-- 膝伸展筋力（2回測定+平均） -->
         <div class="measurement-section">
-            <h3 class="text-lg font-bold text-gray-700 mb-3">膝伸展筋力（2回測定・平均値自動算出）</h3>
+            <h3 class="text-lg font-bold text-gray-700 mb-3">膝伸展筋力（2回測定・平均値自動算出・単位 Nm）</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="p-4 bg-gray-50 rounded-lg">
                     <label class="block font-semibold text-gray-700 mb-2">左</label>
                     <div class="space-y-2">
-                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="kneeExt_L1" step="0.1" placeholder="NM" onchange="calcAvg('kneeExt_L','NM',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('kneeExt_L1')">🎤</button></div>
-                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="kneeExt_L2" step="0.1" placeholder="NM" onchange="calcAvg('kneeExt_L','NM',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('kneeExt_L2')">🎤</button></div>
-                        <div class="flex items-center gap-1"><span class="text-xs w-10 font-bold">平均</span><input type="text" id="kneeExt_L_avg" readonly class="flex-1 px-2 py-1 border rounded auto-field" value="—"><span class="text-xs">NM</span></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="kneeExt_L1" step="0.1" placeholder="Nm" onchange="calcAvg('kneeExt_L','Nm',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'kneeExt_L1')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="kneeExt_L2" step="0.1" placeholder="Nm" onchange="calcAvg('kneeExt_L','Nm',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'kneeExt_L2')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10 font-bold">平均</span><input type="text" id="kneeExt_L_avg" readonly class="flex-1 px-2 py-1 border rounded auto-field" value="—"><span class="text-xs">Nm</span></div>
                     </div>
                 </div>
                 <div class="p-4 bg-gray-50 rounded-lg">
                     <label class="block font-semibold text-gray-700 mb-2">右</label>
                     <div class="space-y-2">
-                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="kneeExt_R1" step="0.1" placeholder="NM" onchange="calcAvg('kneeExt_R','NM',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('kneeExt_R1')">🎤</button></div>
-                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="kneeExt_R2" step="0.1" placeholder="NM" onchange="calcAvg('kneeExt_R','NM',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('kneeExt_R2')">🎤</button></div>
-                        <div class="flex items-center gap-1"><span class="text-xs w-10 font-bold">平均</span><input type="text" id="kneeExt_R_avg" readonly class="flex-1 px-2 py-1 border rounded auto-field" value="—"><span class="text-xs">NM</span></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="kneeExt_R1" step="0.1" placeholder="Nm" onchange="calcAvg('kneeExt_R','Nm',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'kneeExt_R1')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="kneeExt_R2" step="0.1" placeholder="Nm" onchange="calcAvg('kneeExt_R','Nm',2)" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'kneeExt_R2')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10 font-bold">平均</span><input type="text" id="kneeExt_R_avg" readonly class="flex-1 px-2 py-1 border rounded auto-field" value="—"><span class="text-xs">Nm</span></div>
                     </div>
                 </div>
             </div>
@@ -445,16 +430,16 @@
                 <div class="p-4 bg-gray-50 rounded-lg">
                     <label class="block font-semibold text-gray-700 mb-2">左 (kg)</label>
                     <div class="space-y-2">
-                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="grip_L1" step="0.1" placeholder="kg" onchange="calcAvg('grip_L','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('grip_L1')">🎤</button></div>
-                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="grip_L2" step="0.1" placeholder="kg" onchange="calcAvg('grip_L','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('grip_L2')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="grip_L1" step="0.1" placeholder="kg" onchange="calcAvg('grip_L','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'grip_L1')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="grip_L2" step="0.1" placeholder="kg" onchange="calcAvg('grip_L','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'grip_L2')">🎤</button></div>
                         <div class="flex items-center gap-1"><span class="text-xs w-10 font-bold">平均</span><input type="text" id="grip_L_avg" readonly class="flex-1 px-2 py-1 border rounded auto-field" value="—"><span class="text-xs">kg</span></div>
                     </div>
                 </div>
                 <div class="p-4 bg-gray-50 rounded-lg">
                     <label class="block font-semibold text-gray-700 mb-2">右 (kg)</label>
                     <div class="space-y-2">
-                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="grip_R1" step="0.1" placeholder="kg" onchange="calcAvg('grip_R','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('grip_R1')">🎤</button></div>
-                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="grip_R2" step="0.1" placeholder="kg" onchange="calcAvg('grip_R','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput('grip_R2')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">1回目</span><input type="number" id="grip_R1" step="0.1" placeholder="kg" onchange="calcAvg('grip_R','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'grip_R1')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-10">2回目</span><input type="number" id="grip_R2" step="0.1" placeholder="kg" onchange="calcAvg('grip_R','kg',2); updateJudgment()" class="flex-1 px-2 py-1 border rounded focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'grip_R2')">🎤</button></div>
                         <div class="flex items-center gap-1"><span class="text-xs w-10 font-bold">平均</span><input type="text" id="grip_R_avg" readonly class="flex-1 px-2 py-1 border rounded auto-field" value="—"><span class="text-xs">kg</span></div>
                     </div>
                 </div>
@@ -467,15 +452,15 @@
             <div class="flex gap-3 flex-wrap items-end">
                 <div class="flex-1 min-w-[90px]">
                     <label class="block text-sm text-gray-600 mb-1">1回目</label>
-                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_1" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('respMuscle_1')">🎤</button></div>
+                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_1" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'respMuscle_1')">🎤</button></div>
                 </div>
                 <div class="flex-1 min-w-[90px]">
                     <label class="block text-sm text-gray-600 mb-1">2回目</label>
-                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_2" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('respMuscle_2')">🎤</button></div>
+                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_2" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'respMuscle_2')">🎤</button></div>
                 </div>
                 <div class="flex-1 min-w-[90px]">
                     <label class="block text-sm text-gray-600 mb-1">3回目</label>
-                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_3" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('respMuscle_3')">🎤</button></div>
+                    <div class="flex items-center gap-1"><input type="number" id="respMuscle_3" step="0.1" placeholder="値" onchange="highlightMax('respMuscle',3); calcMaxField('respMuscle',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'respMuscle_3')">🎤</button></div>
                 </div>
                 <div class="min-w-[100px]">
                     <label class="block text-sm font-bold text-gray-700 mb-1">最大値</label>
@@ -501,69 +486,87 @@
             <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-purple-50"><input type="checkbox" id="chk_geniohyoid" class="w-5 h-5"> <span class="font-semibold">実施済み</span></label>
         </div>
 
-        <!-- オーラルディアドコキネシス（30秒） -->
+        <!-- オーラルディアドコキネシス（機器測定値の入力） -->
         <div class="measurement-section ms-purple">
-            <h3 class="text-lg font-bold text-gray-700 mb-3">オーラルディアドコキネシス（pa/ta/ka）— 10秒間</h3>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                    <div class="mb-4">
-                        <label class="block font-semibold text-gray-700 mb-2">測定対象</label>
-                        <select id="oralTarget" class="w-full px-3 py-2 text-lg font-bold border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
-                            <option value="pa">「パ」の発音</option>
-                            <option value="ta">「タ」の発音</option>
-                            <option value="ka">「カ」の発音</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block font-semibold text-gray-700 mb-2">音量閾値: <span id="thresholdValue">30</span></label>
-                        <input type="range" id="threshold" min="10" max="50" value="30" oninput="updateThreshold(this.value)" class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    </div>
-                    <button onclick="toggleMicTest()" id="micTestBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mb-2 text-sm">🎤 発声テスト（測定前の確認）</button>
-                    <div id="micTestPanel" class="hidden mb-3 p-3 bg-blue-50 border-2 border-blue-300 rounded-xl">
-                        <p class="text-xs font-semibold text-gray-700 mb-1">マイク音量レベル</p>
-                        <div class="bg-gray-200 rounded-full h-5 overflow-hidden mb-2"><div id="testLevelBar" class="h-full rounded-full bg-blue-400 transition-none" style="width:0%"></div></div>
-                        <div id="micTestMsg" class="text-sm text-center font-bold text-yellow-700">🎤 「パ」「タ」「カ」と発声してください</div>
-                    </div>
-                    <button onclick="startOralTest()" id="oralStartBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-xl text-xl shadow-lg transform transition hover:scale-105 mb-4">▶️ 測定開始（10秒間）</button>
-                    <div class="bg-purple-50 rounded-xl p-4 border-2 border-purple-200">
-                        <div class="grid grid-cols-2 gap-4 text-center">
-                            <div><p class="text-sm font-semibold text-gray-700">検出回数</p><p id="oralCount" class="text-4xl font-bold text-purple-600">0</p><p class="text-xs text-gray-600">回</p></div>
-                            <div><p class="text-sm font-semibold text-gray-700">1秒あたり</p><p id="oralRate" class="text-4xl font-bold text-blue-600">0.0</p><p class="text-xs text-gray-600">回/秒</p></div>
-                        </div>
-                    </div>
-                    <div class="mt-3 grid grid-cols-3 gap-2">
-                        <div class="text-center p-2 bg-gray-50 rounded-lg"><span class="text-sm font-bold">pa</span><p id="result_pa" class="text-lg font-bold text-gray-500">—</p></div>
-                        <div class="text-center p-2 bg-gray-50 rounded-lg"><span class="text-sm font-bold">ta</span><p id="result_ta" class="text-lg font-bold text-gray-500">—</p></div>
-                        <div class="text-center p-2 bg-gray-50 rounded-lg"><span class="text-sm font-bold">ka</span><p id="result_ka" class="text-lg font-bold text-gray-500">—</p></div>
-                    </div>
-                    <button onclick="saveCurrentOralResult()" class="w-full mt-3 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow transform transition hover:scale-105">💾 この測定結果を記録</button>
+            <h3 class="text-lg font-bold text-gray-700 mb-1">オーラルディアドコキネシス（pa / ta / ka）</h3>
+            <p class="text-sm text-gray-600 mb-3">測定機器（健口くん等）の表示値を入力します。<b>回/秒</b>を直接入力するか、<b>回数</b>を入力すると測定時間から自動計算します。基準：いずれかが <b>6.0 回/秒未満</b> で舌口唇運動機能低下。</p>
+            <div class="flex flex-wrap items-center gap-3 mb-3 p-3 bg-purple-50 rounded-lg">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-semibold text-gray-700">測定時間</label>
+                    <select id="odk_duration" onchange="calcODK('pa'); calcODK('ta'); calcODK('ka')" class="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none font-bold">
+                        <option value="5" selected>5秒</option>
+                        <option value="10">10秒</option>
+                    </select>
                 </div>
-                <div>
-                    <h4 class="font-bold text-gray-700 mb-2">🎵 音声波形モニター</h4>
-                    <div class="bg-gray-900 rounded-xl p-6 h-48 flex items-end justify-around gap-2">
-                        <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
-                        <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
-                        <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
-                        <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
-                        <div class="wave-bar bg-purple-500 w-8 rounded-t" style="height:20%"></div>
+                <div class="flex items-center gap-2 w-full md:w-auto md:flex-1">
+                    <label class="text-sm font-semibold text-gray-700 whitespace-nowrap">測定機器</label>
+                    <select id="odk_device" class="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none flex-1">
+                        <option value="kenkokun">健口くん（竹井機器）</option>
+                        <option value="counter">手動カウント（ストップウォッチ）</option>
+                        <option value="other">その他</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- pa -->
+                <div class="p-4 bg-gray-50 rounded-lg border-2 border-gray-200" id="odk_card_pa">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl font-bold text-purple-700">「パ」<span class="text-sm text-gray-500 font-semibold ml-1">pa</span></span>
+                        <span id="odk_badge_pa" class="text-xs font-bold px-2 py-1 rounded bg-gray-200 text-gray-500">未入力</span>
                     </div>
-                    <div class="mt-2">
-                        <p class="text-xs font-semibold text-gray-600 mb-1">音量レベル（測定中）</p>
-                        <div class="bg-gray-200 rounded-full h-4 overflow-hidden"><div id="levelMeter" class="h-full rounded-full bg-green-400 transition-none" style="width:0%"></div></div>
-                    </div>
-                    <div id="oralStatus" class="mt-3 text-center text-lg font-bold text-gray-600">準備完了</div>
-                    <div class="mt-3 bg-blue-50 rounded-xl p-4 text-center">
-                        <p class="text-sm font-semibold text-gray-700">残り時間</p>
-                        <p id="oralTimer" class="text-4xl font-bold text-blue-600">10.0</p>
-                        <p class="text-xs text-gray-600">秒</p>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-1"><span class="text-xs w-12 font-semibold">回/秒</span><input type="number" id="odk_pa_rate" step="0.1" min="0" max="15" placeholder="例 6.4" oninput="calcODK('pa', 'rate')" onchange="calcODK('pa','rate')" class="flex-1 min-w-0 px-2 py-2 text-lg font-bold border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'odk_pa_rate')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-12">回数</span><input type="number" id="odk_pa_count" step="1" min="0" max="150" placeholder="例 32" oninput="calcODK('pa', 'count')" onchange="calcODK('pa','count')" class="flex-1 min-w-0 px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'odk_pa_count')">🎤</button></div>
                     </div>
                 </div>
+                <!-- ta -->
+                <div class="p-4 bg-gray-50 rounded-lg border-2 border-gray-200" id="odk_card_ta">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl font-bold text-purple-700">「タ」<span class="text-sm text-gray-500 font-semibold ml-1">ta</span></span>
+                        <span id="odk_badge_ta" class="text-xs font-bold px-2 py-1 rounded bg-gray-200 text-gray-500">未入力</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-1"><span class="text-xs w-12 font-semibold">回/秒</span><input type="number" id="odk_ta_rate" step="0.1" min="0" max="15" placeholder="例 6.2" oninput="calcODK('ta', 'rate')" onchange="calcODK('ta','rate')" class="flex-1 min-w-0 px-2 py-2 text-lg font-bold border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'odk_ta_rate')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-12">回数</span><input type="number" id="odk_ta_count" step="1" min="0" max="150" placeholder="例 31" oninput="calcODK('ta', 'count')" onchange="calcODK('ta','count')" class="flex-1 min-w-0 px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'odk_ta_count')">🎤</button></div>
+                    </div>
+                </div>
+                <!-- ka -->
+                <div class="p-4 bg-gray-50 rounded-lg border-2 border-gray-200" id="odk_card_ka">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl font-bold text-purple-700">「カ」<span class="text-sm text-gray-500 font-semibold ml-1">ka</span></span>
+                        <span id="odk_badge_ka" class="text-xs font-bold px-2 py-1 rounded bg-gray-200 text-gray-500">未入力</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-1"><span class="text-xs w-12 font-semibold">回/秒</span><input type="number" id="odk_ka_rate" step="0.1" min="0" max="15" placeholder="例 5.8" oninput="calcODK('ka', 'rate')" onchange="calcODK('ka','rate')" class="flex-1 min-w-0 px-2 py-2 text-lg font-bold border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'odk_ka_rate')">🎤</button></div>
+                        <div class="flex items-center gap-1"><span class="text-xs w-12">回数</span><input type="number" id="odk_ka_count" step="1" min="0" max="150" placeholder="例 29" oninput="calcODK('ka', 'count')" onchange="calcODK('ka','count')" class="flex-1 min-w-0 px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:28px;height:28px;font-size:0.8rem" onclick="startVoiceInput(this, 'odk_ka_count')">🎤</button></div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 flex flex-wrap items-center gap-3">
+                <div id="odk_summary" class="flex-1 min-w-[200px] p-3 rounded-lg border-2 border-gray-200 bg-gray-50 text-sm font-bold text-gray-500">判定：未入力</div>
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="odk_unable" onchange="calcODK('pa'); calcODK('ta'); calcODK('ka')" class="w-5 h-5"> 実施不可（理解困難・拒否等）</label>
+            </div>
+            <div class="mt-2">
+                <input type="text" id="odk_note" placeholder="備考（義歯装着の有無、再測定など）" class="w-full px-3 py-2 border rounded-lg focus:border-purple-500 focus:outline-none text-sm">
             </div>
         </div>
 
         <!-- 咀嚼機能(ガム) L/a/b値 3回 -->
         <div class="measurement-section ms-purple">
-            <h3 class="text-lg font-bold text-gray-700 mb-3">咀嚼機能・ガム（L/a/b値 × 3回測定）</h3>
+            <h3 class="text-lg font-bold text-gray-700 mb-3">咀嚼機能・ガム（色彩色差計 L*a*b* × 3回測定）</h3>
+            <div class="flex flex-wrap items-center gap-3 mb-3 p-3 bg-purple-50 rounded-lg">
+                <label class="text-sm font-semibold text-gray-700">咀嚼チェックガム 色スケール判定</label>
+                <select id="chew_scale" onchange="updateJudgment()" class="px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none font-bold">
+                    <option value="">—</option>
+                    <option value="1">1（ほぼ変色なし）</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5（十分に変色）</option>
+                </select>
+                <span class="text-xs text-gray-600">3以下で咀嚼機能低下（口腔機能低下症 2024 基準）。色差計の値は記録用。</span>
+                <span class="ml-auto text-sm font-bold text-purple-700" id="chew_ab_mean">a* 平均: —</span>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead><tr class="bg-purple-50">
@@ -571,17 +574,17 @@
                     </tr></thead>
                     <tbody>
                         <tr><td class="p-2 font-semibold">1回目</td>
-                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_L1" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_L1')">🎤</button></div></td>
-                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_a1" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_a1')">🎤</button></div></td>
-                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_b1" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_b1')">🎤</button></div></td></tr>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_L1" step="0.1" onchange="calcChewMean(); updateJudgment()" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput(this, 'chew_L1')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_a1" step="0.1" onchange="calcChewMean(); updateJudgment()" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput(this, 'chew_a1')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_b1" step="0.1" onchange="calcChewMean(); updateJudgment()" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput(this, 'chew_b1')">🎤</button></div></td></tr>
                         <tr><td class="p-2 font-semibold">2回目</td>
-                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_L2" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_L2')">🎤</button></div></td>
-                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_a2" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_a2')">🎤</button></div></td>
-                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_b2" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_b2')">🎤</button></div></td></tr>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_L2" step="0.1" onchange="calcChewMean(); updateJudgment()" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput(this, 'chew_L2')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_a2" step="0.1" onchange="calcChewMean(); updateJudgment()" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput(this, 'chew_a2')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_b2" step="0.1" onchange="calcChewMean(); updateJudgment()" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput(this, 'chew_b2')">🎤</button></div></td></tr>
                         <tr><td class="p-2 font-semibold">3回目</td>
-                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_L3" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_L3')">🎤</button></div></td>
-                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_a3" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_a3')">🎤</button></div></td>
-                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_b3" step="0.1" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput('chew_b3')">🎤</button></div></td></tr>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_L3" step="0.1" onchange="calcChewMean(); updateJudgment()" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput(this, 'chew_L3')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_a3" step="0.1" onchange="calcChewMean(); updateJudgment()" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput(this, 'chew_a3')">🎤</button></div></td>
+                            <td class="p-1"><div class="flex items-center gap-1"><input type="number" id="chew_b3" step="0.1" onchange="calcChewMean(); updateJudgment()" class="w-full px-2 py-1 border rounded focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" style="width:24px;height:24px;font-size:0.7rem" onclick="startVoiceInput(this, 'chew_b3')">🎤</button></div></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -591,21 +594,21 @@
         <div class="measurement-section ms-purple">
             <h3 class="text-lg font-bold text-gray-700 mb-3">最大舌圧（3回測定・最大値自動算出）</h3>
             <div class="flex gap-3 flex-wrap items-end">
-                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">1回目</label><div class="flex items-center gap-1"><input type="number" id="tonguePressure_1" step="0.1" placeholder="kPa" onchange="highlightMax('tonguePressure',3); calcMaxField('tonguePressure',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('tonguePressure_1')">🎤</button></div></div>
-                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">2回目</label><div class="flex items-center gap-1"><input type="number" id="tonguePressure_2" step="0.1" placeholder="kPa" onchange="highlightMax('tonguePressure',3); calcMaxField('tonguePressure',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('tonguePressure_2')">🎤</button></div></div>
-                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">3回目</label><div class="flex items-center gap-1"><input type="number" id="tonguePressure_3" step="0.1" placeholder="kPa" onchange="highlightMax('tonguePressure',3); calcMaxField('tonguePressure',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('tonguePressure_3')">🎤</button></div></div>
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">1回目</label><div class="flex items-center gap-1"><input type="number" id="tonguePressure_1" step="0.1" placeholder="kPa" onchange="highlightMax('tonguePressure',3); calcMaxField('tonguePressure',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'tonguePressure_1')">🎤</button></div></div>
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">2回目</label><div class="flex items-center gap-1"><input type="number" id="tonguePressure_2" step="0.1" placeholder="kPa" onchange="highlightMax('tonguePressure',3); calcMaxField('tonguePressure',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'tonguePressure_2')">🎤</button></div></div>
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">3回目</label><div class="flex items-center gap-1"><input type="number" id="tonguePressure_3" step="0.1" placeholder="kPa" onchange="highlightMax('tonguePressure',3); calcMaxField('tonguePressure',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'tonguePressure_3')">🎤</button></div></div>
                 <div class="min-w-[100px]"><label class="block text-sm font-bold text-gray-700 mb-1">最大値</label><input type="text" id="tonguePressure_max" readonly class="w-full px-2 py-2 border-2 rounded-lg auto-field text-center" value="—"></div>
             </div>
         </div>
 
         <!-- 口腔乾燥（3回+最大値自動） -->
         <div class="measurement-section ms-purple">
-            <h3 class="text-lg font-bold text-gray-700 mb-3">口腔乾燥・ムーカス（3回測定・最大値自動算出）</h3>
+            <h3 class="text-lg font-bold text-gray-700 mb-3">口腔乾燥・ムーカス（3回測定・中央値を採用）</h3>
             <div class="flex gap-3 flex-wrap items-end">
-                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">1回目</label><div class="flex items-center gap-1"><input type="number" id="mucus_1" step="0.1" placeholder="値" onchange="highlightMax('mucus',3); calcMaxField('mucus',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('mucus_1')">🎤</button></div></div>
-                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">2回目</label><div class="flex items-center gap-1"><input type="number" id="mucus_2" step="0.1" placeholder="値" onchange="highlightMax('mucus',3); calcMaxField('mucus',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('mucus_2')">🎤</button></div></div>
-                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">3回目</label><div class="flex items-center gap-1"><input type="number" id="mucus_3" step="0.1" placeholder="値" onchange="highlightMax('mucus',3); calcMaxField('mucus',3)" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput('mucus_3')">🎤</button></div></div>
-                <div class="min-w-[100px]"><label class="block text-sm font-bold text-gray-700 mb-1">最大値</label><input type="text" id="mucus_max" readonly class="w-full px-2 py-2 border-2 rounded-lg auto-field text-center" value="—"></div>
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">1回目</label><div class="flex items-center gap-1"><input type="number" id="mucus_1" step="0.1" placeholder="値" onchange="calcMedianField('mucus',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'mucus_1')">🎤</button></div></div>
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">2回目</label><div class="flex items-center gap-1"><input type="number" id="mucus_2" step="0.1" placeholder="値" onchange="calcMedianField('mucus',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'mucus_2')">🎤</button></div></div>
+                <div class="flex-1 min-w-[90px]"><label class="block text-sm text-gray-600 mb-1">3回目</label><div class="flex items-center gap-1"><input type="number" id="mucus_3" step="0.1" placeholder="値" onchange="calcMedianField('mucus',3); updateJudgment()" class="w-full px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"><button type="button" class="voice-btn" onclick="startVoiceInput(this, 'mucus_3')">🎤</button></div></div>
+                <div class="min-w-[100px]"><label class="block text-sm font-bold text-gray-700 mb-1">中央値</label><input type="text" id="mucus_max" readonly class="w-full px-2 py-2 border-2 rounded-lg auto-field text-center" value="—"></div>
             </div>
         </div>
 
@@ -631,25 +634,25 @@
                         <!-- 左: x=55, 中: x=110, 右: x=165 -->
                     </svg>
                     <!-- 後方行 (top ≈ 55/300*100% = 18.3%) -->
-                    <input type="number" min="0" max="2" class="tongue-input" id="tci_pl" style="top:13%; left:12%" placeholder="0" oninput="calcTCI()">
-                    <input type="number" min="0" max="2" class="tongue-input" id="tci_pc" style="top:13%; left:40%" placeholder="0" oninput="calcTCI()">
-                    <input type="number" min="0" max="2" class="tongue-input" id="tci_pr" style="top:13%; left:67%" placeholder="0" oninput="calcTCI()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_pl" style="top:13%; left:12%" placeholder="0" oninput="calcTCI(); updateJudgment()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_pc" style="top:13%; left:40%" placeholder="0" oninput="calcTCI(); updateJudgment()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_pr" style="top:13%; left:67%" placeholder="0" oninput="calcTCI(); updateJudgment()">
                     <!-- 中央行 (top ≈ 148/300*100% = 49.3%) -->
-                    <input type="number" min="0" max="2" class="tongue-input" id="tci_ml" style="top:44%; left:14%" placeholder="0" oninput="calcTCI()">
-                    <input type="number" min="0" max="2" class="tongue-input" id="tci_mc" style="top:44%; left:40%" placeholder="0" oninput="calcTCI()">
-                    <input type="number" min="0" max="2" class="tongue-input" id="tci_mr" style="top:44%; left:65%" placeholder="0" oninput="calcTCI()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_ml" style="top:44%; left:14%" placeholder="0" oninput="calcTCI(); updateJudgment()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_mc" style="top:44%; left:40%" placeholder="0" oninput="calcTCI(); updateJudgment()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_mr" style="top:44%; left:65%" placeholder="0" oninput="calcTCI(); updateJudgment()">
                     <!-- 前方行 (top ≈ 240/300*100% = 80%) -->
-                    <input type="number" min="0" max="2" class="tongue-input" id="tci_al" style="top:73%; left:20%" placeholder="0" oninput="calcTCI()">
-                    <input type="number" min="0" max="2" class="tongue-input" id="tci_ac" style="top:73%; left:40%" placeholder="0" oninput="calcTCI()">
-                    <input type="number" min="0" max="2" class="tongue-input" id="tci_ar" style="top:73%; left:60%" placeholder="0" oninput="calcTCI()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_al" style="top:73%; left:20%" placeholder="0" oninput="calcTCI(); updateJudgment()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_ac" style="top:73%; left:40%" placeholder="0" oninput="calcTCI(); updateJudgment()">
+                    <input type="number" min="0" max="2" class="tongue-input" id="tci_ar" style="top:73%; left:60%" placeholder="0" oninput="calcTCI(); updateJudgment()">
                 </div>
                 <div class="flex-1">
                     <p class="text-sm text-gray-600 mb-2">0=舌苔なし　1=薄い/部分的　2=厚い/全体</p>
                     <div class="bg-purple-50 p-3 rounded-lg">
                         <p class="font-bold text-gray-700">TCI合計: <span id="tci_total" class="text-purple-700">0</span> / 18</p>
-                        <p class="font-bold text-gray-700">TCI (%): <span id="tci_percent" class="text-purple-700">0.0</span>%</p>
+                        <p class="font-bold text-gray-700">TCI (%): <span id="tci_percent" class="text-purple-700">0.0</span>%　<span class="text-xs text-gray-500">50%以上で口腔衛生不良</span></p>
                     </div>
-                    <button onclick="calcTCI()" class="mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm">TCI計算</button>
+                    <button onclick="calcTCI(); updateJudgment()" class="mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm">TCI計算</button>
                 </div>
             </div>
         </div>
@@ -660,7 +663,7 @@
             <div class="flex items-center gap-2">
                 <input type="number" id="remainingTeeth" min="0" max="30" step="1" placeholder="本数" onchange="updateJudgment()" class="w-32 px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg">
                 <span class="text-gray-600">本 (0〜30)</span>
-                <button type="button" class="voice-btn" onclick="startVoiceInput('remainingTeeth')">🎤</button>
+                <button type="button" class="voice-btn" onclick="startVoiceInput(this, 'remainingTeeth')">🎤</button>
             </div>
         </div>
     </div>
@@ -700,22 +703,25 @@
 
     <!-- 自動判定パネル -->
     <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-4 border-yellow-500 pb-2">📊 自動判定パネル</h2>
+        <h2 class="text-xl font-bold text-gray-800 mb-1 border-b-4 border-yellow-500 pb-2">📊 自動判定パネル（スクリーニング参考値）</h2>
+        <p class="text-xs text-gray-500 mb-4">入力済み項目のみで判定します。診断ではなく、結果返却・専門職への相談勧奨の目安です。</p>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div id="judge_physicalFrailty" class="p-4 rounded-xl border-2 border-gray-200 bg-gray-50">
-                <h3 class="font-bold text-gray-700 mb-2">身体的フレイル</h3>
-                <p class="text-sm text-gray-600 mb-2">握力・SPPB等から判定</p>
+                <h3 class="font-bold text-gray-700 mb-2">サルコペニア スクリーニング</h3>
+                <p class="text-sm text-gray-600 mb-2">AWGS2019 参考：握力 男&lt;28 / 女&lt;18 kg、SPPB≦9、5回立ち上がり≧12秒、歩行速度&lt;1.0 m/s</p>
                 <div id="judge_physicalFrailty_result" class="text-lg font-bold text-gray-400">— 未判定 —</div>
+                <div id="judge_physicalFrailty_detail" class="text-xs text-gray-600 mt-1"></div>
             </div>
             <div id="judge_physicalDecline" class="p-4 rounded-xl border-2 border-gray-200 bg-gray-50">
-                <h3 class="font-bold text-gray-700 mb-2">身体機能低下</h3>
-                <p class="text-sm text-gray-600 mb-2">SPPBスコア: 0-6低 / 7-9中 / 10-12高</p>
+                <h3 class="font-bold text-gray-700 mb-2">身体機能（SPPB）</h3>
+                <p class="text-sm text-gray-600 mb-2">SPPB合計: 0-6 低 / 7-9 中 / 10-12 高</p>
                 <div id="judge_physicalDecline_result" class="text-lg font-bold text-gray-400">— 未判定 —</div>
             </div>
             <div id="judge_oralFrailty" class="p-4 rounded-xl border-2 border-gray-200 bg-gray-50">
-                <h3 class="font-bold text-gray-700 mb-2">オーラルフレイル</h3>
-                <p class="text-sm text-gray-600 mb-2">6項目中3項目以上で該当</p>
+                <h3 class="font-bold text-gray-700 mb-2">口腔機能低下 スクリーニング</h3>
+                <p class="text-sm text-gray-600 mb-2">口腔機能低下症 参考：TCI≧50%・ムーカス&lt;27・残存歯&lt;20・パタカ&lt;6/秒・舌圧&lt;30kPa・ガム≦3 のうち3項目以上</p>
                 <div id="judge_oralFrailty_result" class="text-lg font-bold text-gray-400">— 未判定 —</div>
+                <div id="judge_oralFrailty_detail" class="text-xs text-gray-600 mt-1"></div>
             </div>
         </div>
     </div>
@@ -723,15 +729,51 @@
     <!-- データ一覧 -->
     <div class="bg-white rounded-2xl shadow-xl p-6">
         <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
-            <h2 class="text-2xl font-bold text-gray-800 border-b-4 border-indigo-500 pb-2">📋 記録済みセッション一覧</h2>
+            <h2 class="text-2xl font-bold text-gray-800 border-b-4 border-indigo-500 pb-2">📋 記録済みセッション一覧 <span class="text-xs font-normal text-gray-500 ml-2">この端末のブラウザ内に保存（IndexedDB）。終了時は必ずCSV/JSONを出力してください。</span></h2>
             <div class="flex gap-3">
                 <span class="text-lg font-semibold text-gray-700">総件数: <span id="totalRecords" class="text-indigo-600">0</span>件</span>
-                <button onclick="exportData()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow">📤 JSON出力</button>
+                <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow">📊 CSV出力</button>
+                <button onclick="exportData()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow">📤 JSON出力（画像含む）</button>
                 <button onclick="clearAllRecords()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow">🗑️ 全削除</button>
             </div>
         </div>
         <div id="recordsList" class="grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar" style="max-height:600px;overflow-y:auto">
             <p class="col-span-full text-center text-gray-400 py-10">まだデータがありません</p>
+        </div>
+    </div>
+</div>
+
+<!-- 同期設定モーダル -->
+<div id="syncModal" class="inline-camera-modal">
+    <div class="modal-content" style="max-width:640px">
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="text-xl font-bold text-gray-800">☁ スプレッドシート同期</h2>
+            <button onclick="closeSyncModal()" class="text-2xl text-gray-500 hover:text-gray-800 font-bold">&times;</button>
+        </div>
+        <p class="text-xs text-gray-600 mb-3">保存するたびに Google スプレッドシート（Apps Script）へ送信し、<b>検査日＋利用者ID</b> で1行に統合します。他のブースが入力した値は消えません。圏外のときは端末に溜めて、つながったら自動で送ります。</p>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">ウェブアプリの URL（Apps Script のデプロイで表示されるもの）</label>
+                <input type="url" id="sync_url" class="header-input w-full" placeholder="https://script.google.com/macros/s/…/exec">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">合言葉（Code.gs の SECRET と同じ）</label>
+                    <input type="text" id="sync_secret" class="header-input w-full" placeholder="CHANGE-ME-2026" autocomplete="off">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">この端末のブース名</label>
+                    <input type="text" id="sync_device" class="header-input w-full" placeholder="例：口腔ブースA / 受付 / 身体1">
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="saveSyncSettings()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm">💾 設定を保存</button>
+                <button onclick="testSync()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg text-sm">🔌 接続テスト</button>
+                <button onclick="trySync(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm">📤 未送信を今すぐ送信</button>
+                <button onclick="copyShareUrl()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm" title="この設定を埋め込んだURL。他の端末でこのURLを開くと設定が自動で入ります">🔗 設定入りURLをコピー</button>
+            </div>
+            <div id="sync_status" class="text-sm p-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-700">—</div>
+            <div id="sync_outbox" class="text-xs text-gray-600"></div>
         </div>
     </div>
 </div>
@@ -796,10 +838,6 @@
 let allSessions = [];
 let capturedImagesData = [];
 let cameraStreams = {};
-let audioContext = null, analyser = null, microphone = null;
-let oralTestInterval = null, oralTestTimeout = null, oralCount = 0, oralThreshold = 30, lastPeakTime = 0;
-let micTestContext = null, micTestStream = null, micTestInterval = null;
-const oralTestDuration = 10;
 let diadochoResults = { pa: null, ta: null, ka: null };
 let inlineCameraTarget = null;
 let cognitiveImages = { moca: [], fab: [] };
@@ -837,18 +875,35 @@ function autoSaveDraft() {
     if (!userId) return;
     const data = collectSessionDataRaw();
     data._draftTimestamp = new Date().toISOString();
-    localStorage.setItem(DRAFT_KEY_PREFIX + userId, JSON.stringify(data));
+    try { localStorage.setItem(DRAFT_KEY_PREFIX + userId, JSON.stringify(data)); }
+    catch (e) {
+        // 画像で容量超過した場合は画像を除いて途中保存
+        data.images = []; data.cognitive.moca.images = []; data.cognitive.fab.images = [];
+        try { localStorage.setItem(DRAFT_KEY_PREFIX + userId, JSON.stringify(data)); } catch (_) {}
+    }
 }
 
 function loadSessionById() {
     const userId = document.getElementById('userId').value.trim();
     if (!userId) { alert('利用者IDを入力してください'); return; }
     const raw = localStorage.getItem(DRAFT_KEY_PREFIX + userId);
-    if (!raw) { alert(`ID「${userId}」の途中記録は見つかりませんでした`); return; }
-    const data = JSON.parse(raw);
-    if (!confirm(`ID「${userId}」(${data.userName || '名前未入力'}) の途中記録を読み込みますか？\n保存日時: ${data._draftTimestamp ? new Date(data._draftTimestamp).toLocaleString('ja-JP') : '不明'}`)) return;
+    let data = null, kind = '';
+    if (raw) { data = JSON.parse(raw); kind = '途中記録'; }
+    else {
+        const saved = allSessions.find(s => s.userId === userId);
+        if (saved) { data = saved; kind = '保存済みセッション'; }
+    }
+    if (!data) {
+        if (syncConfigured() && confirm(`ID「${userId}」の記録はこの端末にありません。\nスプレッドシート（他ブースの入力）から取り込みますか？`)) { pullRemoteById(); }
+        else alert(`ID「${userId}」の途中記録・保存済みセッションは見つかりませんでした`);
+        return;
+    }
+    const when = data._draftTimestamp || data.timestamp;
+    if (!confirm(`ID「${userId}」(${data.userName || '名前未入力'}) の${kind}を読み込みますか？\n保存日時: ${when ? new Date(when).toLocaleString('ja-JP') : '不明'}\n※ 現在の入力内容は上書きされます`)) return;
+    resetForm(true, document.getElementById('userId').value.trim() !== userId);
+    document.getElementById('userId').value = userId;
     restoreSessionData(data);
-    alert('途中記録を読み込みました');
+    alert(`${kind}を読み込みました。修正後に「保存」すると新しいセッションとして追加されます。`);
 }
 
 function restoreSessionData(d) {
@@ -873,6 +928,7 @@ function restoreSessionData(d) {
         if (s.gait?.sec) document.getElementById('sppb_gait_sec').value = s.gait.sec;
         if (s.chair?.sec) document.getElementById('sppb_chair_sec').value = s.chair.sec;
         if (s.chair?.unable) document.getElementById('sppb_chair_unable').checked = s.chair.unable;
+        if (s.gait?.unable) document.getElementById('sppb_gait_unable').checked = s.gait.unable;
         calcSPPBBalance(); calcSPPBGait(); calcSPPBChair();
     }
 
@@ -881,6 +937,7 @@ function restoreSessionData(d) {
         const w = d.physical.walk5m;
         if (w.natural) { if (w.natural[0]) document.getElementById('walk5m_nat_1').value = w.natural[0]; if (w.natural[1]) document.getElementById('walk5m_nat_2').value = w.natural[1]; }
         if (w.max) { if (w.max[0]) document.getElementById('walk5m_max_1').value = w.max[0]; if (w.max[1]) document.getElementById('walk5m_max_2').value = w.max[1]; }
+        calcWalkSpeed();
     }
 
     // 膝伸展
@@ -888,7 +945,7 @@ function restoreSessionData(d) {
         const k = d.physical.kneeExtension;
         if (k.left) { if (k.left[0]) document.getElementById('kneeExt_L1').value = k.left[0]; if (k.left[1]) document.getElementById('kneeExt_L2').value = k.left[1]; }
         if (k.right) { if (k.right[0]) document.getElementById('kneeExt_R1').value = k.right[0]; if (k.right[1]) document.getElementById('kneeExt_R2').value = k.right[1]; }
-        calcAvg('kneeExt_L','NM',2); calcAvg('kneeExt_R','NM',2);
+        calcAvg('kneeExt_L','Nm',2); calcAvg('kneeExt_R','Nm',2);
     }
 
     // 握力
@@ -908,20 +965,14 @@ function restoreSessionData(d) {
 
     // 嚥下機能
     if (d.swallowing?.geniohyoidEcho !== undefined) document.getElementById('chk_geniohyoid').checked = d.swallowing.geniohyoidEcho;
-    if (d.swallowing?.diadochokinesis) {
-        diadochoResults = { ...diadochoResults, ...d.swallowing.diadochokinesis };
-        ['pa','ta','ka'].forEach(k => {
-            if (diadochoResults[k] !== null) {
-                document.getElementById(`result_${k}`).textContent = `${diadochoResults[k]} 回/秒`;
-                document.getElementById(`result_${k}`).className = 'text-lg font-bold text-purple-700';
-            }
-        });
-    }
+    if (d.swallowing?.diadochokinesis) restoreODK(d.swallowing.diadochokinesis);
 
     // 咀嚼
     if (d.swallowing?.chewing) {
         const ch = d.swallowing.chewing;
         ['L','a','b'].forEach(c => { if (ch[c]) ch[c].forEach((v,i) => { if (v) document.getElementById(`chew_${c}${i+1}`).value = v; }); });
+        if (ch.scale) document.getElementById('chew_scale').value = ch.scale;
+        calcChewMean();
     }
 
     // 舌圧
@@ -933,7 +984,7 @@ function restoreSessionData(d) {
     // ムーカス
     if (d.swallowing?.mucus?.trials) {
         d.swallowing.mucus.trials.forEach((v,i) => { if (v) document.getElementById(`mucus_${i+1}`).value = v; });
-        highlightMax('mucus',3); calcMaxField('mucus',3);
+        calcMedianField('mucus',3); updateJudgment();
     }
 
     // TCI
@@ -976,13 +1027,14 @@ function collectSessionDataRaw() {
             checks: { bodyComp: document.getElementById('chk_bodyComp').checked, boneDensity: document.getElementById('chk_boneDensity').checked, postural: document.getElementById('chk_postural').checked, limbBP: document.getElementById('chk_limbBP').checked, pulseWave: document.getElementById('chk_pulseWave').checked, endothelial: document.getElementById('chk_endothelial').checked, thighEcho: document.getElementById('chk_thighEcho').checked },
             sppb: {
                 balance: { test: document.getElementById('sppb_balance_test').value, sec: document.getElementById('sppb_balance_sec').value || null, score: document.getElementById('sppb_balance_score').value },
-                gait: { sec: document.getElementById('sppb_gait_sec').value || null, score: document.getElementById('sppb_gait_score').value },
+                gait: { sec: document.getElementById('sppb_gait_sec').value || null, unable: document.getElementById('sppb_gait_unable').checked, score: document.getElementById('sppb_gait_score').value },
                 chair: { sec: document.getElementById('sppb_chair_sec').value || null, unable: document.getElementById('sppb_chair_unable').checked, score: document.getElementById('sppb_chair_score').value },
                 total: getSPPBTotal(),
             },
             walk5m: {
                 natural: [document.getElementById('walk5m_nat_1').value||null, document.getElementById('walk5m_nat_2').value||null],
                 max: [document.getElementById('walk5m_max_1').value||null, document.getElementById('walk5m_max_2').value||null],
+                naturalSpeed: getWalkSpeed('nat'), maxSpeed: getWalkSpeed('max'),
             },
             kneeExtension: {
                 left: [document.getElementById('kneeExt_L1').value||null, document.getElementById('kneeExt_L2').value||null],
@@ -1000,14 +1052,15 @@ function collectSessionDataRaw() {
         },
         swallowing: {
             geniohyoidEcho: document.getElementById('chk_geniohyoid').checked,
-            diadochokinesis: { ...diadochoResults },
+            diadochokinesis: getODKData(),
             chewing: {
                 L: [document.getElementById('chew_L1').value||null, document.getElementById('chew_L2').value||null, document.getElementById('chew_L3').value||null],
                 a: [document.getElementById('chew_a1').value||null, document.getElementById('chew_a2').value||null, document.getElementById('chew_a3').value||null],
                 b: [document.getElementById('chew_b1').value||null, document.getElementById('chew_b2').value||null, document.getElementById('chew_b3').value||null],
+                aMean: getChewAMean(), scale: document.getElementById('chew_scale').value || null,
             },
             tonguePressure: { trials: [document.getElementById('tonguePressure_1').value||null, document.getElementById('tonguePressure_2').value||null, document.getElementById('tonguePressure_3').value||null], max: document.getElementById('tonguePressure_max').value },
-            mucus: { trials: [document.getElementById('mucus_1').value||null, document.getElementById('mucus_2').value||null, document.getElementById('mucus_3').value||null], max: document.getElementById('mucus_max').value },
+            mucus: { trials: [document.getElementById('mucus_1').value||null, document.getElementById('mucus_2').value||null, document.getElementById('mucus_3').value||null], median: document.getElementById('mucus_max').value },
             tci: { sections: tciData, total: parseInt(document.getElementById('tci_total').textContent), percent: parseFloat(document.getElementById('tci_percent').textContent) },
             remainingTeeth: document.getElementById('remainingTeeth').value || null,
         },
@@ -1023,12 +1076,101 @@ function collectSessionDataRaw() {
 // 初期化
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('examDate').valueAsDate = new Date();
-    document.getElementById('oralTimer').textContent = oralTestDuration.toFixed(1);
-    updateRecordsList();
-    // 30秒ごとに途中自動保存
+    document.getElementById('examDate').value = localDateString();
+    loadSyncSettingsFromHash();
+    loadSyncSettings();
+    loadSessionsFromStore().then(() => updateRecordsList());
+    refreshSyncBadge();
+    window.addEventListener('online', () => trySync(false));
+    setInterval(() => trySync(false), 30000);
+    setTimeout(() => trySync(false), 2000);
+    // 入力のたびに途中自動保存（1.5秒デバウンス）＋ 30秒ごとの保険
+    document.addEventListener('change', scheduleAutoSave, true);
+    document.addEventListener('input', scheduleAutoSave, true);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autoSaveDraft(); });
     setInterval(autoSaveDraft, 30000);
 });
+function localDateString(d = new Date()) {
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+let autoSaveTimer = null;
+function scheduleAutoSave() { clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(autoSaveDraft, 1500); }
+
+// ==========================================
+// セッション永続化（IndexedDB。失敗時は localStorage）
+// ==========================================
+const DB_NAME = 'medapp', DB_STORE = 'sessions', OUTBOX_STORE = 'outbox', SESSIONS_LS_KEY = 'medapp_sessions';
+function openDB() {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error('no idb'));
+        const req = indexedDB.open(DB_NAME, 2);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'timestamp' });
+            if (!db.objectStoreNames.contains(OUTBOX_STORE)) db.createObjectStore(OUTBOX_STORE, { keyPath: 'submissionId' });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+async function loadSessionsFromStore() {
+    try {
+        const db = await openDB();
+        const rows = await new Promise((res, rej) => { const r = db.transaction(DB_STORE).objectStore(DB_STORE).getAll(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+        allSessions = rows.sort((a,b) => (a.timestamp < b.timestamp ? 1 : -1));
+    } catch (e) {
+        try { allSessions = JSON.parse(localStorage.getItem(SESSIONS_LS_KEY) || '[]'); } catch (_) { allSessions = []; }
+    }
+}
+async function persistSession(s) {
+    try {
+        const db = await openDB();
+        await new Promise((res, rej) => { const tx = db.transaction(DB_STORE, 'readwrite'); tx.objectStore(DB_STORE).put(s); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    } catch (e) {
+        try { localStorage.setItem(SESSIONS_LS_KEY, JSON.stringify(allSessions)); }
+        catch (e2) { alert('端末への保存に失敗しました（容量不足の可能性）。今すぐJSON出力でバックアップしてください。'); }
+    }
+}
+async function deleteSessionFromStore(timestamp) {
+    try { const db = await openDB(); await new Promise((res, rej) => { const tx = db.transaction(DB_STORE, 'readwrite'); tx.objectStore(DB_STORE).delete(timestamp); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); }
+    catch (e) { try { localStorage.setItem(SESSIONS_LS_KEY, JSON.stringify(allSessions)); } catch (_) {} }
+}
+async function clearStore() {
+    try { const db = await openDB(); await new Promise((res, rej) => { const tx = db.transaction(DB_STORE, 'readwrite'); tx.objectStore(DB_STORE).clear(); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e) {}
+    try { localStorage.removeItem(SESSIONS_LS_KEY); } catch (_) {}
+}
+
+// ==========================================
+// フォームのリセット（次の受検者へ）
+// ==========================================
+function resetForm(skipConfirm, keepDraft = true) {
+    if (!skipConfirm && !confirm('入力内容をすべてクリアして、次の受検者の入力を開始しますか？\n（保存済みセッションは消えません。未保存の入力は途中記録として端末に残ります）')) return;
+    clearTimeout(autoSaveTimer);
+    if (keepDraft) autoSaveDraft();
+    document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], textarea').forEach(el => { if (el.readOnly) el.value = '—'; else el.value = ''; });
+    document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
+    document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+    document.getElementById('odk_duration').value = '5';
+    document.getElementById('examDate').value = localDateString();
+    document.getElementById('userBMI').value = '—';
+    document.getElementById('sppb_total').textContent = '— / 12';
+    document.getElementById('tci_total').textContent = '0';
+    document.getElementById('tci_percent').textContent = '0.0';
+    document.getElementById('walk5m_nat_speed').textContent = '— m/s';
+    document.getElementById('walk5m_max_speed').textContent = '— m/s';
+    document.getElementById('chew_ab_mean').textContent = 'a* 平均: —';
+    document.querySelectorAll('.trial-max').forEach(el => el.classList.remove('trial-max'));
+    diadochoResults = { pa: null, ta: null, ka: null };
+    ['pa','ta','ka'].forEach(s => updateODKBadge(s, null));
+    updateODKSummary();
+    capturedImagesData = []; renderCapturedImages();
+    cognitiveImages = { moca: [], fab: [] }; renderCognitiveImages('moca'); renderCognitiveImages('fab');
+    updateJudgment();
+    switchTab('physical');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('userId').focus();
+}
 
 // ==========================================
 // タブ切り替え
@@ -1045,27 +1187,46 @@ function switchTab(tabName) {
 // ==========================================
 // 音声入力 (Web Speech API)
 // ==========================================
-function startVoiceInput(fieldId) {
-    if (!recognition) { alert('お使いのブラウザは音声入力に対応していません。'); return; }
-    const btn = event.target;
+let voiceBusy = false;
+function startVoiceInput(btn, fieldId) {
+    if (!recognition) { alert('お使いのブラウザは音声入力に対応していません（Chrome / Safari を推奨）。'); return; }
+    if (voiceBusy) { try { recognition.stop(); } catch (_) {} return; }
+    voiceBusy = true;
     btn.classList.add('recording');
     const inputEl = document.getElementById(fieldId);
     recognition.onresult = (e) => {
         const transcript = e.results[0][0].transcript;
         const val = extractNumericValue(transcript);
-        if (val !== null) { inputEl.value = val; inputEl.classList.add('bg-green-100'); setTimeout(() => inputEl.classList.remove('bg-green-100'), 800); inputEl.dispatchEvent(new Event('change')); }
-        else { alert(`数値が認識できませんでした: "${transcript}"`); }
+        if (val !== null) {
+            inputEl.value = val; inputEl.classList.add('bg-green-100'); setTimeout(() => inputEl.classList.remove('bg-green-100'), 800);
+            inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+            inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+        } else { alert(`数値が認識できませんでした: 「${transcript}」\n手入力してください。`); }
     };
-    recognition.onerror = () => { alert('音声認識エラー'); };
-    recognition.onend = () => { btn.classList.remove('recording'); };
-    recognition.start();
+    recognition.onerror = (e) => { if (e.error !== 'aborted' && e.error !== 'no-speech') alert('音声認識エラー: ' + e.error); };
+    recognition.onend = () => { btn.classList.remove('recording'); voiceBusy = false; };
+    try { recognition.start(); } catch (e) { btn.classList.remove('recording'); voiceBusy = false; }
 }
 function extractNumericValue(text) {
-    text = text.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-    text = text.replace(/[一二三四五六七八九]/g, s => '123456789'['一二三四五六七八九'.indexOf(s)]);
-    text = text.replace(/[てん点]/g, '.');
-    const m = text.match(/\d+\.?\d*/);
-    return m ? parseFloat(m[0]) : null;
+    text = text.replace(/[０-９．]/g, s => s === '．' ? '.' : String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+    text = text.replace(/[,、，]/g, '');
+    const neg = /マイナス|ﾏｲﾅｽ|−|－|^-/.test(text);
+    // 漢数字（十・百を含む）→ 算用数字
+    const kan = { '〇':0,'零':0,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9 };
+    text = text.replace(/[〇零一二三四五六七八九十百]+/g, s => {
+        let total = 0, cur = 0;
+        for (const ch of s) {
+            if (ch === '十') { total += (cur || 1) * 10; cur = 0; }
+            else if (ch === '百') { total += (cur || 1) * 100; cur = 0; }
+            else cur = cur * 10 + kan[ch];
+        }
+        return String(total + cur);
+    });
+    text = text.replace(/(てん|点|コンマ|ポイント)/g, '.');
+    const m = text.match(/\d+(?:\.\d+)?/);
+    if (!m) return null;
+    const v = parseFloat(m[0]);
+    return neg ? -v : v;
 }
 
 // ==========================================
@@ -1075,9 +1236,9 @@ function calcSPPBBalance() {
     const test = document.getElementById('sppb_balance_test').value;
     const sec = parseFloat(document.getElementById('sppb_balance_sec').value);
     let score = null;
-    if (test && !isNaN(sec)) {
-        if (test === 'single') { score = 4; }
-        else if (test === 'tandem') { score = sec >= 10 ? 4 : sec >= 3 ? 3 : 2; }
+    if (test === 'unable') { score = 0; }
+    else if (test && !isNaN(sec)) {
+        if (test === 'tandem') { score = sec >= 10 ? 4 : sec >= 3 ? 3 : 2; }
         else if (test === 'semi') { score = sec >= 10 ? 2 : 1; }
         else if (test === 'side') { score = sec >= 10 ? 1 : 0; }
     }
@@ -1086,8 +1247,10 @@ function calcSPPBBalance() {
 }
 function calcSPPBGait() {
     const sec = parseFloat(document.getElementById('sppb_gait_sec').value);
+    const unable = document.getElementById('sppb_gait_unable').checked;
     let score = null;
-    if (!isNaN(sec) && sec > 0) {
+    if (unable) { score = 0; }
+    else if (!isNaN(sec) && sec > 0) {
         if (sec <= 4.82) score = 4;
         else if (sec <= 6.20) score = 3;
         else if (sec <= 8.70) score = 2;
@@ -1173,6 +1336,35 @@ function getMaxTrial(prefix, count) {
     return maxVal === -Infinity ? null : maxVal;
 }
 
+// 中央値フィールド（ムーカス：メーカー推奨は3回測定の中央値）
+function calcMedianField(prefix, count) {
+    const vals = [];
+    for (let i = 1; i <= count; i++) { const el = document.getElementById(`${prefix}_${i}`); const v = parseFloat(el.value); el.classList.remove('trial-max'); if (!isNaN(v)) vals.push(v); }
+    let med = null;
+    if (vals.length) { vals.sort((a,b) => a-b); med = vals.length % 2 ? vals[(vals.length-1)/2] : (vals[vals.length/2-1] + vals[vals.length/2]) / 2; }
+    document.getElementById(`${prefix}_max`).value = med === null ? '—' : (Math.round(med * 10) / 10);
+}
+function getMedianTrial(prefix, count) {
+    const v = parseFloat(document.getElementById(`${prefix}_max`).value);
+    return isNaN(v) ? null : v;
+}
+// 5m歩行速度（m/s）：2試行の速い方（短い秒数）を採用
+function getWalkSpeed(kind) {
+    const t1 = parseFloat(document.getElementById(`walk5m_${kind}_1`).value), t2 = parseFloat(document.getElementById(`walk5m_${kind}_2`).value);
+    const ts = [t1, t2].filter(v => !isNaN(v) && v > 0);
+    if (!ts.length) return null;
+    return Math.round((5 / Math.min(...ts)) * 100) / 100;
+}
+function calcWalkSpeed() {
+    ['nat','max'].forEach(k => { const v = getWalkSpeed(k); document.getElementById(`walk5m_${k}_speed`).textContent = v === null ? '— m/s' : `${v.toFixed(2)} m/s`; });
+}
+// 咀嚼ガム a* 平均（記録用）
+function getChewAMean() {
+    const vals = ['1','2','3'].map(i => parseFloat(document.getElementById(`chew_a${i}`).value)).filter(v => !isNaN(v));
+    return vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length * 10) / 10 : null;
+}
+function calcChewMean() { const m = getChewAMean(); document.getElementById('chew_ab_mean').textContent = `a* 平均: ${m === null ? '—' : m.toFixed(1)}`; }
+
 // ==========================================
 // TCI計算
 // ==========================================
@@ -1199,41 +1391,63 @@ function updateJudgment() {
         declineR.className = 'text-lg font-bold';
     } else { declineEl.className = 'p-4 rounded-xl border-2 border-gray-200 bg-gray-50'; declineR.textContent = '— 未判定 —'; declineR.className = 'text-lg font-bold text-gray-400'; }
 
-    // 身体的フレイル
+    // サルコペニア スクリーニング（AWGS2019 参考）
     const gL1 = parseFloat(document.getElementById('grip_L1').value), gL2 = parseFloat(document.getElementById('grip_L2').value);
     const gR1 = parseFloat(document.getElementById('grip_R1').value), gR2 = parseFloat(document.getElementById('grip_R2').value);
-    const maxGrip = Math.max(isNaN(gL1)?0:gL1, isNaN(gL2)?0:gL2, isNaN(gR1)?0:gR1, isNaN(gR2)?0:gR2);
+    const grips = [gL1, gL2, gR1, gR2].filter(v => !isNaN(v));
+    const maxGrip = grips.length ? Math.max(...grips) : null;
+    const sex = document.getElementById('userSex').value;
+    const chairSec = parseFloat(document.getElementById('sppb_chair_sec').value);
+    const chairUnable = document.getElementById('sppb_chair_unable').checked;
+    const natSpeed = getWalkSpeed('nat');
     const frailEl = document.getElementById('judge_physicalFrailty');
     const frailR = document.getElementById('judge_physicalFrailty_result');
-    if (maxGrip > 0 || sppb !== null) {
-        let fc = 0;
-        if (maxGrip > 0 && maxGrip < 20) fc++;
-        if (sppb !== null && sppb <= 6) fc++;
-        if (fc >= 2) { frailEl.className = 'p-4 rounded-xl frailty-frail'; frailR.textContent = 'フレイル該当'; }
-        else if (fc === 1) { frailEl.className = 'p-4 rounded-xl frailty-prefrail'; frailR.textContent = 'プレフレイル'; }
-        else { frailEl.className = 'p-4 rounded-xl frailty-normal'; frailR.textContent = '正常'; }
+    const frailD = document.getElementById('judge_physicalFrailty_detail');
+    const details = [];
+    let gripLow = null, perfLow = null;
+    if (maxGrip !== null) {
+        if (sex === 'male' || sex === 'female') { const cut = sex === 'male' ? 28 : 18; gripLow = maxGrip < cut; details.push(`握力 ${maxGrip.toFixed(1)}kg（基準 ${cut}）${gripLow ? '低下' : '基準内'}`); }
+        else details.push(`握力 ${maxGrip.toFixed(1)}kg（性別未入力のため判定不可）`);
+    }
+    const perfParts = [];
+    if (sppb !== null) perfParts.push(sppb <= 9);
+    if (chairUnable || (!isNaN(chairSec) && chairSec > 0)) perfParts.push(chairUnable || chairSec >= 12);
+    if (natSpeed !== null) perfParts.push(natSpeed < 1.0);
+    if (perfParts.length) { perfLow = perfParts.some(Boolean); details.push(`身体機能 ${perfLow ? '低下' : '基準内'}` + (natSpeed !== null ? `（歩行 ${natSpeed.toFixed(2)} m/s）` : '')); }
+    if (gripLow !== null || perfLow !== null) {
+        if (gripLow && perfLow) { frailEl.className = 'p-4 rounded-xl frailty-frail'; frailR.textContent = 'サルコペニアの可能性（要精査）'; }
+        else if (gripLow || perfLow) { frailEl.className = 'p-4 rounded-xl frailty-prefrail'; frailR.textContent = gripLow ? '握力低下あり' : '身体機能低下あり'; }
+        else { frailEl.className = 'p-4 rounded-xl frailty-normal'; frailR.textContent = '基準内'; }
         frailR.className = 'text-lg font-bold';
     } else { frailEl.className = 'p-4 rounded-xl border-2 border-gray-200 bg-gray-50'; frailR.textContent = '— 未判定 —'; frailR.className = 'text-lg font-bold text-gray-400'; }
+    frailD.textContent = details.join(' / ');
 
-    // オーラルフレイル
-    let ofc = 0, oic = 0;
+    // 口腔機能低下 スクリーニング（口腔機能低下症 7項目のうち測定可能な6項目・3項目以上）
+    const items = [];
+    const tciPct = parseFloat(document.getElementById('tci_percent').textContent);
+    const tciAny = ['tci_pl','tci_pc','tci_pr','tci_ml','tci_mc','tci_mr','tci_al','tci_ac','tci_ar'].some(id => document.getElementById(id).value !== '');
+    if (tciAny && !isNaN(tciPct)) items.push({ name: '口腔衛生', low: tciPct >= 50 });
+    const mucusMed = getMedianTrial('mucus', 3);
+    if (mucusMed !== null) items.push({ name: '口腔乾燥', low: mucusMed < 27 });
     const teethVal = parseInt(document.getElementById('remainingTeeth').value);
-    if (!isNaN(teethVal)) { oic++; if (teethVal < 20) ofc++; }
+    if (!isNaN(teethVal)) items.push({ name: '残存歯数', low: teethVal < 20 });
+    const odkVals = ['pa','ta','ka'].map(s => diadochoResults[s]).filter(v => v !== null);
+    if (odkVals.length && !document.getElementById('odk_unable').checked) items.push({ name: '舌口唇運動', low: odkVals.some(v => v < ODK_CUTOFF) });
     const maxT = getMaxTrial('tonguePressure', 3);
-    if (maxT !== null) { oic++; if (maxT < 30) ofc++; }
-    if (diadochoResults.pa !== null) { oic++; if (diadochoResults.pa < 6) ofc++; }
-    if (diadochoResults.ta !== null) { oic++; if (diadochoResults.ta < 6) ofc++; }
-    if (diadochoResults.ka !== null) { oic++; if (diadochoResults.ka < 6) ofc++; }
-    const chewV = parseFloat(document.getElementById('chew_a1').value);
-    if (!isNaN(chewV)) { oic++; if (chewV < 0) ofc++; }
+    if (maxT !== null) items.push({ name: '舌圧', low: maxT < 30 });
+    const scale = parseInt(document.getElementById('chew_scale').value);
+    if (!isNaN(scale)) items.push({ name: '咀嚼', low: scale <= 3 });
     const oralEl = document.getElementById('judge_oralFrailty');
     const oralR = document.getElementById('judge_oralFrailty_result');
+    const oralD = document.getElementById('judge_oralFrailty_detail');
+    const ofc = items.filter(i => i.low).length, oic = items.length;
     if (oic > 0) {
-        if (ofc >= 3) { oralEl.className = 'p-4 rounded-xl frailty-frail'; oralR.textContent = `オーラルフレイル該当 (${ofc}/${oic})`; }
-        else if (ofc >= 1) { oralEl.className = 'p-4 rounded-xl frailty-prefrail'; oralR.textContent = `注意 (${ofc}/${oic})`; }
-        else { oralEl.className = 'p-4 rounded-xl frailty-normal'; oralR.textContent = `正常 (0/${oic})`; }
+        if (ofc >= 3) { oralEl.className = 'p-4 rounded-xl frailty-frail'; oralR.textContent = `口腔機能低下の疑い（${ofc}/${oic}項目）`; }
+        else if (ofc >= 1) { oralEl.className = 'p-4 rounded-xl frailty-prefrail'; oralR.textContent = `注意（${ofc}/${oic}項目）`; }
+        else { oralEl.className = 'p-4 rounded-xl frailty-normal'; oralR.textContent = `基準内（0/${oic}項目）`; }
         oralR.className = 'text-lg font-bold';
-    } else { oralEl.className = 'p-4 rounded-xl border-2 border-gray-200 bg-gray-50'; oralR.textContent = '— 未判定 —'; oralR.className = 'text-lg font-bold text-gray-400'; }
+        oralD.textContent = items.map(i => `${i.name}${i.low ? '▼' : '○'}`).join(' ') + (oic < 6 ? `　（未測定 ${6 - oic}項目）` : '');
+    } else { oralEl.className = 'p-4 rounded-xl border-2 border-gray-200 bg-gray-50'; oralR.textContent = '— 未判定 —'; oralR.className = 'text-lg font-bold text-gray-400'; oralD.textContent = ''; }
 }
 
 // ==========================================
@@ -1301,148 +1515,76 @@ function renderCognitiveImages(target) {
 function deleteCogImage(target, id) { cognitiveImages[target] = cognitiveImages[target].filter(i => i.id !== id); renderCognitiveImages(target); }
 
 // ==========================================
-// ディアドコキネシス
+// オーラルディアドコキネシス（機器測定値の入力）
 // ==========================================
-function updateThreshold(v) { oralThreshold = parseInt(v); document.getElementById('thresholdValue').textContent = v; }
+const ODK_CUTOFF = 6.0;  // 回/秒（口腔機能低下症：舌口唇運動機能低下の基準）
+function getODKDuration() { return parseFloat(document.getElementById('odk_duration').value) || 5; }
 
-// マイクテスト機能
-async function toggleMicTest() {
-    const btn = document.getElementById('micTestBtn');
-    const panel = document.getElementById('micTestPanel');
-    if (micTestInterval) {
-        stopMicTest();
-        panel.classList.add('hidden');
-        btn.textContent = '🎤 発声テスト（測定前の確認）';
-        return;
+// source: 'rate' = 回/秒を直接入力、'count' = 回数から自動計算、未指定 = 再計算のみ
+function calcODK(syl, source) {
+    const rateEl = document.getElementById(`odk_${syl}_rate`);
+    const countEl = document.getElementById(`odk_${syl}_count`);
+    const dur = getODKDuration();
+    if (source === 'count') {
+        const c = parseInt(countEl.value);
+        rateEl.value = isNaN(c) ? '' : (c / dur).toFixed(1);
+    } else if (source === 'rate') {
+        // 回/秒を直接入力した場合は回数欄をクリア（矛盾防止）
+        if (rateEl.value !== '') countEl.value = '';
+    } else {
+        const c = parseInt(countEl.value);
+        if (!isNaN(c)) rateEl.value = (c / dur).toFixed(1);
     }
-    try {
-        micTestStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        micTestContext = new (window.AudioContext || window.webkitAudioContext)();
-        await micTestContext.resume();
-        const micAn = micTestContext.createAnalyser();
-        micAn.fftSize = 1024;
-        micTestContext.createMediaStreamSource(micTestStream).connect(micAn);
-        const tLen = micAn.fftSize;
-        const tArr = new Uint8Array(tLen);
-        let inPeak = false, lastPeak = 0;
-        panel.classList.remove('hidden');
-        btn.textContent = '⏹ テスト停止';
-        const msg = document.getElementById('micTestMsg');
-        msg.textContent = '🎤 「パ」「タ」「カ」と発声してください';
-        msg.className = 'text-sm text-center font-bold text-yellow-700';
-        micTestInterval = setInterval(() => {
-            micAn.getByteTimeDomainData(tArr);
-            let sum = 0;
-            for (let i = 0; i < tLen; i++) { const v = (tArr[i] - 128) / 128; sum += v * v; }
-            const rms = Math.sqrt(sum / tLen);
-            const pct = Math.min(100, rms * 600);
-            const bar = document.getElementById('testLevelBar');
-            bar.style.width = pct + '%';
-            bar.className = 'h-full rounded-full transition-none ' + (pct > 15 ? 'bg-green-500' : 'bg-blue-400');
-            const now = Date.now();
-            if (rms > oralThreshold / 500) {
-                if (!inPeak && now - lastPeak > 200) {
-                    lastPeak = now;
-                    msg.textContent = '✅ 音声を検出しました！測定を開始できます。';
-                    msg.className = 'text-sm text-center font-bold text-green-700';
-                }
-                inPeak = true;
-            } else { inPeak = false; }
-        }, 50);
-    } catch(e) {
-        document.getElementById('micTestPanel').classList.remove('hidden');
-        const msg = document.getElementById('micTestMsg');
-        msg.textContent = '❌ マイクへのアクセスに失敗しました';
-        msg.className = 'text-sm text-center font-bold text-red-700';
-    }
-}
-function stopMicTest() {
-    if (micTestInterval) { clearInterval(micTestInterval); micTestInterval = null; }
-    if (micTestContext) { micTestContext.close(); micTestContext = null; }
-    if (micTestStream) { micTestStream.getTracks().forEach(t => t.stop()); micTestStream = null; }
-    const bar = document.getElementById('testLevelBar');
-    if (bar) bar.style.width = '0%';
-}
-
-async function startOralTest() {
-    const target = document.getElementById('oralTarget').value;
-    const label = document.getElementById('oralTarget').selectedOptions[0].textContent;
-    stopMicTest();
-    document.getElementById('micTestPanel').classList.add('hidden');
-    document.getElementById('micTestBtn').textContent = '🎤 発声テスト（測定前の確認）';
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        await audioContext.resume(); // iOS/Android で suspended 状態を解除
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 1024;
-        microphone = audioContext.createMediaStreamSource(stream);
-        microphone.connect(analyser);
-        const freqLen = analyser.frequencyBinCount; // 512
-        const timeLen = analyser.fftSize;           // 1024（バグ修正：以前はfreqLenを誤用）
-        const freqArr = new Uint8Array(freqLen);
-        const timeArr = new Uint8Array(timeLen);
-        oralCount = 0; lastPeakTime = 0;
-        let inPeak = false;
-        document.getElementById('oralCount').textContent = '0';
-        document.getElementById('oralRate').textContent = '0.0';
-        document.getElementById('oralStatus').textContent = `測定中: ${label}`;
-        document.getElementById('levelMeter').style.width = '0%';
-        const btn = document.getElementById('oralStartBtn');
-        btn.disabled = true; btn.classList.add('opacity-50');
-        let timeLeft = oralTestDuration;
-        document.getElementById('oralTimer').textContent = timeLeft.toFixed(1);
-        const timerInt = setInterval(() => { timeLeft -= 0.1; document.getElementById('oralTimer').textContent = timeLeft <= 0 ? '0.0' : timeLeft.toFixed(1); if (timeLeft <= 0) clearInterval(timerInt); }, 100);
-        const waveBars = document.querySelectorAll('.wave-bar');
-        const levelMeter = document.getElementById('levelMeter');
-        oralTestInterval = setInterval(() => {
-            // 波形バー更新（周波数データ）
-            analyser.getByteFrequencyData(freqArr);
-            waveBars.forEach((bar, i) => {
-                const idx = Math.floor(i * freqLen / waveBars.length);
-                bar.style.height = `${Math.max(5, (freqArr[idx] / 255) * 100)}%`;
-            });
-            // RMS振幅で音節オンセット検出（時間領域データ・正しいサイズで取得）
-            analyser.getByteTimeDomainData(timeArr);
-            let sum = 0;
-            for (let i = 0; i < timeLen; i++) { const v = (timeArr[i] - 128) / 128; sum += v * v; }
-            const rms = Math.sqrt(sum / timeLen);
-            levelMeter.style.width = Math.min(100, rms * 600) + '%';
-            const rmsThreshold = oralThreshold / 500;
-            const now = Date.now();
-            if (rms > rmsThreshold) {
-                if (!inPeak && now - lastPeakTime > 200) { oralCount++; lastPeakTime = now; document.getElementById('oralCount').textContent = oralCount; }
-                inPeak = true;
-            } else { inPeak = false; }
-        }, 50);
-        oralTestTimeout = setTimeout(() => stopOralTest(stream, timerInt), oralTestDuration * 1000);
-    } catch (e) { alert('マイクへのアクセスに失敗しました。'); }
-}
-function stopOralTest(stream, timerInt) {
-    if (oralTestInterval) { clearInterval(oralTestInterval); oralTestInterval = null; }
-    if (oralTestTimeout) { clearTimeout(oralTestTimeout); oralTestTimeout = null; }
-    if (timerInt) clearInterval(timerInt);
-    if (audioContext) { audioContext.close(); audioContext = null; }
-    if (stream) stream.getTracks().forEach(t => t.stop());
-    const rate = (oralCount / oralTestDuration).toFixed(1);
-    document.getElementById('oralRate').textContent = rate;
-    document.getElementById('oralStatus').textContent = '測定完了';
-    document.getElementById('oralTimer').textContent = oralTestDuration.toFixed(1);
-    const btn = document.getElementById('oralStartBtn');
-    btn.disabled = false; btn.classList.remove('opacity-50');
-}
-function saveCurrentOralResult() {
-    const target = document.getElementById('oralTarget').value;
-    const rate = parseFloat(document.getElementById('oralRate').textContent);
-    const count = parseInt(document.getElementById('oralCount').textContent);
-    if (count === 0 && rate === 0) { alert('先に測定を実施してください'); return; }
-    diadochoResults[target] = rate;
-    document.getElementById(`result_${target}`).textContent = `${rate} 回/秒`;
-    document.getElementById(`result_${target}`).className = 'text-lg font-bold text-purple-700';
-    document.getElementById('oralCount').textContent = '0';
-    document.getElementById('oralRate').textContent = '0.0';
+    const rate = parseFloat(rateEl.value);
+    diadochoResults[syl] = isNaN(rate) ? null : rate;
+    updateODKBadge(syl, diadochoResults[syl]);
+    updateODKSummary();
     updateJudgment();
-    alert(`「${target}」: ${rate} 回/秒 を記録しました`);
+}
+function updateODKBadge(syl, rate) {
+    const badge = document.getElementById(`odk_badge_${syl}`);
+    const card = document.getElementById(`odk_card_${syl}`);
+    card.className = 'p-4 rounded-lg border-2 ' + (rate === null ? 'bg-gray-50 border-gray-200' : rate < ODK_CUTOFF ? 'bg-red-50 border-red-300' : 'bg-green-50 border-green-300');
+    if (rate === null) { badge.textContent = '未入力'; badge.className = 'text-xs font-bold px-2 py-1 rounded bg-gray-200 text-gray-500'; return; }
+    if (rate < ODK_CUTOFF) { badge.textContent = `${rate.toFixed(1)} 低下`; badge.className = 'text-xs font-bold px-2 py-1 rounded bg-red-500 text-white'; }
+    else { badge.textContent = `${rate.toFixed(1)} 良好`; badge.className = 'text-xs font-bold px-2 py-1 rounded bg-green-500 text-white'; }
+}
+function updateODKSummary() {
+    const el = document.getElementById('odk_summary');
+    const unable = document.getElementById('odk_unable').checked;
+    const vals = ['pa','ta','ka'].map(s => diadochoResults[s]).filter(v => v !== null);
+    if (unable) { el.textContent = '判定：実施不可'; el.className = 'flex-1 min-w-[200px] p-3 rounded-lg border-2 border-gray-300 bg-gray-100 text-sm font-bold text-gray-600'; return; }
+    if (!vals.length) { el.textContent = '判定：未入力'; el.className = 'flex-1 min-w-[200px] p-3 rounded-lg border-2 border-gray-200 bg-gray-50 text-sm font-bold text-gray-500'; return; }
+    const low = ['pa','ta','ka'].filter(s => diadochoResults[s] !== null && diadochoResults[s] < ODK_CUTOFF);
+    const missing = ['pa','ta','ka'].filter(s => diadochoResults[s] === null);
+    const tail = missing.length ? `（${missing.join('/')} 未入力）` : '';
+    if (low.length) { el.textContent = `判定：舌口唇運動機能低下の疑い（${low.join('/')} が ${ODK_CUTOFF} 回/秒未満）${tail}`; el.className = 'flex-1 min-w-[200px] p-3 rounded-lg frailty-frail text-sm font-bold'; }
+    else { el.textContent = `判定：基準内（全て ${ODK_CUTOFF} 回/秒以上）${tail}`; el.className = 'flex-1 min-w-[200px] p-3 rounded-lg frailty-normal text-sm font-bold'; }
+}
+function getODKData() {
+    const g = id => document.getElementById(id).value;
+    const num = v => v === '' ? null : parseFloat(v);
+    return {
+        durationSec: getODKDuration(),
+        device: g('odk_device'),
+        unable: document.getElementById('odk_unable').checked,
+        note: g('odk_note').trim(),
+        pa: diadochoResults.pa, ta: diadochoResults.ta, ka: diadochoResults.ka,
+        counts: { pa: num(g('odk_pa_count')), ta: num(g('odk_ta_count')), ka: num(g('odk_ka_count')) },
+    };
+}
+function restoreODK(d) {
+    if (!d) return;
+    if (d.durationSec) document.getElementById('odk_duration').value = String(d.durationSec);
+    if (d.device) document.getElementById('odk_device').value = d.device;
+    document.getElementById('odk_unable').checked = !!d.unable;
+    document.getElementById('odk_note').value = d.note || '';
+    ['pa','ta','ka'].forEach(s => {
+        const c = d.counts && d.counts[s];
+        document.getElementById(`odk_${s}_count`).value = (c !== null && c !== undefined) ? c : '';
+        document.getElementById(`odk_${s}_rate`).value = (d[s] !== null && d[s] !== undefined) ? d[s] : '';
+        calcODK(s);
+    });
 }
 
 // ==========================================
@@ -1464,11 +1606,14 @@ function collectSessionData() {
 function saveSession() {
     const s = collectSessionData();
     if (!s) return;
+    if (syncConfigured()) s.syncStatus = 'pending';
     allSessions.unshift(s);
+    persistSession(s);
+    if (syncConfigured()) enqueueSync(s);
     // 途中記録を削除（正式保存したため）
     localStorage.removeItem(DRAFT_KEY_PREFIX + s.userId);
     updateRecordsList();
-    alert(`セッションを保存しました (${s.userName})`);
+    if (confirm(`セッションを保存しました (${s.userName})。\n入力をクリアして次の受検者に進みますか？`)) resetForm(true, false);
 }
 
 // ==========================================
@@ -1483,11 +1628,12 @@ function updateRecordsList() {
         const profile = [sexLabel, s.userAge ? `${s.userAge}歳` : '', s.userBMI && s.userBMI !== '—' ? `BMI:${s.userBMI}` : ''].filter(Boolean).join(' / ');
         const sppb = s.physical.sppb.total !== null ? `SPPB: ${s.physical.sppb.total}/12` : '';
         const grip = (s.physical.grip.leftAvg !== '—' || s.physical.grip.rightAvg !== '—') ? `握力: L${s.physical.grip.leftAvg} / R${s.physical.grip.rightAvg} kg` : '';
-        const diad = (s.swallowing.diadochokinesis.pa!==null||s.swallowing.diadochokinesis.ta!==null||s.swallowing.diadochokinesis.ka!==null) ? `パタカ: pa${s.swallowing.diadochokinesis.pa??'-'} ta${s.swallowing.diadochokinesis.ta??'-'} ka${s.swallowing.diadochokinesis.ka??'-'}` : '';
+        const dk = s.swallowing.diadochokinesis || {};
+        const diad = (dk.pa!=null||dk.ta!=null||dk.ka!=null) ? `パタカ: pa${dk.pa??'-'} ta${dk.ta??'-'} ka${dk.ka??'-'} 回/秒` : (dk.unable ? 'パタカ: 実施不可' : '');
         const imgs = s.images.length + s.cognitive.moca.images.length + s.cognitive.fab.images.length;
         return `<div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-            <div class="flex justify-between items-start mb-2"><span class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">セッション</span><span class="text-xs text-gray-500">#${allSessions.length-i}</span></div>
-            <p class="font-bold text-lg mb-1">${s.userName} (${s.userId})</p>
+            <div class="flex justify-between items-start mb-2"><span class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">セッション</span><span class="flex items-center gap-2"><span class="text-xs text-gray-500">#${allSessions.length-i}</span><button onclick="deleteSession('${s.timestamp}')" class="text-xs text-red-600 hover:text-red-800 font-bold" title="このセッションを削除">🗑</button></span></div>
+            <p class="font-bold text-lg mb-1">${s.userName} (${s.userId}) <span class="text-xs font-bold ml-1 ${s.syncStatus === 'sent' ? 'text-emerald-600' : s.syncStatus === 'pending' ? 'text-amber-600' : 'text-gray-400'}">${s.syncStatus === 'sent' ? '☁✓ 送信済' : s.syncStatus === 'pending' ? '☁⏳ 未送信' : ''}</span></p>
             ${profile ? `<p class="text-sm text-gray-700 mb-1">${profile}</p>` : ''}
             <p class="text-xs text-gray-600 mb-2">${s.examDate} ${s.timestampLocal}</p>
             ${sppb ? `<p class="text-sm">${sppb}</p>` : ''}${grip ? `<p class="text-sm">${grip}</p>` : ''}${diad ? `<p class="text-sm">${diad}</p>` : ''}${imgs ? `<p class="text-sm">📷 ${imgs}枚</p>` : ''}
@@ -1501,8 +1647,246 @@ function exportData() {
     const a = document.createElement('a'); a.href = url; a.download = `medical-session-${Date.now()}.json`; a.click();
     URL.revokeObjectURL(url);
 }
-function clearAllRecords() { if (confirm('全てのデータを削除しますか？')) { allSessions = []; updateRecordsList(); } }
-function sendToPleasanterAPI(data) { console.log('Pleasanter API送信予定データ:', data); }
+function deleteSession(ts) {
+    const s = allSessions.find(x => x.timestamp === ts);
+    if (!s) return;
+    if (!confirm(`${s.userName} (${s.userId}) のセッションを削除しますか？`)) return;
+    allSessions = allSessions.filter(x => x.timestamp !== ts);
+    deleteSessionFromStore(ts);
+    updateRecordsList();
+}
+function clearAllRecords() {
+    if (!allSessions.length) return;
+    if (!confirm(`保存済み ${allSessions.length} 件をすべて削除します。CSV/JSONは出力済みですか？`)) return;
+    if (prompt('確認のため「削除」と入力してください') !== '削除') return;
+    allSessions = []; clearStore(); updateRecordsList();
+}
+// CSV出力（1行 = 1セッション、画像は含まない）
+function getCSVColumns() {
+    return [
+        ['保存日時', s => s.timestampLocal], ['検査日', s => s.examDate], ['利用者ID', s => s.userId], ['氏名', s => s.userName],
+        ['性別', s => ({male:'男',female:'女'})[s.userSex] || ''], ['年齢', s => s.userAge], ['身長cm', s => s.userHeight], ['体重kg', s => s.userWeight], ['BMI', s => s.userBMI],
+        ['体組成', s => s.physical.checks.bodyComp], ['骨密度', s => s.physical.checks.boneDensity], ['重心動揺', s => s.physical.checks.postural], ['四肢血圧', s => s.physical.checks.limbBP], ['脈波', s => s.physical.checks.pulseWave], ['血管内皮機能', s => s.physical.checks.endothelial], ['大腿筋エコー', s => s.physical.checks.thighEcho],
+        ['SPPBバランス種別', s => s.physical.sppb.balance.test], ['SPPBバランス秒', s => s.physical.sppb.balance.sec], ['SPPBバランス点', s => s.physical.sppb.balance.score],
+        ['SPPB歩行秒', s => s.physical.sppb.gait.sec], ['SPPB歩行不可', s => s.physical.sppb.gait.unable], ['SPPB歩行点', s => s.physical.sppb.gait.score],
+        ['SPPB立ち上がり秒', s => s.physical.sppb.chair.sec], ['SPPB立ち上がり不可', s => s.physical.sppb.chair.unable], ['SPPB立ち上がり点', s => s.physical.sppb.chair.score], ['SPPB合計', s => s.physical.sppb.total],
+        ['5m自然1秒', s => s.physical.walk5m.natural[0]], ['5m自然2秒', s => s.physical.walk5m.natural[1]], ['5m自然速度m/s', s => s.physical.walk5m.naturalSpeed],
+        ['5m最大1秒', s => s.physical.walk5m.max[0]], ['5m最大2秒', s => s.physical.walk5m.max[1]], ['5m最大速度m/s', s => s.physical.walk5m.maxSpeed],
+        ['膝伸展L1', s => s.physical.kneeExtension.left[0]], ['膝伸展L2', s => s.physical.kneeExtension.left[1]], ['膝伸展L平均', s => s.physical.kneeExtension.leftAvg],
+        ['膝伸展R1', s => s.physical.kneeExtension.right[0]], ['膝伸展R2', s => s.physical.kneeExtension.right[1]], ['膝伸展R平均', s => s.physical.kneeExtension.rightAvg],
+        ['握力L1', s => s.physical.grip.left[0]], ['握力L2', s => s.physical.grip.left[1]], ['握力L平均', s => s.physical.grip.leftAvg],
+        ['握力R1', s => s.physical.grip.right[0]], ['握力R2', s => s.physical.grip.right[1]], ['握力R平均', s => s.physical.grip.rightAvg],
+        ['呼吸筋力1', s => s.physical.respMuscle.trials[0]], ['呼吸筋力2', s => s.physical.respMuscle.trials[1]], ['呼吸筋力3', s => s.physical.respMuscle.trials[2]], ['呼吸筋力最大', s => s.physical.respMuscle.max],
+        ['オトガイ舌骨筋エコー', s => s.swallowing.geniohyoidEcho],
+        ['ODK測定秒', s => s.swallowing.diadochokinesis.durationSec], ['ODK機器', s => s.swallowing.diadochokinesis.device], ['ODK実施不可', s => s.swallowing.diadochokinesis.unable],
+        ['pa回/秒', s => s.swallowing.diadochokinesis.pa], ['ta回/秒', s => s.swallowing.diadochokinesis.ta], ['ka回/秒', s => s.swallowing.diadochokinesis.ka],
+        ['pa回数', s => s.swallowing.diadochokinesis.counts?.pa], ['ta回数', s => s.swallowing.diadochokinesis.counts?.ta], ['ka回数', s => s.swallowing.diadochokinesis.counts?.ka], ['ODK備考', s => s.swallowing.diadochokinesis.note],
+        ['ガムL1', s => s.swallowing.chewing.L[0]], ['ガムL2', s => s.swallowing.chewing.L[1]], ['ガムL3', s => s.swallowing.chewing.L[2]],
+        ['ガムa1', s => s.swallowing.chewing.a[0]], ['ガムa2', s => s.swallowing.chewing.a[1]], ['ガムa3', s => s.swallowing.chewing.a[2]], ['ガムa平均', s => s.swallowing.chewing.aMean],
+        ['ガムb1', s => s.swallowing.chewing.b[0]], ['ガムb2', s => s.swallowing.chewing.b[1]], ['ガムb3', s => s.swallowing.chewing.b[2]], ['ガム色スケール', s => s.swallowing.chewing.scale],
+        ['舌圧1', s => s.swallowing.tonguePressure.trials[0]], ['舌圧2', s => s.swallowing.tonguePressure.trials[1]], ['舌圧3', s => s.swallowing.tonguePressure.trials[2]], ['舌圧最大', s => s.swallowing.tonguePressure.max],
+        ['ムーカス1', s => s.swallowing.mucus.trials[0]], ['ムーカス2', s => s.swallowing.mucus.trials[1]], ['ムーカス3', s => s.swallowing.mucus.trials[2]], ['ムーカス中央値', s => s.swallowing.mucus.median ?? s.swallowing.mucus.max],
+        ['TCI後左', s => s.swallowing.tci.sections.tci_pl], ['TCI後中', s => s.swallowing.tci.sections.tci_pc], ['TCI後右', s => s.swallowing.tci.sections.tci_pr],
+        ['TCI中左', s => s.swallowing.tci.sections.tci_ml], ['TCI中中', s => s.swallowing.tci.sections.tci_mc], ['TCI中右', s => s.swallowing.tci.sections.tci_mr],
+        ['TCI前左', s => s.swallowing.tci.sections.tci_al], ['TCI前中', s => s.swallowing.tci.sections.tci_ac], ['TCI前右', s => s.swallowing.tci.sections.tci_ar],
+        ['TCI合計', s => s.swallowing.tci.total], ['TCI%', s => s.swallowing.tci.percent], ['残存歯数', s => s.swallowing.remainingTeeth],
+        ['MoCA-J実施', s => s.cognitive.moca.done], ['MoCA-J画像数', s => s.cognitive.moca.images.length], ['FAB実施', s => s.cognitive.fab.done], ['FAB画像数', s => s.cognitive.fab.images.length], ['その他画像数', s => s.images.length],
+    ];
+}
+function exportCSV() {
+    if (!allSessions.length) { alert('データがありません'); return; }
+    const cols = getCSVColumns();
+    const esc = v => { if (v === null || v === undefined) return ''; if (v === true) return '1'; if (v === false) return '0'; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const lines = [cols.map(c => esc(c[0])).join(',')];
+    allSessions.forEach(s => { lines.push(cols.map(c => { try { return esc(c[1](s)); } catch (e) { return ''; } }).join(',')); });
+    const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `medical-sessions-${localDateString()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+}
+// ==========================================
+// スプレッドシート同期（Google Apps Script Web アプリ）
+// ==========================================
+const SYNC_LS_KEY = 'medapp_sync';
+let syncSettings = { url: '', secret: '', device: '' };
+let syncing = false;
+let lastSyncError = '';
+
+function loadSyncSettings() {
+    try { syncSettings = Object.assign(syncSettings, JSON.parse(localStorage.getItem(SYNC_LS_KEY) || '{}')); } catch (_) {}
+    document.getElementById('sync_url').value = syncSettings.url || '';
+    document.getElementById('sync_secret').value = syncSettings.secret || '';
+    document.getElementById('sync_device').value = syncSettings.device || '';
+    document.getElementById('pullBtn').classList.toggle('hidden', !syncConfigured());
+}
+// URL の #sync=… に設定が入っていれば取り込む（1つのURLを配れば全端末の設定が済む）
+function loadSyncSettingsFromHash() {
+    const m = location.hash.match(/#sync=([A-Za-z0-9\-_]+)/);
+    if (!m) return;
+    try {
+        const jsonStr = decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))));
+        const cfg = JSON.parse(jsonStr);
+        const cur = JSON.parse(localStorage.getItem(SYNC_LS_KEY) || '{}');
+        localStorage.setItem(SYNC_LS_KEY, JSON.stringify({ url: cfg.url || cur.url || '', secret: cfg.secret || cur.secret || '', device: cur.device || cfg.device || '' }));
+        history.replaceState(null, '', location.pathname + location.search);
+        setTimeout(() => { if (!(JSON.parse(localStorage.getItem(SYNC_LS_KEY)).device)) { openSyncModal(); document.getElementById('sync_status').textContent = '同期設定を読み込みました。この端末のブース名を入力して「設定を保存」してください。'; } }, 300);
+    } catch (e) { console.warn('sync hash parse failed', e); }
+}
+function syncConfigured() { return !!(syncSettings.url && syncSettings.secret); }
+function openSyncModal() { loadSyncSettings(); document.getElementById('syncModal').classList.add('active'); renderOutboxInfo(); }
+function closeSyncModal() { document.getElementById('syncModal').classList.remove('active'); }
+function saveSyncSettings() {
+    syncSettings = { url: document.getElementById('sync_url').value.trim(), secret: document.getElementById('sync_secret').value.trim(), device: document.getElementById('sync_device').value.trim() };
+    localStorage.setItem(SYNC_LS_KEY, JSON.stringify(syncSettings));
+    document.getElementById('pullBtn').classList.toggle('hidden', !syncConfigured());
+    document.getElementById('sync_status').textContent = syncConfigured() ? '設定を保存しました。' : 'URL と合言葉を入力してください。';
+    refreshSyncBadge();
+    trySync(false);
+}
+function copyShareUrl() {
+    const cfg = { url: document.getElementById('sync_url').value.trim(), secret: document.getElementById('sync_secret').value.trim() };
+    if (!cfg.url || !cfg.secret) { alert('URL と合言葉を入力してから実行してください'); return; }
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(cfg)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const share = location.origin + location.pathname + '#sync=' + b64;
+    const done = () => { document.getElementById('sync_status').innerHTML = '設定入りURLをコピーしました。他の端末でこのURLを開くと URL と合言葉が自動設定されます（ブース名だけ端末ごとに入力）。<br><span class="break-all text-xs text-gray-500">' + share + '</span>'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(share).then(done, () => { prompt('コピーしてください', share); done(); });
+    else { prompt('コピーしてください', share); done(); }
+}
+async function testSync() {
+    const url = document.getElementById('sync_url').value.trim(), secret = document.getElementById('sync_secret').value.trim();
+    const st = document.getElementById('sync_status');
+    if (!url || !secret) { st.textContent = 'URL と合言葉を入力してください。'; return; }
+    st.textContent = '接続中…';
+    try {
+        const r = await fetch(url + '?action=ping&secret=' + encodeURIComponent(secret), { method: 'GET', redirect: 'follow' });
+        const j = await r.json();
+        st.textContent = j.ok ? `✅ 接続OK：スプレッドシート「${j.sheet}」` : `❌ ${j.error || '認証エラー（合言葉を確認）'}`;
+    } catch (e) { st.textContent = '❌ 接続できません（URL・ネット接続・デプロイ設定「全員」を確認）: ' + e.message; }
+}
+
+// 送信ペイロード（フラット列＋ネストJSON＋画像）
+function buildSyncPayload(s) {
+    const cols = getCSVColumns();
+    const flat = {}; const columns = [];
+    cols.forEach(c => { columns.push(c[0]); try { flat[c[0]] = c[1](s); } catch (_) { flat[c[0]] = null; } });
+    const record = JSON.parse(JSON.stringify(s));
+    const images = [];
+    const strip = d => String(d || '').replace(/^data:[^;]+;base64,/, '');
+    (s.cognitive.moca.images || []).forEach((im, i) => images.push({ label: 'MoCA-J', name: `${s.userId}_MoCA-J_${i+1}.jpg`, mime: 'image/jpeg', data: strip(im.data) }));
+    (s.cognitive.fab.images || []).forEach((im, i) => images.push({ label: 'FAB', name: `${s.userId}_FAB_${i+1}.jpg`, mime: 'image/jpeg', data: strip(im.data) }));
+    (s.images || []).forEach((im, i) => images.push({ label: im.categoryLabel || im.category || 'その他', name: `${s.userId}_${im.category || 'img'}_${i+1}.jpg`, mime: 'image/jpeg', data: strip(im.data) }));
+    record.images = []; record.cognitive.moca.images = []; record.cognitive.fab.images = [];
+    return {
+        secret: syncSettings.secret, action: 'upsert',
+        submissionId: `${s.timestamp}_${(syncSettings.device || 'dev').replace(/[^\w\-]/g, '')}`,
+        device: syncSettings.device || '', sentAt: new Date().toISOString(),
+        examDate: s.examDate, userId: s.userId, userName: s.userName,
+        columns, flat, record, images,
+    };
+}
+async function enqueueSync(s) {
+    const payload = buildSyncPayload(s);
+    try {
+        const db = await openDB();
+        await new Promise((res, rej) => { const tx = db.transaction(OUTBOX_STORE, 'readwrite'); tx.objectStore(OUTBOX_STORE).put({ submissionId: payload.submissionId, sessionTimestamp: s.timestamp, payload, queuedAt: new Date().toISOString(), tries: 0 }); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    } catch (e) { console.warn('outbox put failed', e); }
+    refreshSyncBadge();
+    trySync(false);
+}
+async function getOutbox() {
+    try { const db = await openDB(); return await new Promise((res, rej) => { const r = db.transaction(OUTBOX_STORE).objectStore(OUTBOX_STORE).getAll(); r.onsuccess = () => res(r.result.sort((a,b) => a.queuedAt < b.queuedAt ? -1 : 1)); r.onerror = () => rej(r.error); }); }
+    catch (e) { return []; }
+}
+async function outboxDelete(id) {
+    try { const db = await openDB(); await new Promise((res, rej) => { const tx = db.transaction(OUTBOX_STORE, 'readwrite'); tx.objectStore(OUTBOX_STORE).delete(id); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (_) {}
+}
+async function outboxUpdate(item) {
+    try { const db = await openDB(); await new Promise((res, rej) => { const tx = db.transaction(OUTBOX_STORE, 'readwrite'); tx.objectStore(OUTBOX_STORE).put(item); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (_) {}
+}
+async function postToSheet(payload) {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 60000);
+    try {
+        // Content-Type を付けない（text/plain 扱い）ことで CORS のプリフライトを避ける（Apps Script の制約）
+        const r = await fetch(syncSettings.url, { method: 'POST', body: JSON.stringify(payload), redirect: 'follow', signal: ctrl.signal });
+        const txt = await r.text();
+        let j; try { j = JSON.parse(txt); } catch (_) { throw new Error('サーバー応答が不正: ' + txt.slice(0, 80)); }
+        if (!j.ok) throw new Error(j.error || 'unknown');
+        return j;
+    } finally { clearTimeout(t); }
+}
+async function trySync(manual) {
+    if (!syncConfigured() || syncing) { if (manual && !syncConfigured()) alert('先に同期設定を保存してください'); return; }
+    if (!navigator.onLine) { lastSyncError = 'オフライン'; refreshSyncBadge(); if (manual) alert('オフラインです。接続後に自動で送信されます。'); return; }
+    syncing = true; refreshSyncBadge();
+    const items = await getOutbox();
+    let sent = 0, failed = null;
+    for (const it of items) {
+        try {
+            it.payload.secret = syncSettings.secret; it.payload.device = it.payload.device || syncSettings.device;
+            await postToSheet(it.payload);
+            await outboxDelete(it.submissionId);
+            const s = allSessions.find(x => x.timestamp === it.sessionTimestamp);
+            if (s) { s.syncStatus = 'sent'; s.syncedAt = new Date().toISOString(); persistSession(s); }
+            sent++;
+        } catch (e) {
+            it.tries = (it.tries || 0) + 1; it.lastError = e.message; await outboxUpdate(it);
+            failed = e.message; break;   // 順番を守るため、失敗したら以降は次回に回す
+        }
+    }
+    lastSyncError = failed || '';
+    syncing = false;
+    if (sent) updateRecordsList();
+    refreshSyncBadge();
+    if (manual) { const rest = (await getOutbox()).length; alert(failed ? `送信失敗（${failed}）。未送信 ${rest} 件は接続回復後に自動で再送します。` : `送信完了（${sent} 件）。未送信 0 件。`); }
+    renderOutboxInfo();
+}
+async function refreshSyncBadge() {
+    const b = document.getElementById('syncBadge');
+    if (!syncConfigured()) { b.textContent = '未設定'; b.className = 'text-xs font-bold px-1.5 py-0.5 rounded bg-gray-300 text-gray-800'; return; }
+    const n = (await getOutbox()).length;
+    if (syncing) { b.textContent = '送信中…'; b.className = 'text-xs font-bold px-1.5 py-0.5 rounded bg-blue-200 text-blue-900'; }
+    else if (n === 0) { b.textContent = (syncSettings.device || '同期') + ' ✓'; b.className = 'text-xs font-bold px-1.5 py-0.5 rounded bg-emerald-300 text-emerald-900'; }
+    else { b.textContent = `未送信 ${n}`; b.className = 'text-xs font-bold px-1.5 py-0.5 rounded ' + (lastSyncError ? 'bg-red-300 text-red-900' : 'bg-amber-300 text-amber-900'); }
+}
+async function renderOutboxInfo() {
+    const el = document.getElementById('sync_outbox'); if (!el) return;
+    const items = await getOutbox();
+    if (!items.length) { el.textContent = '未送信キュー: 0 件' + (lastSyncError ? `（前回エラー: ${lastSyncError}）` : ''); return; }
+    el.innerHTML = `未送信キュー: ${items.length} 件` + (lastSyncError ? `　<span class="text-red-600">前回エラー: ${lastSyncError}</span>` : '') + '<ul class="list-disc ml-5 mt-1">' + items.map(it => `<li>${it.payload.userName || ''} (${it.payload.userId}) ${new Date(it.queuedAt).toLocaleTimeString('ja-JP')}${it.tries ? `　再試行 ${it.tries} 回` : ''}</li>`).join('') + '</ul>';
+}
+
+// 他ブースの記録を取り込む（空欄だけ埋める。この端末の入力は優先）
+async function fetchRemote(userId, examDate) {
+    const u = syncSettings.url + '?action=fetch&secret=' + encodeURIComponent(syncSettings.secret) + '&userId=' + encodeURIComponent(userId) + '&examDate=' + encodeURIComponent(examDate);
+    const r = await fetch(u, { method: 'GET', redirect: 'follow' });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'unknown');
+    return j;
+}
+function isEmptyVal(v) { return v === null || v === undefined || v === '' || v === '—' || v === false; }
+function deepMergePreferBase(base, inc) {
+    // base（この端末の現在の入力）が空のところだけ inc（リモート）で埋める
+    if (Array.isArray(inc)) { const out = Array.isArray(base) ? base.slice() : []; inc.forEach((v, i) => { out[i] = deepMergePreferBase(out[i], v); }); return out; }
+    if (inc && typeof inc === 'object') { const out = (base && typeof base === 'object' && !Array.isArray(base)) ? Object.assign({}, base) : {}; Object.keys(inc).forEach(k => { out[k] = deepMergePreferBase(out[k], inc[k]); }); return out; }
+    return isEmptyVal(base) ? inc : base;
+}
+async function pullRemoteById() {
+    if (!syncConfigured()) { alert('先に同期設定を保存してください'); return; }
+    const userId = document.getElementById('userId').value.trim();
+    const examDate = document.getElementById('examDate').value;
+    if (!userId) { alert('利用者IDを入力してください'); return; }
+    const btn = document.getElementById('pullBtn'); btn.disabled = true; btn.textContent = '☁ 取得中…';
+    try {
+        const j = await fetchRemote(userId, examDate);
+        if (!j.found) { alert(`ID「${userId}」（${examDate}）の記録はスプレッドシートにまだありません`); return; }
+        const local = collectSessionDataRaw();
+        const merged = deepMergePreferBase(local, j.record || {});
+        merged.userId = userId;
+        restoreSessionData(merged);
+        alert(`スプレッドシートの記録を取り込みました（最終更新: ${j.updatedAt ? new Date(j.updatedAt).toLocaleString('ja-JP') : '不明'}）。\nこの端末で入力済みの値は上書きしていません。`);
+    } catch (e) { alert('取り込みに失敗しました: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = '☁ 取込'; }
+}
 </script>
 </body>
 </html>
