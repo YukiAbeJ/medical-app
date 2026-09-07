@@ -40,6 +40,13 @@
             max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto;
         }
         .auto-field { background-color: #eff6ff; border-color: #93c5fd; font-weight: 700; }
+        #syncToast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+            background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 700; max-width: 92vw;
+            box-shadow: 0 10px 25px rgba(0,0,0,.3); transition: opacity .25s, transform .25s; z-index: 60; }
+        #syncToast.show { opacity: 1; transform: translate(-50%, 0); }
+        #remoteInfo { font-size: 11px; color: #0369a1; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 6px; padding: 3px 8px; margin-top: 6px; }
+        .sync-panel { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fafafa; }
+        .sync-panel h3 { font-weight: 700; font-size: 13px; color: #374151; margin-bottom: 6px; }
         /* ヘッダー入力フィールド共通 */
         .header-input {
             padding: 8px 10px; font-size: 15px; border: 1.5px solid #d1d5db;
@@ -209,6 +216,10 @@
             .header-row1 > div { grid-column: auto !important; }
         }
     </style>
+    <!-- Firebase（クラウド同期用）。同期を使わない端末でも読み込み失敗は無視される -->
+    <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-green-50 to-purple-50 min-h-screen">
 <div class="container mx-auto p-4 max-w-7xl">
@@ -219,7 +230,7 @@
         <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 flex items-center justify-between">
             <h1 class="text-lg md:text-xl font-bold text-white tracking-wide">高齢者包括的検査・測定</h1>
             <div class="flex gap-2">
-                <button onclick="openSyncModal()" id="syncBtn" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-3 rounded-lg text-sm backdrop-blur transition flex items-center gap-1" title="スプレッドシート同期の設定・状態"><span>☁</span><span id="syncBadge" class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-300 text-gray-800">未設定</span></button>
+                <button onclick="openSyncModal()" id="syncBtn" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-3 rounded-lg text-sm backdrop-blur transition flex items-center gap-1" title="クラウド同期の設定・状態・進捗・ログ"><span>☁</span><span id="syncBadge" class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-300 text-gray-800">未設定</span></button>
                 <button onclick="resetForm()" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-3 rounded-lg text-sm backdrop-blur transition" title="次の受検者のために入力をクリア">🆕 新規</button>
                 <button onclick="openCameraModal()" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-3 rounded-lg text-sm backdrop-blur transition">📷 カメラ</button>
                 <button onclick="saveSession()" class="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold py-2 px-3 rounded-lg text-sm shadow transition">💾 保存</button>
@@ -234,8 +245,9 @@
                     <div class="flex gap-1">
                         <input type="text" id="userId" class="header-input flex-1 min-w-0" placeholder="U12345">
                         <button onclick="loadSessionById()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 rounded-lg text-xs whitespace-nowrap shadow-sm transition flex items-center gap-1" title="この端末の途中記録・保存済み記録を読み込み">📂 読込</button>
-                        <button onclick="pullRemoteById()" id="pullBtn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 rounded-lg text-xs whitespace-nowrap shadow-sm transition flex items-center gap-1 hidden" title="他のブースがスプレッドシートに送った記録を取り込み（空欄のみ埋める）">☁ 取込</button>
+                        <button onclick="pullRemoteById()" id="pullBtn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 rounded-lg text-xs whitespace-nowrap shadow-sm transition flex items-center gap-1 hidden" title="他のブースがクラウドに送った記録を取り込み（空欄のみ埋める）">☁ 取込</button>
                     </div>
+                    <div id="remoteInfo" class="hidden"></div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1 tracking-wider">氏名</label>
@@ -745,27 +757,32 @@
 
 <!-- 同期設定モーダル -->
 <div id="syncModal" class="inline-camera-modal">
-    <div class="modal-content" style="max-width:640px">
+    <div class="modal-content" style="max-width:760px">
         <div class="flex justify-between items-center mb-3">
-            <h2 class="text-xl font-bold text-gray-800">☁ スプレッドシート同期</h2>
+            <h2 class="text-xl font-bold text-gray-800">☁ クラウド同期（Firebase）</h2>
             <button onclick="closeSyncModal()" class="text-2xl text-gray-500 hover:text-gray-800 font-bold">&times;</button>
         </div>
-        <p class="text-xs text-gray-600 mb-3">保存するたびに Google スプレッドシート（Apps Script）へ送信し、<b>検査日＋利用者ID</b> で1行に統合します。他のブースが入力した値は消えません。圏外のときは端末に溜めて、つながったら自動で送ります。</p>
+        <p class="text-xs text-gray-600 mb-3">全ブースの端末が同じクラウド（Firestore）に書き込み、<b>検査日＋利用者ID</b> で1件に統合します。他のブースが入力した値はこの画面の空欄にリアルタイムで入り、こちらの入力は上書きされません。圏外のときは端末に溜まり、つながったら自動で送られます。</p>
         <div class="space-y-3">
             <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">ウェブアプリの URL（Apps Script のデプロイで表示されるもの）</label>
-                <input type="url" id="sync_url" class="header-input w-full" placeholder="https://script.google.com/macros/s/…/exec">
+                <label class="block text-xs font-bold text-gray-500 mb-1">Firebase 設定（コンソールの「firebaseConfig = { … }」をそのまま貼り付け）</label>
+                <textarea id="sync_fbconfig" class="header-input w-full" rows="4" style="font-family:ui-monospace,monospace;font-size:12px" placeholder='{ "apiKey": "AIza…", "authDomain": "xxx.firebaseapp.com", "projectId": "xxx", "appId": "1:…" }'></textarea>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">合言葉（Code.gs の SECRET と同じ）</label>
-                    <input type="text" id="sync_secret" class="header-input w-full" placeholder="CHANGE-ME-2026" autocomplete="off">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">合言葉（全端末で同じもの）</label>
+                    <input type="text" id="sync_secret" class="header-input w-full" placeholder="例：murakami-2026-xyz" autocomplete="off">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">イベント名（回ごとに分ける場合）</label>
+                    <input type="text" id="sync_event" class="header-input w-full" placeholder="default" autocomplete="off">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1">この端末のブース名</label>
                     <input type="text" id="sync_device" class="header-input w-full" placeholder="例：口腔ブースA / 受付 / 身体1">
                 </div>
             </div>
+            <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" id="sync_live" class="w-5 h-5" checked> 入力中も自動送信する（ライブ同期。OFF のときは「保存」ボタンのときだけ送信）</label>
             <div class="flex flex-wrap gap-2">
                 <button onclick="saveSyncSettings()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm">💾 設定を保存</button>
                 <button onclick="testSync()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg text-sm">🔌 接続テスト</button>
@@ -773,10 +790,24 @@
                 <button onclick="copyShareUrl()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm" title="この設定を埋め込んだURL。他の端末でこのURLを開くと設定が自動で入ります">🔗 設定入りURLをコピー</button>
             </div>
             <div id="sync_status" class="text-sm p-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-700">—</div>
-            <div id="sync_outbox" class="text-xs text-gray-600"></div>
+            <div class="sync-panel">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <h3 id="sync_progress_title" class="mb-0">📋 進捗</h3>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-gray-600 flex items-center gap-1"><input type="checkbox" id="sync_pull_images" class="w-5 h-5"> 画像も</label>
+                        <button onclick="pullAllForDate()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-1 px-3 rounded-lg text-xs" title="この検査日の全参加者（全ブース分）をこの端末に取り込み、CSV/JSONでまとめて出力できるようにします">☁ この検査日の全件を取込</button>
+                    </div>
+                </div>
+                <div id="sync_progress" class="text-xs text-gray-700"></div>
+            </div>
+            <div class="sync-panel">
+                <h3>🕒 操作ログ（最新40件・全ブース）</h3>
+                <div id="sync_logs" class="text-xs text-gray-700" style="max-height:220px;overflow-y:auto"></div>
+            </div>
         </div>
     </div>
 </div>
+<div id="syncToast"></div>
 
 <!-- カメラモーダル（汎用） -->
 <div id="cameraModal">
@@ -872,7 +903,9 @@ const DRAFT_KEY_PREFIX = 'medapp_draft_';
 
 function autoSaveDraft() {
     const userId = document.getElementById('userId').value.trim();
+    try { ensureParticipantWatch(); } catch (_) {}
     if (!userId) return;
+    scheduleLivePush();
     const data = collectSessionDataRaw();
     data._draftTimestamp = new Date().toISOString();
     try { localStorage.setItem(DRAFT_KEY_PREFIX + userId, JSON.stringify(data)); }
@@ -894,7 +927,7 @@ function loadSessionById() {
         if (saved) { data = saved; kind = '保存済みセッション'; }
     }
     if (!data) {
-        if (syncConfigured() && confirm(`ID「${userId}」の記録はこの端末にありません。\nスプレッドシート（他ブースの入力）から取り込みますか？`)) { pullRemoteById(); }
+        if (syncConfigured() && confirm(`ID「${userId}」の記録はこの端末にありません。\nクラウド（他ブースの入力）から取り込みますか？`)) { pullRemoteById(); }
         else alert(`ID「${userId}」の途中記録・保存済みセッションは見つかりませんでした`);
         return;
     }
@@ -1079,11 +1112,12 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('examDate').value = localDateString();
     loadSyncSettingsFromHash();
     loadSyncSettings();
-    loadSessionsFromStore().then(() => updateRecordsList());
+    loadSessionsFromStore().then(() => { updateRecordsList(); refreshSyncBadge(); });
     refreshSyncBadge();
-    window.addEventListener('online', () => trySync(false));
-    setInterval(() => trySync(false), 30000);
-    setTimeout(() => trySync(false), 2000);
+    window.addEventListener('online', () => { refreshSyncBadge(); renderSyncStatus(); trySync(false); });
+    window.addEventListener('offline', () => { refreshSyncBadge(); renderSyncStatus(); });
+    document.getElementById('examDate').addEventListener('change', () => { ensureParticipantWatch(); renderProgress(); });
+    setTimeout(() => { if (syncConfigured()) initFirebase(); }, 300);
     // 入力のたびに途中自動保存（1.5秒デバウンス）＋ 30秒ごとの保険
     document.addEventListener('change', scheduleAutoSave, true);
     document.addEventListener('input', scheduleAutoSave, true);
@@ -1146,7 +1180,8 @@ async function clearStore() {
 // ==========================================
 function resetForm(skipConfirm, keepDraft = true) {
     if (!skipConfirm && !confirm('入力内容をすべてクリアして、次の受検者の入力を開始しますか？\n（保存済みセッションは消えません。未保存の入力は途中記録として端末に残ります）')) return;
-    clearTimeout(autoSaveTimer);
+    clearTimeout(autoSaveTimer); clearTimeout(livePushTimer); lastLocalPushJson = '';
+    setTimeout(() => { try { ensureParticipantWatch(); } catch (_) {} }, 0);
     if (keepDraft) autoSaveDraft();
     document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], textarea').forEach(el => { if (el.readOnly) el.value = '—'; else el.value = ''; });
     document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
@@ -1609,7 +1644,7 @@ function saveSession() {
     if (syncConfigured()) s.syncStatus = 'pending';
     allSessions.unshift(s);
     persistSession(s);
-    if (syncConfigured()) enqueueSync(s);
+    if (syncConfigured()) { clearTimeout(livePushTimer); pushSession(s); }
     // 途中記録を削除（正式保存したため）
     localStorage.removeItem(DRAFT_KEY_PREFIX + s.userId);
     updateRecordsList();
@@ -1705,170 +1740,376 @@ function exportCSV() {
     URL.revokeObjectURL(url);
 }
 // ==========================================
-// スプレッドシート同期（Google Apps Script Web アプリ）
+// クラウド同期（Firebase Firestore）
+//   - 保存／入力のたびに Firestore へ「空でない値だけ」をマージ（検査日＋利用者IDで1件）
+//   - 他ブースの入力はリアルタイムでこの画面の空欄に反映
+//   - 圏外でも Firestore の永続キャッシュに溜まり、復帰後に自動送信
+//   - logs コレクションに操作ログ、images コレクションに撮影画像（縮小JPEG）
 // ==========================================
-const SYNC_LS_KEY = 'medapp_sync';
-let syncSettings = { url: '', secret: '', device: '' };
-let syncing = false;
-let lastSyncError = '';
+const SYNC_LS_KEY = 'medapp_sync_fb';
+const SPACE_COLL = 'spaces';
+let syncSettings = { fb: null, secret: '', event: 'default', device: '', live: true };
+let fbDb = null, fbUser = null, fbReady = false, fbInitError = '', fbInitializing = false;
+let spaceKey = '';
+let unsubParticipant = null, watchedDocId = '', unsubLogs = null, unsubProgress = null;
+let livePushTimer = null, livePushInFlight = false, livePushDirty = false;
+let lastLocalPushJson = '';
+let lastRemoteRecord = null, lastRemoteDoc = null;   // 監視中の参加者のクラウド側レコード（差分送信・ログ用）
+let progressCache = [];
 
+// ---------- 設定 ----------
 function loadSyncSettings() {
     try { syncSettings = Object.assign(syncSettings, JSON.parse(localStorage.getItem(SYNC_LS_KEY) || '{}')); } catch (_) {}
-    document.getElementById('sync_url').value = syncSettings.url || '';
-    document.getElementById('sync_secret').value = syncSettings.secret || '';
-    document.getElementById('sync_device').value = syncSettings.device || '';
-    document.getElementById('pullBtn').classList.toggle('hidden', !syncConfigured());
+    if (!syncSettings.event) syncSettings.event = 'default';
+    if (syncSettings.live === undefined) syncSettings.live = true;
+    const el = id => document.getElementById(id);
+    el('sync_fbconfig').value = syncSettings.fb ? JSON.stringify(syncSettings.fb, null, 2) : '';
+    el('sync_secret').value = syncSettings.secret || '';
+    el('sync_event').value = syncSettings.event || 'default';
+    el('sync_device').value = syncSettings.device || '';
+    el('sync_live').checked = !!syncSettings.live;
+    el('pullBtn').classList.toggle('hidden', !syncConfigured());
 }
-// URL の #sync=… に設定が入っていれば取り込む（1つのURLを配れば全端末の設定が済む）
+// Firebase コンソールに表示される `const firebaseConfig = { apiKey: "...", ... }` をそのまま貼れるように寛容にパース
+function parseFirebaseConfig(text) {
+    if (!text) return null;
+    const a = text.indexOf('{'), b = text.lastIndexOf('}');
+    if (a < 0 || b < 0) return null;
+    let body = text.slice(a, b + 1);
+    let cfg = null;
+    try { cfg = JSON.parse(body); } catch (_) {
+        try {
+            body = body.replace(/\/\/.*$/gm, '').replace(/,\s*}/g, '}').replace(/'/g, '"').replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":');
+            cfg = JSON.parse(body);
+        } catch (e) { return null; }
+    }
+    if (!cfg || !cfg.apiKey || !cfg.projectId || !cfg.appId) return null;
+    const keep = {}; ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId', 'databaseURL'].forEach(k => { if (cfg[k]) keep[k] = String(cfg[k]); });
+    if (!keep.authDomain) keep.authDomain = keep.projectId + '.firebaseapp.com';
+    return keep;
+}
+function syncConfigured() { return !!(syncSettings.fb && syncSettings.fb.apiKey && syncSettings.fb.projectId && syncSettings.secret); }
+function openSyncModal() { loadSyncSettings(); document.getElementById('syncModal').classList.add('active'); renderSyncStatus(); renderProgress(); }
+function closeSyncModal() { document.getElementById('syncModal').classList.remove('active'); }
+function saveSyncSettings() {
+    const el = id => document.getElementById(id);
+    const fb = parseFirebaseConfig(el('sync_fbconfig').value);
+    const st = el('sync_status');
+    if (el('sync_fbconfig').value.trim() && !fb) { st.textContent = '❌ Firebase 設定を読み取れません。コンソールの firebaseConfig（{ … } の部分）を丸ごと貼り付けてください。'; return; }
+    const prev = JSON.stringify({ fb: syncSettings.fb, secret: syncSettings.secret, event: syncSettings.event });
+    syncSettings = { fb, secret: el('sync_secret').value.trim(), event: (el('sync_event').value.trim() || 'default'), device: el('sync_device').value.trim(), live: el('sync_live').checked };
+    localStorage.setItem(SYNC_LS_KEY, JSON.stringify(syncSettings));
+    el('pullBtn').classList.toggle('hidden', !syncConfigured());
+    const now = JSON.stringify({ fb: syncSettings.fb, secret: syncSettings.secret, event: syncSettings.event });
+    if (!syncConfigured()) { st.textContent = 'Firebase 設定と合言葉を入力してください。'; refreshSyncBadge(); return; }
+    if (fbReady && prev !== now) { st.textContent = '設定を保存しました。反映のためページを再読み込みします…'; setTimeout(() => location.reload(), 800); return; }
+    st.textContent = '設定を保存しました。接続中…';
+    initFirebase().then(() => { renderSyncStatus(); refreshSyncBadge(); });
+}
+// URL の #sync=… に設定が入っていれば取り込む（1つのURLを配れば全端末の設定が済む。ブース名だけ端末ごとに入力）
 function loadSyncSettingsFromHash() {
     const m = location.hash.match(/#sync=([A-Za-z0-9\-_]+)/);
     if (!m) return;
     try {
         const jsonStr = decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))));
         const cfg = JSON.parse(jsonStr);
-        const cur = JSON.parse(localStorage.getItem(SYNC_LS_KEY) || '{}');
-        localStorage.setItem(SYNC_LS_KEY, JSON.stringify({ url: cfg.url || cur.url || '', secret: cfg.secret || cur.secret || '', device: cur.device || cfg.device || '' }));
+        let cur = {}; try { cur = JSON.parse(localStorage.getItem(SYNC_LS_KEY) || '{}'); } catch (_) {}
+        localStorage.setItem(SYNC_LS_KEY, JSON.stringify({ fb: cfg.fb || cur.fb || null, secret: cfg.secret || cur.secret || '', event: cfg.event || cur.event || 'default', device: cur.device || '', live: cur.live === undefined ? true : cur.live }));
         history.replaceState(null, '', location.pathname + location.search);
-        setTimeout(() => { if (!(JSON.parse(localStorage.getItem(SYNC_LS_KEY)).device)) { openSyncModal(); document.getElementById('sync_status').textContent = '同期設定を読み込みました。この端末のブース名を入力して「設定を保存」してください。'; } }, 300);
+        setTimeout(() => { let s = {}; try { s = JSON.parse(localStorage.getItem(SYNC_LS_KEY)); } catch (_) {} if (!s.device) { openSyncModal(); document.getElementById('sync_status').textContent = '同期設定を読み込みました。この端末のブース名を入力して「設定を保存」してください。'; } }, 300);
     } catch (e) { console.warn('sync hash parse failed', e); }
 }
-function syncConfigured() { return !!(syncSettings.url && syncSettings.secret); }
-function openSyncModal() { loadSyncSettings(); document.getElementById('syncModal').classList.add('active'); renderOutboxInfo(); }
-function closeSyncModal() { document.getElementById('syncModal').classList.remove('active'); }
-function saveSyncSettings() {
-    syncSettings = { url: document.getElementById('sync_url').value.trim(), secret: document.getElementById('sync_secret').value.trim(), device: document.getElementById('sync_device').value.trim() };
-    localStorage.setItem(SYNC_LS_KEY, JSON.stringify(syncSettings));
-    document.getElementById('pullBtn').classList.toggle('hidden', !syncConfigured());
-    document.getElementById('sync_status').textContent = syncConfigured() ? '設定を保存しました。' : 'URL と合言葉を入力してください。';
-    refreshSyncBadge();
-    trySync(false);
-}
 function copyShareUrl() {
-    const cfg = { url: document.getElementById('sync_url').value.trim(), secret: document.getElementById('sync_secret').value.trim() };
-    if (!cfg.url || !cfg.secret) { alert('URL と合言葉を入力してから実行してください'); return; }
-    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(cfg)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const fb = parseFirebaseConfig(document.getElementById('sync_fbconfig').value);
+    const secret = document.getElementById('sync_secret').value.trim(), event = document.getElementById('sync_event').value.trim() || 'default';
+    if (!fb || !secret) { alert('Firebase 設定と合言葉を入力してから実行してください'); return; }
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify({ fb, secret, event })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     const share = location.origin + location.pathname + '#sync=' + b64;
-    const done = () => { document.getElementById('sync_status').innerHTML = '設定入りURLをコピーしました。他の端末でこのURLを開くと URL と合言葉が自動設定されます（ブース名だけ端末ごとに入力）。<br><span class="break-all text-xs text-gray-500">' + share + '</span>'; };
+    const done = () => { document.getElementById('sync_status').innerHTML = '設定入りURLをコピーしました。他の端末でこのURLを開くと設定が自動で入ります（ブース名だけ端末ごとに入力）。<br><span class="break-all text-xs text-gray-500">' + share + '</span>'; };
     if (navigator.clipboard) navigator.clipboard.writeText(share).then(done, () => { prompt('コピーしてください', share); done(); });
     else { prompt('コピーしてください', share); done(); }
 }
-async function testSync() {
-    const url = document.getElementById('sync_url').value.trim(), secret = document.getElementById('sync_secret').value.trim();
-    const st = document.getElementById('sync_status');
-    if (!url || !secret) { st.textContent = 'URL と合言葉を入力してください。'; return; }
-    st.textContent = '接続中…';
-    try {
-        const r = await fetch(url + '?action=ping&secret=' + encodeURIComponent(secret), { method: 'GET', redirect: 'follow' });
-        const j = await r.json();
-        st.textContent = j.ok ? `✅ 接続OK：スプレッドシート「${j.sheet}」` : `❌ ${j.error || '認証エラー（合言葉を確認）'}`;
-    } catch (e) { st.textContent = '❌ 接続できません（URL・ネット接続・デプロイ設定「全員」を確認）: ' + e.message; }
+
+// ---------- 合言葉 → スペースキー（SHA-256 の先頭32桁。合言葉を知る端末だけが同じ場所に読み書きできる） ----------
+async function sha256Hex(str) {
+    const bytes = new TextEncoder().encode(str);
+    if (window.crypto && crypto.subtle && crypto.subtle.digest) {
+        try { const buf = await crypto.subtle.digest('SHA-256', bytes); return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''); } catch (_) {}
+    }
+    return sha256Fallback(bytes);
+}
+function sha256Fallback(bytes) {
+    const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    let H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    const l = bytes.length, bitLen = l * 8, padLen = ((l + 9 + 63) >> 6) << 6;
+    const msg = new Uint8Array(padLen); msg.set(bytes); msg[l] = 0x80;
+    const dv = new DataView(msg.buffer); dv.setUint32(padLen - 4, bitLen >>> 0); dv.setUint32(padLen - 8, Math.floor(bitLen / 0x100000000));
+    const w = new Uint32Array(64), rotr = (x, n) => (x >>> n) | (x << (32 - n));
+    for (let i = 0; i < padLen; i += 64) {
+        for (let t = 0; t < 16; t++) w[t] = dv.getUint32(i + t * 4);
+        for (let t = 16; t < 64; t++) { const s0 = rotr(w[t-15],7) ^ rotr(w[t-15],18) ^ (w[t-15]>>>3), s1 = rotr(w[t-2],17) ^ rotr(w[t-2],19) ^ (w[t-2]>>>10); w[t] = (w[t-16] + s0 + w[t-7] + s1) >>> 0; }
+        let [a,b,c,d,e,f,g,h] = H;
+        for (let t = 0; t < 64; t++) { const S1 = rotr(e,6)^rotr(e,11)^rotr(e,25), ch = (e&f)^(~e&g), t1 = (h + S1 + ch + K[t] + w[t])>>>0, S0 = rotr(a,2)^rotr(a,13)^rotr(a,22), mj = (a&b)^(a&c)^(b&c), t2 = (S0 + mj)>>>0; h=g; g=f; f=e; e=(d+t1)>>>0; d=c; c=b; b=a; a=(t1+t2)>>>0; }
+        H = H.map((v, i) => (v + [a,b,c,d,e,f,g,h][i]) >>> 0);
+    }
+    return H.map(v => v.toString(16).padStart(8, '0')).join('');
 }
 
-// 送信ペイロード（フラット列＋ネストJSON＋画像）
-function buildSyncPayload(s) {
-    const cols = getCSVColumns();
-    const flat = {}; const columns = [];
-    cols.forEach(c => { columns.push(c[0]); try { flat[c[0]] = c[1](s); } catch (_) { flat[c[0]] = null; } });
-    const record = JSON.parse(JSON.stringify(s));
-    const images = [];
-    const strip = d => String(d || '').replace(/^data:[^;]+;base64,/, '');
-    (s.cognitive.moca.images || []).forEach((im, i) => images.push({ label: 'MoCA-J', name: `${s.userId}_MoCA-J_${i+1}.jpg`, mime: 'image/jpeg', data: strip(im.data) }));
-    (s.cognitive.fab.images || []).forEach((im, i) => images.push({ label: 'FAB', name: `${s.userId}_FAB_${i+1}.jpg`, mime: 'image/jpeg', data: strip(im.data) }));
-    (s.images || []).forEach((im, i) => images.push({ label: im.categoryLabel || im.category || 'その他', name: `${s.userId}_${im.category || 'img'}_${i+1}.jpg`, mime: 'image/jpeg', data: strip(im.data) }));
-    record.images = []; record.cognitive.moca.images = []; record.cognitive.fab.images = [];
-    return {
-        secret: syncSettings.secret, action: 'upsert',
-        submissionId: `${s.timestamp}_${(syncSettings.device || 'dev').replace(/[^\w\-]/g, '')}`,
-        device: syncSettings.device || '', sentAt: new Date().toISOString(),
-        examDate: s.examDate, userId: s.userId, userName: s.userName,
-        columns, flat, record, images,
+// ---------- 初期化・接続 ----------
+function firebaseSdkLoaded() { return !!(window.firebase && firebase.firestore && firebase.auth); }
+async function initFirebase() {
+    if (!syncConfigured() || fbReady || fbInitializing) return fbReady;
+    fbInitializing = true; fbInitError = '';
+    try {
+        if (!firebaseSdkLoaded()) throw new Error('Firebase SDK を読み込めていません（初回はネット接続が必要です）');
+        spaceKey = (await sha256Hex('medapp|' + syncSettings.event + '|' + syncSettings.secret)).slice(0, 32);
+        if (!firebase.apps.length) firebase.initializeApp(syncSettings.fb);
+        fbDb = firebase.firestore();
+        try { await fbDb.enablePersistence({ synchronizeTabs: true }); } catch (e) { console.warn('persistence', e && e.code); }
+        const cred = await firebase.auth().signInAnonymously();
+        fbUser = cred.user;
+        fbReady = true;
+        startProgressWatch(); startLogsWatch(); ensureParticipantWatch();
+        fbDb.waitForPendingWrites().then(() => markAllSent()).catch(() => {});
+        fbDb.onSnapshotsInSync(() => refreshSyncBadge());
+    } catch (e) {
+        fbInitError = (e && (e.message || e.code)) || String(e);
+        console.warn('initFirebase failed', e);
+    } finally { fbInitializing = false; refreshSyncBadge(); renderSyncStatus(); }
+    return fbReady;
+}
+function spaceRef() { return fbDb.collection(SPACE_COLL).doc(spaceKey); }
+function participantDocId(examDate, userId) { return (String(examDate || '') + '_' + String(userId || '')).replace(/[^\w\-]/g, '_'); }
+function participantRef(examDate, userId) { return spaceRef().collection('participants').doc(participantDocId(examDate, userId)); }
+async function testSync() {
+    const st = document.getElementById('sync_status');
+    const fb = parseFirebaseConfig(document.getElementById('sync_fbconfig').value);
+    if (!fb || !document.getElementById('sync_secret').value.trim()) { st.textContent = 'Firebase 設定と合言葉を入力してください。'; return; }
+    if (!syncConfigured()) { st.textContent = '先に「設定を保存」してください。'; return; }
+    st.textContent = '接続中…';
+    if (!fbReady) await initFirebase();
+    if (!fbReady) { st.textContent = '❌ 接続できません: ' + fbInitError; return; }
+    try {
+        await spaceRef().set({ event: syncSettings.event, lastPingAt: firebase.firestore.FieldValue.serverTimestamp(), lastPingBy: syncSettings.device || '' }, { merge: true });
+        const snap = await spaceRef().collection('participants').get();
+        st.textContent = `✅ 接続OK：プロジェクト「${syncSettings.fb.projectId}」／イベント「${syncSettings.event}」に参加者 ${snap.size} 件`;
+        writeLog('ping', {});
+    } catch (e) { st.textContent = '❌ 書き込みできません: ' + (e.code || e.message) + '（Firestore のルールと Anonymous 認証の有効化を確認）'; }
+}
+
+// ---------- 送信（空でない値だけをマージ） ----------
+function isEmptyVal(v) { return v === null || v === undefined || v === '' || v === '—' || v === false || (typeof v === 'number' && isNaN(v)); }
+function pruneEmpty(v) {
+    if (Array.isArray(v)) {
+        const arr = v.map(x => (x && typeof x === 'object') ? pruneEmpty(x) : (isEmptyVal(x) ? null : x));
+        return arr.some(x => x !== null && x !== undefined) ? arr.map(x => x === undefined ? null : x) : undefined;
+    }
+    if (v && typeof v === 'object') {
+        const out = {}; Object.keys(v).forEach(k => { const p = pruneEmpty(v[k]); if (p !== undefined) out[k] = p; });
+        return Object.keys(out).length ? out : undefined;
+    }
+    return isEmptyVal(v) ? undefined : v;
+}
+// 端末の「既定値」がリモートの入力値を上書きしないように、未実施の検査項目を落とす
+function buildCloudRecord(raw) {
+    const r = JSON.parse(JSON.stringify(raw));
+    delete r.images; if (r.cognitive) { if (r.cognitive.moca) delete r.cognitive.moca.images; if (r.cognitive.fab) delete r.cognitive.fab.images; }
+    delete r._draftTimestamp; delete r.timestamp; delete r.timestampLocal; delete r.syncStatus; delete r.syncedAt;
+    const sw = r.swallowing || {};
+    if (sw.diadochokinesis) { const d = sw.diadochokinesis; const has = d.unable || d.note || [d.pa, d.ta, d.ka, d.counts && d.counts.pa, d.counts && d.counts.ta, d.counts && d.counts.ka].some(x => !isEmptyVal(x)); if (!has) delete sw.diadochokinesis; }
+    if (sw.tci && !(sw.tci.total > 0)) delete sw.tci;
+    if (sw.chewing && !(sw.chewing.L || []).concat(sw.chewing.a || [], sw.chewing.b || []).some(x => !isEmptyVal(x))) delete sw.chewing;
+    return pruneEmpty(r) || {};
+}
+function recordSummaryFields(rec) {
+    const out = [];
+    const names = { userName: '氏名', userSex: '性別', userAge: '年齢', userHeight: '身長', userWeight: '体重', 'physical.checks': '身体チェック', 'physical.sppb': 'SPPB', 'physical.walk5m': '5m歩行', 'physical.kneeExtension': '膝伸展', 'physical.grip': '握力', 'physical.respMuscle': '呼吸筋力', 'swallowing.geniohyoidEcho': 'オトガイ舌骨筋', 'swallowing.diadochokinesis': 'パタカ', 'swallowing.chewing': '咀嚼', 'swallowing.tonguePressure': '舌圧', 'swallowing.mucus': 'ムーカス', 'swallowing.tci': 'TCI', 'swallowing.remainingTeeth': '残存歯', 'cognitive.moca': 'MoCA-J', 'cognitive.fab': 'FAB' };
+    Object.keys(names).forEach(path => { const v = path.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : undefined), rec); if (v !== undefined && !isEmptyVal(v)) out.push(names[path]); });
+    return out;
+}
+// rec のうち remote と異なる（＝この端末が新たに持ち込む）値だけを残す
+function recordDiff(rec, remote) {
+    if (!Array.isArray(rec) && (rec === null || typeof rec !== 'object') && isEmptyVal(rec)) return undefined;   // 空値は「新しい値」ではない
+    if (remote === undefined || remote === null) return (rec === 0 ? undefined : rec);   // 未入力の 0（TCI）は差分にしない
+    if (Array.isArray(rec)) return JSON.stringify(rec) === JSON.stringify(remote) ? undefined : rec;
+    if (rec && typeof rec === 'object') {
+        if (typeof remote !== 'object') return rec;
+        const out = {}; Object.keys(rec).forEach(k => { const d = recordDiff(rec[k], remote[k]); if (d !== undefined) out[k] = d; });
+        return Object.keys(out).length ? out : undefined;
+    }
+    return String(rec) === String(remote) ? undefined : rec;
+}
+function remoteRecordFor(raw) { return (lastRemoteRecord && watchedDocId === participantDocId(raw.examDate, raw.userId)) ? lastRemoteRecord : null; }
+async function pushRecord(raw, kind) {
+    // kind: 'save'（保存ボタン）| 'live'（入力中の自動送信）
+    if (!fbReady || !raw.userId || !raw.examDate) return false;
+    const rec = buildCloudRecord(raw);
+    const dev = syncSettings.device || '未設定端末';
+    const devKey = dev.replace(/[.~*/\[\]]/g, '_');
+    const prevFields = (remoteRecordFor(raw) && lastRemoteDoc && lastRemoteDoc.contributors && lastRemoteDoc.contributors[devKey] && lastRemoteDoc.contributors[devKey].fields) || [];
+    const fields = Array.from(new Set(prevFields.concat(recordSummaryFields(recordDiff(rec, remoteRecordFor(raw)) || {}))));
+    const data = {
+        examDate: raw.examDate, userId: raw.userId, record: rec,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAtLocal: new Date().toISOString(), updatedBy: dev, updatedKind: kind,
+        contributors: { [devKey]: { at: new Date().toISOString(), fields } },
     };
-}
-async function enqueueSync(s) {
-    const payload = buildSyncPayload(s);
-    try {
-        const db = await openDB();
-        await new Promise((res, rej) => { const tx = db.transaction(OUTBOX_STORE, 'readwrite'); tx.objectStore(OUTBOX_STORE).put({ submissionId: payload.submissionId, sessionTimestamp: s.timestamp, payload, queuedAt: new Date().toISOString(), tries: 0 }); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
-    } catch (e) { console.warn('outbox put failed', e); }
+    if (raw.userName) data.userName = raw.userName;
+    if (kind === 'save') data.savedAt = new Date().toISOString();
+    const batch = fbDb.batch();
+    batch.set(participantRef(raw.examDate, raw.userId), data, { merge: true });
+    if (kind === 'save') batch.set(spaceRef().collection('logs').doc(), logEntry('save', { userId: raw.userId, examDate: raw.examDate, userName: raw.userName || '', fields }));
+    const p = batch.commit();
     refreshSyncBadge();
-    trySync(false);
+    return p;
 }
-async function getOutbox() {
-    try { const db = await openDB(); return await new Promise((res, rej) => { const r = db.transaction(OUTBOX_STORE).objectStore(OUTBOX_STORE).getAll(); r.onsuccess = () => res(r.result.sort((a,b) => a.queuedAt < b.queuedAt ? -1 : 1)); r.onerror = () => rej(r.error); }); }
-    catch (e) { return []; }
+function logEntry(action, extra) {
+    return Object.assign({ at: firebase.firestore.FieldValue.serverTimestamp(), atLocal: new Date().toISOString(), device: syncSettings.device || '未設定端末', uid: fbUser ? fbUser.uid : '', action }, extra || {});
 }
-async function outboxDelete(id) {
-    try { const db = await openDB(); await new Promise((res, rej) => { const tx = db.transaction(OUTBOX_STORE, 'readwrite'); tx.objectStore(OUTBOX_STORE).delete(id); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (_) {}
+function writeLog(action, extra) { if (!fbReady) return; spaceRef().collection('logs').add(logEntry(action, extra)).catch(e => console.warn('log', e)); }
+
+// 撮影画像は 1 枚 = 1 ドキュメント（縮小JPEG、Firestore の 1MB 制限内）
+function shrinkImage(dataUrl, maxSide, quality) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            const sc = Math.min(1, maxSide / Math.max(img.width, img.height));
+            const c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            resolve(c.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+    });
 }
-async function outboxUpdate(item) {
-    try { const db = await openDB(); await new Promise((res, rej) => { const tx = db.transaction(OUTBOX_STORE, 'readwrite'); tx.objectStore(OUTBOX_STORE).put(item); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (_) {}
+async function pushImages(s) {
+    if (!fbReady) return 0;
+    const list = [];
+    (s.cognitive.moca.images || []).forEach((im, i) => list.push({ label: 'MoCA-J', idx: i + 1, data: im.data, capturedAt: im.capturedAt || '' }));
+    (s.cognitive.fab.images || []).forEach((im, i) => list.push({ label: 'FAB', idx: i + 1, data: im.data, capturedAt: im.capturedAt || '' }));
+    (s.images || []).forEach((im, i) => list.push({ label: im.categoryLabel || im.category || 'その他', category: im.category || 'other', idx: i + 1, data: im.data, capturedAt: im.capturedAt || '' }));
+    let n = 0;
+    for (const im of list) {
+        if (!im.data) continue;
+        let d = await shrinkImage(im.data, 1600, 0.75);
+        if (d && d.length > 700000) d = await shrinkImage(d, 1200, 0.6);
+        if (d && d.length > 700000) d = await shrinkImage(d, 900, 0.5);
+        if (!d) continue;
+        const id = participantDocId(s.examDate, s.userId) + '_' + (im.label + (im.category ? '_' + im.category : '')).replace(/[^\w\-]/g, '') + '_' + im.idx + '_' + (s.timestamp || '').replace(/[^\d]/g, '').slice(0, 14);
+        spaceRef().collection('images').doc(id).set({ participant: participantDocId(s.examDate, s.userId), examDate: s.examDate, userId: s.userId, label: im.label, category: im.category || '', idx: im.idx, capturedAt: im.capturedAt, data: d, device: syncSettings.device || '', at: firebase.firestore.FieldValue.serverTimestamp() }).catch(e => console.warn('image push', e));
+        n++;
+    }
+    return n;
 }
-async function postToSheet(payload) {
-    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 60000);
+// 保存ボタン → セッションをクラウドへ
+async function pushSession(s) {
+    if (!syncConfigured()) return;
+    if (!fbReady) { await initFirebase(); if (!fbReady) { s.syncStatus = 'pending'; persistSession(s); updateRecordsList(); refreshSyncBadge(); return; } }
+    s.syncStatus = 'pending'; persistSession(s); updateRecordsList(); refreshSyncBadge();
     try {
-        // Content-Type を付けない（text/plain 扱い）ことで CORS のプリフライトを避ける（Apps Script の制約）
-        const r = await fetch(syncSettings.url, { method: 'POST', body: JSON.stringify(payload), redirect: 'follow', signal: ctrl.signal });
-        const txt = await r.text();
-        let j; try { j = JSON.parse(txt); } catch (_) { throw new Error('サーバー応答が不正: ' + txt.slice(0, 80)); }
-        if (!j.ok) throw new Error(j.error || 'unknown');
-        return j;
-    } finally { clearTimeout(t); }
+        const p = pushRecord(s, 'save');
+        pushImages(s);
+        await p;    // サーバーに届いた時点で解決（オフライン中は復帰まで待つ）
+        s.syncStatus = 'sent'; s.syncedAt = new Date().toISOString(); persistSession(s); updateRecordsList();
+    } catch (e) { console.warn('push failed', e); s.syncStatus = 'pending'; s.syncError = e.code || e.message; persistSession(s); }
+    refreshSyncBadge();
+}
+function markAllSent() {
+    let changed = false;
+    allSessions.forEach(s => { if (s.syncStatus === 'pending') { s.syncStatus = 'sent'; s.syncedAt = s.syncedAt || new Date().toISOString(); persistSession(s); changed = true; } });
+    if (changed) updateRecordsList();
+    refreshSyncBadge();
 }
 async function trySync(manual) {
-    if (!syncConfigured() || syncing) { if (manual && !syncConfigured()) alert('先に同期設定を保存してください'); return; }
-    if (!navigator.onLine) { lastSyncError = 'オフライン'; refreshSyncBadge(); if (manual) alert('オフラインです。接続後に自動で送信されます。'); return; }
-    syncing = true; refreshSyncBadge();
-    const items = await getOutbox();
-    let sent = 0, failed = null;
-    for (const it of items) {
-        try {
-            it.payload.secret = syncSettings.secret; it.payload.device = it.payload.device || syncSettings.device;
-            await postToSheet(it.payload);
-            await outboxDelete(it.submissionId);
-            const s = allSessions.find(x => x.timestamp === it.sessionTimestamp);
-            if (s) { s.syncStatus = 'sent'; s.syncedAt = new Date().toISOString(); persistSession(s); }
-            sent++;
-        } catch (e) {
-            it.tries = (it.tries || 0) + 1; it.lastError = e.message; await outboxUpdate(it);
-            failed = e.message; break;   // 順番を守るため、失敗したら以降は次回に回す
-        }
+    if (!syncConfigured()) { if (manual) alert('先に同期設定を保存してください'); return; }
+    if (!fbReady) { await initFirebase(); if (!fbReady) { if (manual) alert('接続できません: ' + fbInitError); return; } }
+    if (manual) {
+        const st = document.getElementById('sync_status'); if (st) st.textContent = '未送信の書き込みを送信中…';
+        try { await fbDb.waitForPendingWrites(); markAllSent(); if (st) st.textContent = '✅ 未送信 0 件。すべてクラウドに届いています。'; }
+        catch (e) { if (st) st.textContent = '❌ ' + (e.code || e.message); }
     }
-    lastSyncError = failed || '';
-    syncing = false;
-    if (sent) updateRecordsList();
     refreshSyncBadge();
-    if (manual) { const rest = (await getOutbox()).length; alert(failed ? `送信失敗（${failed}）。未送信 ${rest} 件は接続回復後に自動で再送します。` : `送信完了（${sent} 件）。未送信 0 件。`); }
-    renderOutboxInfo();
 }
-async function refreshSyncBadge() {
-    const b = document.getElementById('syncBadge');
-    if (!syncConfigured()) { b.textContent = '未設定'; b.className = 'text-xs font-bold px-1.5 py-0.5 rounded bg-gray-300 text-gray-800'; return; }
-    const n = (await getOutbox()).length;
-    if (syncing) { b.textContent = '送信中…'; b.className = 'text-xs font-bold px-1.5 py-0.5 rounded bg-blue-200 text-blue-900'; }
-    else if (n === 0) { b.textContent = (syncSettings.device || '同期') + ' ✓'; b.className = 'text-xs font-bold px-1.5 py-0.5 rounded bg-emerald-300 text-emerald-900'; }
-    else { b.textContent = `未送信 ${n}`; b.className = 'text-xs font-bold px-1.5 py-0.5 rounded ' + (lastSyncError ? 'bg-red-300 text-red-900' : 'bg-amber-300 text-amber-900'); }
+// 入力中のライブ送信（4秒デバウンス）
+function scheduleLivePush() {
+    if (!syncConfigured() || !syncSettings.live) return;
+    clearTimeout(livePushTimer);
+    livePushTimer = setTimeout(livePushNow, 4000);
 }
-async function renderOutboxInfo() {
-    const el = document.getElementById('sync_outbox'); if (!el) return;
-    const items = await getOutbox();
-    if (!items.length) { el.textContent = '未送信キュー: 0 件' + (lastSyncError ? `（前回エラー: ${lastSyncError}）` : ''); return; }
-    el.innerHTML = `未送信キュー: ${items.length} 件` + (lastSyncError ? `　<span class="text-red-600">前回エラー: ${lastSyncError}</span>` : '') + '<ul class="list-disc ml-5 mt-1">' + items.map(it => `<li>${it.payload.userName || ''} (${it.payload.userId}) ${new Date(it.queuedAt).toLocaleTimeString('ja-JP')}${it.tries ? `　再試行 ${it.tries} 回` : ''}</li>`).join('') + '</ul>';
+async function livePushNow() {
+    if (!syncConfigured() || !syncSettings.live) return;
+    if (!fbReady) { await initFirebase(); if (!fbReady) return; }
+    const raw = collectSessionDataRaw();
+    if (!raw.userId || !raw.examDate) return;
+    const rec = buildCloudRecord(raw);
+    const json = JSON.stringify([participantDocId(raw.examDate, raw.userId), rec]);
+    if (json === lastLocalPushJson || !Object.keys(rec).length) return;
+    const diff = recordDiff(rec, remoteRecordFor(raw));
+    if (!diff || !Object.keys(diff).filter(k => k !== 'userId' && k !== 'examDate').length) { lastLocalPushJson = json; return; }   // クラウドに無い新しい値がなければ送らない
+    lastLocalPushJson = json;
+    try { await pushRecord(raw, 'live'); } catch (e) { console.warn('live push', e); }
 }
 
-// 他ブースの記録を取り込む（空欄だけ埋める。この端末の入力は優先）
-async function fetchRemote(userId, examDate) {
-    const u = syncSettings.url + '?action=fetch&secret=' + encodeURIComponent(syncSettings.secret) + '&userId=' + encodeURIComponent(userId) + '&examDate=' + encodeURIComponent(examDate);
-    const r = await fetch(u, { method: 'GET', redirect: 'follow' });
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error || 'unknown');
-    return j;
-}
-function isEmptyVal(v) { return v === null || v === undefined || v === '' || v === '—' || v === false; }
+// ---------- 受信（他ブースの値をリアルタイムに空欄へ） ----------
 function deepMergePreferBase(base, inc) {
     // base（この端末の現在の入力）が空のところだけ inc（リモート）で埋める
     if (Array.isArray(inc)) { const out = Array.isArray(base) ? base.slice() : []; inc.forEach((v, i) => { out[i] = deepMergePreferBase(out[i], v); }); return out; }
     if (inc && typeof inc === 'object') { const out = (base && typeof base === 'object' && !Array.isArray(base)) ? Object.assign({}, base) : {}; Object.keys(inc).forEach(k => { out[k] = deepMergePreferBase(out[k], inc[k]); }); return out; }
     return isEmptyVal(base) ? inc : base;
+}
+function ensureParticipantWatch() {
+    const userId = (document.getElementById('userId').value || '').trim();
+    const examDate = document.getElementById('examDate').value;
+    const id = (fbReady && userId && examDate) ? participantDocId(examDate, userId) : '';
+    if (id === watchedDocId) return;
+    if (unsubParticipant) { unsubParticipant(); unsubParticipant = null; }
+    watchedDocId = id; lastLocalPushJson = ''; lastRemoteRecord = null; lastRemoteDoc = null;
+    setRemoteInfo('');
+    if (!id) return;
+    unsubParticipant = participantRef(examDate, userId).onSnapshot(snap => {
+        if (!snap.exists) { setRemoteInfo('☁ この利用者の記録はまだクラウドにありません'); return; }
+        const d = snap.data() || {};
+        lastRemoteRecord = d.record || {}; lastRemoteDoc = d;
+        const who = d.updatedBy || '他端末', when = d.updatedAtLocal ? new Date(d.updatedAtLocal).toLocaleTimeString('ja-JP') : '';
+        const contribs = Object.keys(d.contributors || {}).sort();
+        setRemoteInfo(`☁ 最終更新: ${who} ${when}　入力ブース: ${contribs.join(' / ') || '—'}`);
+        if (snap.metadata.hasPendingWrites) return;            // 自分の書き込みのエコーは反映不要
+        if (d.updatedBy === (syncSettings.device || '未設定端末')) return;
+        // 現在のIDと一致していることを再確認（切替中の取り違え防止）
+        if (participantDocId(document.getElementById('examDate').value, (document.getElementById('userId').value || '').trim()) !== id) return;
+        applyRemoteRecord(d.record || {}, userId, who);
+    }, err => { console.warn('participant watch', err); setRemoteInfo('☁ 受信エラー: ' + (err.code || err.message)); });
+}
+// 端末側の「未実施の既定値」（TCI の 0、パタカの秒数/機器の初期値）を空扱いにしてからマージする
+function normalizeLocalForMerge(local) {
+    const l = JSON.parse(JSON.stringify(local));
+    const sw = l.swallowing || {};
+    if (sw.tci && !(sw.tci.total > 0)) sw.tci = { sections: {} };
+    if (sw.diadochokinesis) { const d = sw.diadochokinesis; const has = d.unable || d.note || [d.pa, d.ta, d.ka, d.counts && d.counts.pa, d.counts && d.counts.ta, d.counts && d.counts.ka].some(x => !isEmptyVal(x)); if (!has) sw.diadochokinesis = {}; }
+    return l;
+}
+function applyRemoteRecord(remote, userId, who) {
+    const local = normalizeLocalForMerge(collectSessionDataRaw());
+    const merged = deepMergePreferBase(local, remote);
+    if (JSON.stringify(merged) === JSON.stringify(local)) return;   // 空欄に入る新しい値がない
+    // 画像はここでは触らない（restoreSessionData は images を渡さなければ現状維持）
+    delete merged.images; if (merged.cognitive) { delete merged.cognitive.moca.images; delete merged.cognitive.fab.images; }
+    merged.userId = userId;
+    restoreSessionData(merged);
+    const fields = recordSummaryFields(recordDiff(merged, local) || {});
+    showToast(`☁ ${who} の入力を反映：${fields.slice(0, 5).join('・')}${fields.length > 5 ? ' ほか' : ''}`);
+    autoSaveDraft();
+}
+async function fetchRemote(userId, examDate) {
+    const snap = await participantRef(examDate, userId).get();
+    if (!snap.exists) return { found: false };
+    const d = snap.data();
+    return { found: true, record: d.record || {}, updatedAt: d.updatedAtLocal, updatedBy: d.updatedBy, contributors: d.contributors || {} };
+}
+async function fetchRemoteImages(userId, examDate) {
+    const q = await spaceRef().collection('images').where('participant', '==', participantDocId(examDate, userId)).get();
+    const out = { moca: [], fab: [], other: [] };
+    q.forEach(doc => { const im = doc.data(); const it = { id: Date.now() + Math.random(), data: im.data, timestamp: im.capturedAt || '', capturedAt: im.capturedAt || '', category: im.category || 'other', categoryLabel: im.label }; if (im.label === 'MoCA-J' && !im.category) out.moca.push(it); else if (im.label === 'FAB') out.fab.push(it); else out.other.push(it); });
+    return out;
 }
 async function pullRemoteById() {
     if (!syncConfigured()) { alert('先に同期設定を保存してください'); return; }
@@ -1877,15 +2118,128 @@ async function pullRemoteById() {
     if (!userId) { alert('利用者IDを入力してください'); return; }
     const btn = document.getElementById('pullBtn'); btn.disabled = true; btn.textContent = '☁ 取得中…';
     try {
+        if (!fbReady) { await initFirebase(); if (!fbReady) throw new Error(fbInitError); }
         const j = await fetchRemote(userId, examDate);
-        if (!j.found) { alert(`ID「${userId}」（${examDate}）の記録はスプレッドシートにまだありません`); return; }
-        const local = collectSessionDataRaw();
+        if (!j.found) { alert(`ID「${userId}」（${examDate}）の記録はクラウドにまだありません`); return; }
+        const local = normalizeLocalForMerge(collectSessionDataRaw());
         const merged = deepMergePreferBase(local, j.record || {});
         merged.userId = userId;
+        delete merged.images; if (merged.cognitive) { delete merged.cognitive.moca.images; delete merged.cognitive.fab.images; }
         restoreSessionData(merged);
-        alert(`スプレッドシートの記録を取り込みました（最終更新: ${j.updatedAt ? new Date(j.updatedAt).toLocaleString('ja-JP') : '不明'}）。\nこの端末で入力済みの値は上書きしていません。`);
-    } catch (e) { alert('取り込みに失敗しました: ' + e.message); }
+        let imgMsg = '';
+        try {
+            const ims = await fetchRemoteImages(userId, examDate);
+            const have = new Set([...cognitiveImages.moca, ...cognitiveImages.fab, ...capturedImagesData].map(i => (i.data || '').slice(-64)));
+            let added = 0;
+            ims.moca.forEach(i => { if (!have.has(i.data.slice(-64))) { cognitiveImages.moca.push(i); added++; } });
+            ims.fab.forEach(i => { if (!have.has(i.data.slice(-64))) { cognitiveImages.fab.push(i); added++; } });
+            ims.other.forEach(i => { if (!have.has(i.data.slice(-64))) { capturedImagesData.push(i); added++; } });
+            if (added) { renderCognitiveImages('moca'); renderCognitiveImages('fab'); renderCapturedImages(); imgMsg = `\n画像 ${added} 枚を取り込みました。`; }
+        } catch (e) { console.warn('images pull', e); }
+        writeLog('pull', { userId, examDate });
+        alert(`クラウドの記録を取り込みました（最終更新: ${j.updatedBy || '不明'} ${j.updatedAt ? new Date(j.updatedAt).toLocaleString('ja-JP') : ''}）。\nこの端末で入力済みの値は上書きしていません。${imgMsg}`);
+        autoSaveDraft();
+    } catch (e) { alert('取り込みに失敗しました: ' + (e.code || e.message)); }
     finally { btn.disabled = false; btn.textContent = '☁ 取込'; }
+}
+// この検査日の全参加者をクラウドから取り込み、端末のセッション一覧に追加（CSV/JSON出力用）
+async function pullAllForDate() {
+    if (!syncConfigured()) { alert('先に同期設定を保存してください'); return; }
+    if (!fbReady) { await initFirebase(); if (!fbReady) { alert('接続できません: ' + fbInitError); return; } }
+    const examDate = document.getElementById('examDate').value;
+    const withImages = document.getElementById('sync_pull_images').checked;
+    const st = document.getElementById('sync_status'); st.textContent = `${examDate} の全参加者を取得中…`;
+    try {
+        const q = await spaceRef().collection('participants').where('examDate', '==', examDate).get();
+        let added = 0, updated = 0;
+        for (const doc of q.docs) {
+            const d = doc.data();
+            const base = collectEmptyTemplate();
+            const merged = deepMergePreferBase(base, d.record || {});
+            merged.userId = d.userId; merged.userName = d.userName || merged.userName || ''; merged.examDate = d.examDate;
+            merged.timestamp = 'cloud_' + doc.id;      // 同じ参加者は同じキーで上書き（重複しない）
+            merged.timestampLocal = (d.updatedAtLocal ? new Date(d.updatedAtLocal).toLocaleString('ja-JP') : '') + '（クラウド）';
+            merged.syncStatus = 'sent'; merged.cloudContributors = Object.keys(d.contributors || {});
+            merged.images = []; merged.cognitive.moca.images = []; merged.cognitive.fab.images = [];
+            if (withImages) { try { const ims = await fetchRemoteImages(d.userId, d.examDate); merged.cognitive.moca.images = ims.moca.map(i => ({ data: i.data, capturedAt: i.capturedAt })); merged.cognitive.fab.images = ims.fab.map(i => ({ data: i.data, capturedAt: i.capturedAt })); merged.images = ims.other.map(i => ({ data: i.data, category: i.category, categoryLabel: i.categoryLabel, capturedAt: i.capturedAt })); } catch (_) {} }
+            const idx = allSessions.findIndex(s => s.timestamp === merged.timestamp);
+            if (idx >= 0) { allSessions[idx] = merged; updated++; } else { allSessions.push(merged); added++; }
+            persistSession(merged);
+        }
+        allSessions.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
+        updateRecordsList();
+        st.textContent = `✅ ${examDate}：${q.size} 件を取り込みました（新規 ${added} / 更新 ${updated}）。「CSV出力」「JSON出力」で全ブース分をまとめて出せます。`;
+        writeLog('pullAll', { examDate, count: q.size });
+    } catch (e) { st.textContent = '❌ 取得失敗: ' + (e.code || e.message); }
+}
+// 空のフォーム相当のテンプレート（全件取込用。現在の入力は触らない）
+function collectEmptyTemplate() {
+    return {
+        userId: '', userName: '', examDate: '', userSex: '', userAge: null, userHeight: null, userWeight: null, userBMI: '—',
+        physical: { checks: {}, sppb: { balance: {}, gait: {}, chair: {}, total: null }, walk5m: { natural: [null, null], max: [null, null] }, kneeExtension: { left: [null, null], right: [null, null], leftAvg: '—', rightAvg: '—' }, grip: { left: [null, null], right: [null, null], leftAvg: '—', rightAvg: '—' }, respMuscle: { trials: [null, null, null] } },
+        swallowing: { diadochokinesis: {}, chewing: { L: [null, null, null], a: [null, null, null], b: [null, null, null] }, tonguePressure: { trials: [null, null, null] }, mucus: { trials: [null, null, null] }, tci: { sections: {} }, remainingTeeth: null },
+        cognitive: { moca: { done: false, images: [] }, fab: { done: false, images: [] } },
+        images: [],
+    };
+}
+
+// ---------- 進捗・ログ（同期モーダル内） ----------
+function startProgressWatch() {
+    if (unsubProgress) unsubProgress();
+    unsubProgress = spaceRef().collection('participants').orderBy('updatedAt', 'desc').limit(200).onSnapshot(snap => {
+        progressCache = snap.docs.map(d => d.data());
+        renderProgress();
+    }, err => console.warn('progress watch', err));
+}
+function renderProgress() {
+    const el = document.getElementById('sync_progress'); if (!el) return;
+    if (!fbReady) { el.innerHTML = '<span class="text-gray-400">未接続</span>'; return; }
+    const examDate = document.getElementById('examDate').value;
+    const rows = progressCache.filter(p => p.examDate === examDate);
+    const booths = Array.from(new Set(rows.flatMap(p => Object.keys(p.contributors || {})))).sort();
+    document.getElementById('sync_progress_title').textContent = `📋 進捗（${examDate}）: 参加者 ${rows.length} 名 / ブース ${booths.length}`;
+    if (!rows.length) { el.innerHTML = '<span class="text-gray-400">この検査日の記録はまだありません</span>'; return; }
+    const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    el.innerHTML = '<div class="overflow-x-auto"><table class="text-xs w-full" style="border-collapse:collapse"><thead><tr><th style="text-align:left;padding:2px 6px">ID</th><th style="text-align:left;padding:2px 6px">氏名</th>' + booths.map(b => `<th style="padding:2px 6px;white-space:nowrap">${esc(b)}</th>`).join('') + '<th style="text-align:left;padding:2px 6px">最終更新</th></tr></thead><tbody>' +
+        rows.sort((a, b) => String(a.userId).localeCompare(String(b.userId))).map(p => `<tr style="border-top:1px solid #e5e7eb"><td style="padding:2px 6px;font-weight:700">${esc(p.userId)}</td><td style="padding:2px 6px">${esc(p.userName || '')}</td>` + booths.map(b => `<td style="text-align:center;padding:2px 6px" title="${esc(((p.contributors || {})[b] || {}).fields ? p.contributors[b].fields.join('・') : '')}">${(p.contributors || {})[b] ? '✅' : '·'}</td>`).join('') + `<td style="padding:2px 6px;white-space:nowrap">${esc(p.updatedBy || '')} ${p.updatedAtLocal ? new Date(p.updatedAtLocal).toLocaleTimeString('ja-JP') : ''}</td></tr>`).join('') + '</tbody></table></div>';
+}
+function startLogsWatch() {
+    if (unsubLogs) unsubLogs();
+    unsubLogs = spaceRef().collection('logs').orderBy('atLocal', 'desc').limit(40).onSnapshot(snap => {
+        const el = document.getElementById('sync_logs'); if (!el) return;
+        const names = { save: '💾 保存', live: '✍ 入力', pull: '☁ 取込', pullAll: '☁ 全件取込', ping: '🔌 接続テスト', delete: '🗑 削除' };
+        const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        if (snap.empty) { el.innerHTML = '<span class="text-gray-400">ログはまだありません</span>'; return; }
+        el.innerHTML = '<ul class="space-y-2">' + snap.docs.map(d => { const l = d.data(); return `<li style="border-left:3px solid #93c5fd;padding-left:6px"><span class="text-gray-500">${l.atLocal ? new Date(l.atLocal).toLocaleString('ja-JP') : ''}</span>　<b>${esc(l.device)}</b>　${names[l.action] || esc(l.action)}${l.userId ? `　${esc(l.userId)} ${esc(l.userName || '')}` : ''}${l.fields && l.fields.length ? `　<span class="text-gray-500">${esc(l.fields.join('・'))}</span>` : ''}${l.count !== undefined ? `　${l.count}件` : ''}</li>`; }).join('') + '</ul>';
+    }, err => console.warn('logs watch', err));
+}
+
+// ---------- 表示 ----------
+function setRemoteInfo(text) { const el = document.getElementById('remoteInfo'); if (!el) return; el.textContent = text; el.classList.toggle('hidden', !text); }
+let toastTimer = null;
+function showToast(msg) {
+    const el = document.getElementById('syncToast'); if (!el) return;
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 4500);
+}
+function pendingLocalCount() { return allSessions.filter(s => s.syncStatus === 'pending').length; }
+function refreshSyncBadge() {
+    const b = document.getElementById('syncBadge'); if (!b) return;
+    const base = 'text-xs font-bold px-1.5 py-0.5 rounded ';
+    if (!syncConfigured()) { b.textContent = '未設定'; b.className = base + 'bg-gray-300 text-gray-800'; return; }
+    if (!fbReady) { b.textContent = fbInitError ? '接続エラー' : (fbInitializing ? '接続中…' : '未接続'); b.className = base + (fbInitError ? 'bg-red-300 text-red-900' : 'bg-amber-300 text-amber-900'); return; }
+    const n = pendingLocalCount();
+    if (!navigator.onLine) { b.textContent = (syncSettings.device || '同期') + ' オフライン' + (n ? `(${n})` : ''); b.className = base + 'bg-amber-300 text-amber-900'; return; }
+    if (n) { b.textContent = `未送信 ${n}`; b.className = base + 'bg-amber-300 text-amber-900'; return; }
+    b.textContent = (syncSettings.device || '同期') + ' ✓'; b.className = base + 'bg-emerald-300 text-emerald-900';
+}
+function renderSyncStatus() {
+    const st = document.getElementById('sync_status'); if (!st) return;
+    if (!syncConfigured()) { st.textContent = 'Firebase 設定と合言葉を入力して「設定を保存」してください。'; return; }
+    if (!firebaseSdkLoaded()) { st.textContent = '⚠ Firebase SDK を読み込めていません。ネットに接続した状態でページを再読み込みしてください。'; return; }
+    if (fbInitializing) { st.textContent = '接続中…'; return; }
+    if (!fbReady) { st.textContent = fbInitError ? '❌ 接続エラー: ' + fbInitError : '未接続'; return; }
+    st.textContent = `✅ 接続中：${syncSettings.fb.projectId} ／ イベント「${syncSettings.event}」／ ブース「${syncSettings.device || '未設定'}」／ ライブ同期 ${syncSettings.live ? 'ON' : 'OFF'}` + (navigator.onLine ? '' : '　⚠ オフライン（復帰後に自動送信）');
 }
 </script>
 </body>
